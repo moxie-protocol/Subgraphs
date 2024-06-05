@@ -3,10 +3,14 @@
     "inputs": [
       {
         "internalType": "contract IERC20",
-        "name": "_graphToken",
+        "name": "_MoxieToken",
         "type": "address"
       },
-      { "internalType": "address", "name": "_masterCopy", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "_masterCopy",
+        "type": "address"
+      }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
@@ -53,6 +57,19 @@
       }
     ],
     "name": "MasterCopyUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "moxiePassToken",
+        "type": "address"
+      }
+    ],
+    "name": "MoxiePassTokenUpdated",
     "type": "event"
   },
   {
@@ -171,7 +188,7 @@
       },
       {
         "indexed": false,
-        "internalType": "enum IGraphTokenLock.Revocability",
+        "internalType": "enum IMoxieTokenLock.Revocability",
         "name": "revocable",
         "type": "uint8"
       }
@@ -219,7 +236,11 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "_dst", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "_dst",
+        "type": "address"
+      }
     ],
     "name": "addTokenDestination",
     "outputs": [],
@@ -227,24 +248,56 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "bytes4", "name": "", "type": "bytes4" }],
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "",
+        "type": "bytes4"
+      }
+    ],
     "name": "authFnCalls",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "_owner", "type": "address" },
-      { "internalType": "address", "name": "_beneficiary", "type": "address" },
+      {
+        "internalType": "address",
+        "name": "_owner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_beneficiary",
+        "type": "address"
+      },
       {
         "internalType": "uint256",
         "name": "_managedAmount",
         "type": "uint256"
       },
-      { "internalType": "uint256", "name": "_startTime", "type": "uint256" },
-      { "internalType": "uint256", "name": "_endTime", "type": "uint256" },
-      { "internalType": "uint256", "name": "_periods", "type": "uint256" },
+      {
+        "internalType": "uint256",
+        "name": "_startTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_endTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_periods",
+        "type": "uint256"
+      },
       {
         "internalType": "uint256",
         "name": "_releaseStartTime",
@@ -256,7 +309,7 @@
         "type": "uint256"
       },
       {
-        "internalType": "enum IGraphTokenLock.Revocability",
+        "internalType": "enum IMoxieTokenLock.Revocability",
         "name": "_revocable",
         "type": "uint8"
       }
@@ -268,7 +321,11 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "_amount", "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
     ],
     "name": "deposit",
     "outputs": [],
@@ -277,16 +334,59 @@
   },
   {
     "inputs": [
-      { "internalType": "bytes4", "name": "_sigHash", "type": "bytes4" }
+      {
+        "internalType": "bytes4",
+        "name": "_sigHash",
+        "type": "bytes4"
+      }
     ],
     "name": "getAuthFunctionCallTarget",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "bytes32", "name": "_salt", "type": "bytes32" },
+      {
+        "internalType": "bytes32",
+        "name": "_salt",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "_implementation",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_deployer",
+        "type": "address"
+      }
+    ],
+    "name": "getDeploymentAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_salt",
+        "type": "bytes32"
+      },
       {
         "internalType": "address",
         "name": "_implementation",
@@ -294,7 +394,13 @@
       }
     ],
     "name": "getDeploymentAddress",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
@@ -302,46 +408,86 @@
     "inputs": [],
     "name": "getTokenDestinations",
     "outputs": [
-      { "internalType": "address[]", "name": "", "type": "address[]" }
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
     ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "bytes4", "name": "_sigHash", "type": "bytes4" }
+      {
+        "internalType": "bytes4",
+        "name": "_sigHash",
+        "type": "bytes4"
+      }
     ],
     "name": "isAuthFunctionCall",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "_dst", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "_dst",
+        "type": "address"
+      }
     ],
     "name": "isTokenDestination",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "masterCopy",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "owner",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "_dst", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "_dst",
+        "type": "address"
+      }
     ],
     "name": "removeTokenDestination",
     "outputs": [],
@@ -357,8 +503,16 @@
   },
   {
     "inputs": [
-      { "internalType": "string", "name": "_signature", "type": "string" },
-      { "internalType": "address", "name": "_target", "type": "address" }
+      {
+        "internalType": "string",
+        "name": "_signature",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "_target",
+        "type": "address"
+      }
     ],
     "name": "setAuthFunctionCall",
     "outputs": [],
@@ -367,8 +521,16 @@
   },
   {
     "inputs": [
-      { "internalType": "string[]", "name": "_signatures", "type": "string[]" },
-      { "internalType": "address[]", "name": "_targets", "type": "address[]" }
+      {
+        "internalType": "string[]",
+        "name": "_signatures",
+        "type": "string[]"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_targets",
+        "type": "address[]"
+      }
     ],
     "name": "setAuthFunctionCallMany",
     "outputs": [],
@@ -377,9 +539,26 @@
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "_masterCopy", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "_masterCopy",
+        "type": "address"
+      }
     ],
     "name": "setMasterCopy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "moxiePassToken_",
+        "type": "address"
+      }
+    ],
+    "name": "setMoxiePassToken",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -388,14 +567,22 @@
     "inputs": [],
     "name": "token",
     "outputs": [
-      { "internalType": "contract IERC20", "name": "", "type": "address" }
+      {
+        "internalType": "contract IERC20",
+        "name": "",
+        "type": "address"
+      }
     ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      { "internalType": "address", "name": "newOwner", "type": "address" }
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
     ],
     "name": "transferOwnership",
     "outputs": [],
@@ -404,7 +591,11 @@
   },
   {
     "inputs": [
-      { "internalType": "string", "name": "_signature", "type": "string" }
+      {
+        "internalType": "string",
+        "name": "_signature",
+        "type": "string"
+      }
     ],
     "name": "unsetAuthFunctionCall",
     "outputs": [],
@@ -413,7 +604,11 @@
   },
   {
     "inputs": [
-      { "internalType": "uint256", "name": "_amount", "type": "uint256" }
+      {
+        "internalType": "uint256",
+        "name": "_amount",
+        "type": "uint256"
+      }
     ],
     "name": "withdraw",
     "outputs": [],
