@@ -5,6 +5,7 @@
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy": "graph deploy --studio vesting",
+    "cb": "graph codegen && graph build",
     "cbd": "graph codegen && graph build && graph deploy --studio vesting",
     "test": "graph test"
   },

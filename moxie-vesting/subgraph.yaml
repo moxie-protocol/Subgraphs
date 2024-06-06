@@ -184,36 +184,6 @@ dataSources:
           handler: handleFunctionCallAuth
         - event: TokenDestinationAllowed(indexed address,bool)
           handler: handleTokenDestinationAllowed
-  # - kind: ethereum/contract
-  #   name: MoxieTokenLockTransferTool
-  #   network: mainnet
-  #   source:
-  #     address: "0xCa82c7Ce3388b0B5d307574099aC57d7a00d509F"
-  #     abi: MoxieTokenLockTransferTool
-  #     startBlock: 17743363
-  #   mapping:
-  #     kind: ethereum/events
-  #     apiVersion: 0.0.6
-  #     language: wasm/assemblyscript
-  #     file: ./src/mappings/transferTool.ts
-  #     entities:
-  #       - TODO
-  #     abis:
-  #       - name: MoxieTokenLockTransferTool
-  #         file: ./abis/MoxieTokenLockTransferTool.json
-  #     eventHandlers:
-  # - event: LockedFundsSentToL2(indexed address,indexed address,indexed address,address,uint256)
-  #   handler: handleLockedFundsSentToL2
-  # - event: L2WalletAddressSet(indexed address,indexed address)
-  #   handler: handleL2WalletAddressSet
-  # - event: L2BeneficiarySet(indexed address,indexed address)
-  #   handler: handleL2BeneficiarySet
-  # - event: ETHDeposited(indexed address,uint256)
-  #   handler: handleETHDeposited
-  # - event: ETHWithdrawn(indexed address,indexed address,uint256)
-  #   handler: handleETHWithdrawn
-  # - event: ETHPulled(indexed address,uint256)
-  #   handler: handleETHPulled
 templates:
   - kind: ethereum/contract
     name: MoxieTokenLockWallet
@@ -239,10 +209,6 @@ templates:
           handler: handleTokensRevoked
         - event: ManagerUpdated(indexed address,indexed address)
           handler: handleManagerUpdated
-        # - event: ApproveTokenDestinations()
-        #   handler: handleApproveTokenDestinations
-        # - event: RevokeTokenDestinations()
-        #   handler: handleRevokeTokenDestinations
         - event: TokenDestinationsApproved()
           handler: handleTokenDestinationsApproved
         - event: TokenDestinationsRevoked()

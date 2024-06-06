@@ -71,52 +71,7 @@ type TokenLockWallet @entity {
   blockNumberCreated: BigInt!
   "The creation tx hash of the wallet"
   txHash: Bytes!
-  "ETH balance for L2 transfer."
-  ethBalance: BigInt!
-  "Tokens sent to L2"
-  tokensTransferredToL2: BigInt!
-  "Whether the vesting contract has experienced a transfer to L2"
-  transferredToL2: Boolean!
-  "Timestamp for the L1 -> L2 Transfer."
-  firstTransferredToL2At: BigInt
-  "Block number for the L1 -> L2 Transfer."
-  firstTransferredToL2AtBlockNumber: BigInt
-  "Transaction hash for the L1 -> L2 Transfer."
-  firstTransferredToL2AtTx: String
-  "Timestamp for the L1 -> L2 Transfer."
-  lastTransferredToL2At: BigInt
-  "Block number for the L1 -> L2 Transfer."
-  lastTransferredToL2AtBlockNumber: BigInt
-  "Transaction hash for the L1 -> L2 Transfer."
-  lastTransferredToL2AtTx: String
-  "Wallet address set for L2 transfer"
-  l2WalletAddress: Bytes
-  "L1 wallet address that triggered the creation for this wallet in L2. Only available if the L2 wallet was created through transfer"
-  l1WalletAddress: Bytes
-  "Beneficiary set for L2 transfer. Only for locked tokens codepath, fully vested won't be setting this"
-  l2Beneficiary: Bytes
-  "Whether the wallet is fully vested or not. Fully vested wallets will have an l2WalletAddress set that is not a TokenLockWallet, but rather a normal EOA, since they can withdraw the funds whenever they please"
-  l2WalletIsTokenLock: Boolean
-  "Tokens sent to L1"
-  tokensTransferredToL1: BigInt!
-  "Whether the vesting contract has experienced a transfer to L1"
-  transferredToL1: Boolean!
-  "Timestamp for the L2 -> L1 Transfer of locked funds."
-  firstLockedFundsTransferredToL1At: BigInt
-  "Block number for the L2 -> L1 Transfer of locked funds."
-  firstLockedFundsTransferredToL1AtBlockNumber: BigInt
-  "Transaction hash for the L2 -> L1 Transfer of locked funds."
-  firstLockedFundsTransferredToL1AtTx: String
-  "Timestamp for the L2 -> L1 Transfer of locked funds."
-  lastLockedFundsTransferredToL1At: BigInt
-  "Block number for the L2 -> L1 Transfer of locked funds."
-  lastLockedFundsTransferredToL1AtBlockNumber: BigInt
-  "Transaction hash for the L2 -> L1 Transfer of locked funds."
-  lastLockedFundsTransferredToL1AtTx: String
-  "Tokens sent to L1 (First time)"
-  firstLockedFundsTransferredToL1Amount: BigInt!
-  "Tokens sent to L1 (Last time)"
-  lastLockedFundsTransferredToL1Amount: BigInt!
+ 
 }
 
 """

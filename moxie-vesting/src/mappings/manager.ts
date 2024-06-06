@@ -67,13 +67,6 @@ export function handleTokenLockCreated(event: TokenLockCreated): void {
   tokenLock.tokensReleased = BigInt.fromI32(0)
   tokenLock.blockNumberCreated = event.block.number
   tokenLock.txHash = event.transaction.hash
-  tokenLock.ethBalance = BigInt.fromI32(0)
-  tokenLock.tokensTransferredToL2 = BigInt.fromI32(0)
-  tokenLock.tokensTransferredToL1 = BigInt.fromI32(0)
-  tokenLock.firstLockedFundsTransferredToL1Amount = BigInt.fromI32(0)
-  tokenLock.lastLockedFundsTransferredToL1Amount = BigInt.fromI32(0)
-  tokenLock.transferredToL2 = false
-  tokenLock.transferredToL1 = false
   if (event.params.revocable == 0) {
     tokenLock.revocable = "NotSet"
   } else if (event.params.revocable == 1) {
