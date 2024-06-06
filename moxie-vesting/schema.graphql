@@ -14,6 +14,8 @@ type TokenManager @entity {
   authorizedFunctions: [AuthorizedFunction!] @derivedFrom(field: "manager")
   "Token lock count of contracts created"
   tokenLockCount: BigInt!
+  "moxie pass token"
+  moxiePassToken: Bytes
 }
 
 """
@@ -32,7 +34,7 @@ type AuthorizedFunction @entity {
   manager: TokenManager!
 }
 """
-Token Lock Wallets which hold locked GRT
+Token Lock Wallets which hold locked MOXIE
 """
 type TokenLockWallet @entity {
   "The address of the token lock wallet"
@@ -43,10 +45,12 @@ type TokenLockWallet @entity {
   initHash: Bytes!
   "Address of the beneficiary of locked tokens"
   beneficiary: Bytes!
-  "The token being used (GRT). For L2 wallets created for L1 it will be null"
+  "The token being used (MOXIE)"
   token: Bytes
   "Amount of tokens to be managed by the lock contract"
   managedAmount: BigInt!
+  "balance of the wallet (MOXIE)"
+  balance: BigInt!
   "Start time of the release schedule"
   startTime: BigInt!
   "End time of the release schedule"
@@ -71,7 +75,8 @@ type TokenLockWallet @entity {
   blockNumberCreated: BigInt!
   "The creation tx hash of the wallet"
   txHash: Bytes!
- 
+  "lock"
+  lockAccepted: Boolean!
 }
 
 """

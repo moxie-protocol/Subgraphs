@@ -6,7 +6,8 @@ import {
   TokensWithdrawn,
   FunctionCallAuth,
   TokenDestinationAllowed,
-} from "../../generated/GraphTokenLockManager/GraphTokenLockManager"
+  MoxiePassTokenUpdated,
+} from "../../generated/MoxieTokenLockManager/MoxieTokenLockManager"
 
 import { MoxieTokenLockWallet } from "../../generated/templates"
 
@@ -56,6 +57,7 @@ export function handleTokenLockCreated(event: TokenLockCreated): void {
   tokenLock.beneficiary = event.params.beneficiary
   tokenLock.token = event.params.token
   tokenLock.managedAmount = event.params.managedAmount
+  tokenLock.balance = event.params.managedAmount
   tokenLock.startTime = event.params.startTime
   tokenLock.endTime = event.params.endTime
   tokenLock.periods = event.params.periods
@@ -67,6 +69,7 @@ export function handleTokenLockCreated(event: TokenLockCreated): void {
   tokenLock.tokensReleased = BigInt.fromI32(0)
   tokenLock.blockNumberCreated = event.block.number
   tokenLock.txHash = event.transaction.hash
+  tokenLock.lockAccepted = false
   if (event.params.revocable == 0) {
     tokenLock.revocable = "NotSet"
   } else if (event.params.revocable == 1) {
@@ -144,5 +147,13 @@ export function handleTokenDestinationAllowed(
     // Otherwise do nothing
   }
   manager.tokenDestinations = destinations
+  manager.save()
+}
+
+export function handleMoxiePassTokenUpdated(
+  event: MoxiePassTokenUpdated
+): void {
+  let manager = TokenManager.load(event.address.toHexString())!
+  manager.moxiePassToken = event.params.moxiePassToken
   manager.save()
 }
