@@ -65,14 +65,14 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   auctionDetails.interestScore = pricePoint
     .get("volume")
     .div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
-  if (!pricePoint.get("price").equals(ZERO.toBigDecimal())) {
-    auctionDetails.usdAmountTraded = getUsdAmountTraded(
-      addressBiddingToken,
-      addressAuctioningToken,
-      biddingTokensSold,
-      pricePoint.get("price")
-    )
-  }
+  // if (!pricePoint.get("price").equals(ZERO.toBigDecimal())) {
+  //   auctionDetails.usdAmountTraded = getUsdAmountTraded(
+  //     addressBiddingToken,
+  //     addressAuctioningToken,
+  //     biddingTokensSold,
+  //     pricePoint.get("price")
+  //   )
+  // }
 
   auctionDetails.save()
 }
@@ -224,7 +224,7 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.isAtomicClosureAllowed = isAtomicClosureAllowed
   auctionDetails.isPrivateAuction = isPrivateAuction
   auctionDetails.interestScore = new BigDecimal(new BigInt(0))
-  auctionDetails.usdAmountTraded = new BigDecimal(new BigInt(0))
+  // auctionDetails.usdAmountTraded = new BigDecimal(new BigInt(0))
   auctionDetails.chainId = getChainHexFromName(dataSource.network())
   auctionDetails.currentVolume = BigDecimal.fromString("0")
   auctionDetails.currentClearingOrderSellAmount = new BigInt(0)
@@ -463,12 +463,12 @@ function updateClearingOrderAndVolume(auctionId: BigInt): void {
       auctionDetails.interestScore = currentBiddingAmount
         .toBigDecimal()
         .div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
-      auctionDetails.usdAmountTraded = getUsdAmountTraded(
-        addressBiddingToken,
-        addressAuctioningToken,
-        currentBiddingAmount,
-        currentOrder.price
-      )
+      // auctionDetails.usdAmountTraded = getUsdAmountTraded(
+      //   addressBiddingToken,
+      //   addressAuctioningToken,
+      //   currentBiddingAmount,
+      //   currentOrder.price
+      // )
       auctionDetails.save()
       return
     } else {
@@ -493,12 +493,12 @@ function updateClearingOrderAndVolume(auctionId: BigInt): void {
       auctionDetails.interestScore = currentBiddingAmount
         .toBigDecimal()
         .div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
-      auctionDetails.usdAmountTraded = getUsdAmountTraded(
-        addressBiddingToken,
-        addressAuctioningToken,
-        currentBiddingAmount,
-        currentClearingPrice
-      )
+      // auctionDetails.usdAmountTraded = getUsdAmountTraded(
+      //   addressBiddingToken,
+      //   addressAuctioningToken,
+      //   currentBiddingAmount,
+      //   currentClearingPrice
+      // )
       auctionDetails.save()
       return
     }
@@ -519,12 +519,12 @@ function updateClearingOrderAndVolume(auctionId: BigInt): void {
     auctionDetails.interestScore = biddingTokenTotal
       .toBigDecimal()
       .div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
-    auctionDetails.usdAmountTraded = getUsdAmountTraded(
-      addressBiddingToken,
-      addressAuctioningToken,
-      biddingTokenTotal,
-      currentClearingPrice
-    )
+    // auctionDetails.usdAmountTraded = getUsdAmountTraded(
+    //   addressBiddingToken,
+    //   addressAuctioningToken,
+    //   biddingTokenTotal,
+    //   currentClearingPrice
+    // )
 
     auctionDetails.save()
     return
@@ -550,12 +550,12 @@ function updateClearingOrderAndVolume(auctionId: BigInt): void {
     auctionDetails.interestScore = biddingTokenTotal
       .toBigDecimal()
       .div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
-    auctionDetails.usdAmountTraded = getUsdAmountTraded(
-      addressBiddingToken,
-      addressAuctioningToken,
-      biddingTokenTotal,
-      currentClearingPrice
-    )
+    // auctionDetails.usdAmountTraded = getUsdAmountTraded(
+    //   addressBiddingToken,
+    //   addressAuctioningToken,
+    //   biddingTokenTotal,
+    //   currentClearingPrice
+    // )
     auctionDetails.save()
     return
   }

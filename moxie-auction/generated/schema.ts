@@ -637,16 +637,20 @@ export class AuctionDetail extends Entity {
     this.set("interestScore", Value.fromBigDecimal(value));
   }
 
-  get usdAmountTraded(): BigDecimal {
-    let value = this.get("usdAmountTraded");
+  get uniqueBidders(): BigInt | null {
+    let value = this.get("uniqueBidders");
     if (!value || value.kind == ValueKind.NULL) {
-      throw new Error("Cannot return null for a required field.");
+      return null;
     } else {
-      return value.toBigDecimal();
+      return value.toBigInt();
     }
   }
 
-  set usdAmountTraded(value: BigDecimal) {
-    this.set("usdAmountTraded", Value.fromBigDecimal(value));
+  set uniqueBidders(value: BigInt | null) {
+    if (!value) {
+      this.unset("uniqueBidders");
+    } else {
+      this.set("uniqueBidders", Value.fromBigInt(<BigInt>value));
+    }
   }
 }
