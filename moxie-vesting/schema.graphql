@@ -40,7 +40,7 @@ type TokenLockWallet @entity {
   "The address of the token lock wallet"
   id: ID!
   "The Manager address"
-  manager: Bytes!
+  manager: TokenManager!
   "The hash of the initializer"
   initHash: Bytes!
   "Address of the beneficiary of locked tokens"

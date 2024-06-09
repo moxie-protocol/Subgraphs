@@ -44,7 +44,7 @@ export function handleTokensRevoked(event: TokensRevoked): void {
 
 export function handleManagerUpdated(event: ManagerUpdated): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
-  tokenLockWallet.manager = event.params._newManager
+  tokenLockWallet.manager = event.params._newManager.toHexString()
   tokenLockWallet.save()
 }
 
@@ -93,7 +93,7 @@ export function handleLockAccepted(event: LockAccepted): void {
 }
 export function handleLockCanceled(event: LockCanceled): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
-  let manager = TokenManager.load(tokenLockWallet.manager.toHexString())!
+  let manager = TokenManager.load(tokenLockWallet.manager)!
   manager.tokens = manager.tokens.plus(tokenLockWallet.balance)
   tokenLockWallet.balance = BigInt.fromI32(0)
   tokenLockWallet.save()

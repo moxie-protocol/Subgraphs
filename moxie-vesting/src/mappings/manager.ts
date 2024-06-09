@@ -1,4 +1,4 @@
-import { BigInt, log, store } from "@graphprotocol/graph-ts"
+import { Address, BigInt, log, store } from "@graphprotocol/graph-ts"
 import {
   MasterCopyUpdated,
   TokenLockCreated,
@@ -52,7 +52,8 @@ export function handleTokenLockCreated(event: TokenLockCreated): void {
   let id = event.params.contractAddress.toHexString()
   log.warning("[TOKEN LOCK CREATED] id used: {}", [id])
   let tokenLock = new TokenLockWallet(id)
-  tokenLock.manager = event.address
+  log.warning("[TOKEN LOCK] manager: {}", [event.address.toHexString()])
+  tokenLock.manager = manager.id
   tokenLock.initHash = event.params.initHash
   tokenLock.beneficiary = event.params.beneficiary
   tokenLock.token = event.params.token
@@ -103,10 +104,9 @@ export function handleFunctionCallAuth(event: FunctionCallAuth): void {
     .concat(event.address.toHexString())
 
   // Delete the entity if auth revoked
-  if (
-    event.params.target.toHex() == "0x0000000000000000000000000000000000000000"
-  ) {
+  if (event.params.target == Address.zero()) {
     store.remove("AuthorizedFunction", fid)
+    return
   }
 
   // Save authorized function
