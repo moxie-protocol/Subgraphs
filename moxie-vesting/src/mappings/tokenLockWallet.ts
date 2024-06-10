@@ -44,7 +44,12 @@ export function handleTokensRevoked(event: TokensRevoked): void {
 
 export function handleManagerUpdated(event: ManagerUpdated): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
-  tokenLockWallet.manager = event.params._newManager.toHexString()
+  let manager = TokenManager.load(event.params._newManager.toHexString())
+  if (manager == null) {
+    log.error("Manager not found: {}", [event.params._newManager.toHexString()])
+    throw new Error("Manager not found")
+  }
+  tokenLockWallet.manager = manager.id
   tokenLockWallet.save()
 }
 
