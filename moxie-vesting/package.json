@@ -7,7 +7,7 @@
     "deploy": "graph deploy --studio vesting",
     "cb": "graph codegen && graph build",
     "cbd": "graph codegen && graph build && graph deploy --studio vesting",
-    "test": "graph test"
+    "test": "graph test -d"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.73.0",
