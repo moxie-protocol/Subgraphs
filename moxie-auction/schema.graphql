@@ -5,26 +5,36 @@ type Order @entity {
   buyAmount: BigInt! # uint256
   userId: BigInt! # uint96
   userAddress: Bytes!
-  price: BigDecimal!
-  volume: BigDecimal!
+  price: BigDecimal! # need to understand
+  volume: BigDecimal! # need to understand
   timestamp: BigInt!
   txId: Bytes!
+  auction: AuctionDetail!
+  status: Status
+}
+
+enum Status {
+  Placed
+  Claimed
+  Cancelled
 }
 
 type User @entity {
   id: ID!
   address: Bytes!
-  auctions: [AuctionDetail!]!
+  orders: [Order!]!
 }
 
 type AuctionDetail @entity {
   txHash: Bytes!
   id: ID!
   auctionId: BigInt!
-  exactOrder: Order!
-  chainId: String!
+  exactOrder: Order! # need to understand
+  chainId: String! # not needed
   orders: [Order!]
-  ordersWithoutClaimed: [Order!]
+  highestBid: Order
+  lowestBid: Order
+  ordersWithoutClaimed: [Order!] # need to understand
   symbolAuctioningToken: String!
   symbolBiddingToken: String!
   addressAuctioningToken: Bytes!
@@ -45,6 +55,6 @@ type AuctionDetail @entity {
   currentBiddingAmount: BigInt!
   isAtomicClosureAllowed: Boolean!
   isPrivateAuction: Boolean!
-  interestScore: BigDecimal!
-  usdAmountTraded: BigDecimal!
+  interestScore: BigDecimal! # need to understand
+  uniqueBidders: BigInt
 }
