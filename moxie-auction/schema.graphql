@@ -1,16 +1,31 @@
+# type Order @entity {
+#   id: ID!
+#   auctionId: BigInt!
+#   sellAmount: BigInt!
+#   buyAmount: BigInt! # uint256
+#   userId: BigInt! # uint96
+#   userAddress: Bytes!
+#   price: BigDecimal! # need to understand
+#   volume: BigDecimal! # need to understand
+#   timestamp: BigInt!
+#   txId: Bytes!
+#   auction: AuctionDetail!
+#   status: Status
+# }
+
 type Order @entity {
   id: ID!
-  auctionId: BigInt!
+  # auctionId: BigInt!
   sellAmount: BigInt!
   buyAmount: BigInt! # uint256
-  userId: BigInt! # uint96
-  userAddress: Bytes!
-  price: BigDecimal! # need to understand
-  volume: BigDecimal! # need to understand
+  # userId: BigInt! # uint96
+  # userAddress: Bytes!
+  price: BigDecimal! # sellAmount / buyAmount
+  volume: BigDecimal! # sellAmount * 10 ^ -decimalsSellToken
   timestamp: BigInt!
-  txId: Bytes!
-  auction: AuctionDetail!
-  status: Status
+  auction: AuctionDetail
+  user: User!
+  status: Status!
 }
 
 enum Status {
@@ -19,28 +34,67 @@ enum Status {
   Cancelled
 }
 
+# type User @entity {
+#   id: ID!
+#   address: Bytes!
+#   orders: [Order!]!
+# }
+
 type User @entity {
   id: ID!
   address: Bytes!
-  orders: [Order!]!
+  createdAuction: [AuctionDetail!]!
+  participatedAuction: [AuctionDetail!]!
+  orders: [Order!]! @derivedFrom(field: "user")
 }
+
+# type AuctionDetail @entity {
+#   txHash: Bytes!
+#   id: ID!
+#   auctionId: BigInt!
+#   exactOrder: Order! # need to understand
+#   chainId: String! # not needed
+#   orders: [Order!]
+#   highestBid: Order
+#   lowestBid: Order
+#   ordersWithoutClaimed: [Order!] # need to understand
+#   symbolAuctioningToken: String!
+#   symbolBiddingToken: String!
+#   addressAuctioningToken: Bytes!
+#   addressBiddingToken: Bytes!
+#   decimalsAuctioningToken: BigInt!
+#   decimalsBiddingToken: BigInt!
+#   endTimeTimestamp: BigInt!
+#   orderCancellationEndDate: BigInt!
+#   startingTimeStamp: BigInt!
+#   minimumBiddingAmountPerOrder: BigInt!
+#   minFundingThreshold: BigInt!
+#   allowListManager: Bytes!
+#   allowListSigner: Bytes!
+#   currentVolume: BigDecimal!
+#   currentClearingOrderSellAmount: BigInt!
+#   currentClearingOrderBuyAmount: BigInt!
+#   currentClearingPrice: BigDecimal!
+#   currentBiddingAmount: BigInt!
+#   isAtomicClosureAllowed: Boolean!
+#   isPrivateAuction: Boolean!
+#   interestScore: BigDecimal! # need to understand
+#   uniqueBidders: BigInt
+# }
 
 type AuctionDetail @entity {
   txHash: Bytes!
   id: ID!
   auctionId: BigInt!
-  exactOrder: Order! # need to understand
-  chainId: String! # not needed
-  orders: [Order!]
+  exactOrder: Order!
+  # chainId: String!  # not needed
   highestBid: Order
   lowestBid: Order
-  ordersWithoutClaimed: [Order!] # need to understand
-  symbolAuctioningToken: String!
-  symbolBiddingToken: String!
-  addressAuctioningToken: Bytes!
-  addressBiddingToken: Bytes!
-  decimalsAuctioningToken: BigInt!
-  decimalsBiddingToken: BigInt!
+  orders: [Order!]
+  ordersWithoutCancelled: [Order!] # orders which are not cancelled
+  ordersWithoutClaimedOrCancelled: [Order!] # orders which are not claimed or cancelled
+  auctioningToken: Token!
+  biddingToken: Token!
   endTimeTimestamp: BigInt!
   orderCancellationEndDate: BigInt!
   startingTimeStamp: BigInt!
@@ -56,5 +110,110 @@ type AuctionDetail @entity {
   isAtomicClosureAllowed: Boolean!
   isPrivateAuction: Boolean!
   interestScore: BigDecimal! # need to understand
-  uniqueBidders: BigInt
+  uniqueBidders: BigInt!
+}
+
+type Token @entity {
+  id: ID! #address
+  symbol: String!
+  decimals: BigInt!
+  auctionsAsAuctioningToken: [AuctionDetail!]!
+    @derivedFrom(field: "auctioningToken")
+  auctionsAsBiddingToken: [AuctionDetail!]! @derivedFrom(field: "biddingToken")
+}
+
+type AuctionCleared @entity {
+  id: ID!
+  auctionId: BigInt!
+  soldAuctioningTokens: BigInt!
+  soldBiddingTokens: BigInt!
+  clearingPriceOrder: Bytes!
+}
+# event CancellationSellOrder(
+#       uint256 indexed auctionId,
+#       uint64 indexed userId,
+#       uint96 buyAmount,
+#       uint96 sellAmount
+# );
+type CancellationSellOrder @entity {
+  id: ID!
+  auctionId: BigInt!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+}
+# event ClaimedFromOrder(
+#     uint256 indexed auctionId,
+#     uint64 indexed userId,
+#     uint96 buyAmount,
+#     uint96 sellAmount
+# );
+
+type ClaimedFromOrder @entity {
+  id: ID!
+  auctionId: BigInt!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+}
+# event NewAuction(
+#     uint256 indexed auctionId,
+#     IERC20 indexed _auctioningToken,
+#     IERC20 indexed _biddingToken,
+#     uint256 orderCancellationEndDate,
+#     uint256 auctionEndDate,
+#     uint64 userId,
+#     uint96 _auctionedSellAmount,
+#     uint96 _minBuyAmount,
+#     uint256 minimumBiddingAmountPerOrder,
+#     uint256 minFundingThreshold,
+#     address allowListContract,
+#     bytes allowListData
+# );
+type NewAuction @entity {
+  id: ID!
+  auctionId: BigInt!
+  auctioningToken: Bytes!
+  biddingToken: Bytes!
+  orderCancellationEndDate: BigInt!
+  auctionEndDate: BigInt!
+  userId: BigInt!
+  auctionedSellAmount: BigInt!
+  minBuyAmount: BigInt!
+  minimumBiddingAmountPerOrder: BigInt!
+  minFundingThreshold: BigInt!
+  allowListContract: Bytes!
+  allowListData: Bytes!
+}
+
+# event NewSellOrder(
+#     uint256 indexed auctionId,
+#     uint64 indexed userId,
+#     uint96 buyAmount,
+#     uint96 sellAmount
+# );
+type NewSellOrder @entity {
+  id: ID!
+  auctionId: BigInt!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+}
+# event NewUser(uint64 indexed userId, address indexed userAddress);
+type NewUser @entity {
+  id: ID!
+  userId: BigInt!
+  userAddress: Bytes!
+}
+# event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+type OwnershipTransferred @entity {
+  id: ID!
+  previousOwner: Bytes!
+  newOwner: Bytes!
+}
+# event UserRegistration(address indexed user, uint64 userId);
+type UserRegistration @entity {
+  id: ID!
+  user: Bytes!
+  userId: BigInt!
 }
