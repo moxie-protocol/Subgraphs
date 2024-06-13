@@ -15,11 +15,8 @@
 
 type Order @entity {
   id: ID!
-  # auctionId: BigInt!
   sellAmount: BigInt!
   buyAmount: BigInt! # uint256
-  # userId: BigInt! # uint96
-  # userAddress: Bytes!
   price: BigDecimal! # sellAmount / buyAmount
   volume: BigDecimal! # sellAmount * 10 ^ -decimalsSellToken
   timestamp: BigInt!
@@ -42,9 +39,9 @@ enum Status {
 
 type User @entity {
   id: ID!
-  address: Bytes!
-  createdAuction: [AuctionDetail!]!
-  participatedAuction: [AuctionDetail!]!
+  address: Bytes! #TODO: this can be optional
+  createdAuction: [AuctionDetail!]! # TODO: this can be optional
+  participatedAuction: [AuctionDetail!]! # TODO: this can be optiona
   orders: [Order!]! @derivedFrom(field: "user")
 }
 
@@ -88,11 +85,12 @@ type AuctionDetail @entity {
   auctionId: BigInt!
   exactOrder: Order!
   # chainId: String!  # not needed
-  highestBid: Order
-  lowestBid: Order
+  higestPriceBidOrder: Order
+  lowestPriceBidOrder: Order
   orders: [Order!]
-  ordersWithoutCancelled: [Order!] # orders which are not cancelled
-  ordersWithoutClaimedOrCancelled: [Order!] # orders which are not claimed or cancelled
+  activeOrders: [Order!] # orders which are not claimed or cancelled
+  claimedOrders: [Order!] # orders which are claimed
+  cancelledOrders: [Order!] # orders which are cancelled
   auctioningToken: Token!
   biddingToken: Token!
   endTimeTimestamp: BigInt!
@@ -111,6 +109,7 @@ type AuctionDetail @entity {
   isPrivateAuction: Boolean!
   interestScore: BigDecimal! # need to understand
   uniqueBidders: BigInt!
+  isCleared: Boolean!
 }
 
 type Token @entity {

@@ -1,7 +1,7 @@
-import { BigDecimal, BigInt } from "@graphprotocol/graph-ts"
+import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 
 // Function that sorts orders from highest price to lowest price
-function sortOrders(orders: Array<string>): Array<string> {
+export function sortOrders(orders: Array<string>): Array<string> {
   orders.sort((a, b) => {
     let orderA = a.split("-")
     let orderABiddingTokenAmount = BigDecimal.fromString(orderA[1])
@@ -11,11 +11,8 @@ function sortOrders(orders: Array<string>): Array<string> {
     let orderBBiddingTokenAmount = BigDecimal.fromString(orderB[1])
     let orderBAuctioningTokenAmount = BigDecimal.fromString(orderB[2])
     let orderBUserId = BigInt.fromString(orderB[3])
-
     let orderAPrice = orderABiddingTokenAmount.div(orderAAuctioningTokenAmount)
-
     let orderBPrice = orderBBiddingTokenAmount.div(orderBAuctioningTokenAmount)
-
     // Check if price of order A is greater than order B
     if (orderAPrice.gt(orderBPrice)) {
       return 1

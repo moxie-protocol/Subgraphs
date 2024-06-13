@@ -6,7 +6,7 @@
     "build": "graph build",
     "deploy": "graph deploy --studio auction",
     "cbd": "graph codegen && graph build && graph deploy --studio auction",
-    "test": "graph test"
+    "test": "graph test -d"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.73.0",
