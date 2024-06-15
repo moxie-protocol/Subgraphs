@@ -104,3 +104,51 @@ export class UserRegistrationInput {
   user: string
   userId: string
 }
+
+export class AuctionEntityInput {
+  txHash: string
+  id: string
+  auctionId: string
+  exactOrder: OrderEntityInput
+  auctioningToken: TokenEntityInput
+  biddingToken: TokenEntityInput
+  activeOrders: OrderEntityInput[]
+  endTimeTimestamp: string
+  orderCancellationEndDate: string
+  startingTimeStamp: string
+  minimumBiddingAmountPerOrder: string
+  minFundingThreshold: string
+  allowListManager: string
+  allowListSigner: string
+  currentVolume: string
+  currentClearingOrderSellAmount: string
+  currentClearingOrderBuyAmount: string
+  currentClearingPrice: string
+  currentBiddingAmount: string
+  isAtomicClosureAllowed: true
+  isPrivateAuction: boolean
+  interestScore: string
+  uniqueBidders: string
+  isCleared: boolean
+}
+export class OrderEntityInput {
+  id: string
+  sellAmount: string
+  buyAmount: string
+  price: string
+  volume: string
+  timestamp: string
+  status: string
+  user: UserEntityInput
+}
+
+export class UserEntityInput {
+  id: string
+  address: string
+}
+
+export class TokenEntityInput {
+  id: string
+  symbol: string
+  decimals: string
+}

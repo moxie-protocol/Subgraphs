@@ -1,4 +1,4 @@
-import { Address, BigInt, BigDecimal } from "@graphprotocol/graph-ts"
+import { Address, BigInt, BigDecimal, log } from "@graphprotocol/graph-ts"
 import { Order, AuctionDetail, Token, User } from "../generated/schema"
 import { ERC20Contract } from "../generated/EasyAuction/ERC20Contract"
 
@@ -56,19 +56,10 @@ export function getUniqueBiddersCount(orderIds: string[]): BigInt {
 export function updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders(
   auctionId: BigInt
 ): void {
-  let auctionDetails = AuctionDetail.load(auctionId.toString())
-  if (!auctionDetails) {
-    throw new Error("Auction not found, auctionId: " + auctionId.toString())
-  }
+  let auctionDetails = loadAuctionDetail(auctionId.toString())
+  const auctioningToken = loadToken(auctionDetails.auctioningToken)
+  const biddingToken = loadToken(auctionDetails.biddingToken)
 
-  const auctioningToken = Token.load(auctionDetails.auctioningToken)
-  if (!auctioningToken) {
-    throw new Error("Auctioning token not found")
-  }
-  const biddingToken = Token.load(auctionDetails.biddingToken)
-  if (!biddingToken) {
-    throw new Error("Bidding token not found")
-  }
   let decimalAuctioningToken = auctioningToken.decimals
   let decimalBiddingToken = biddingToken.decimals
   let orders = sortOrders(auctionDetails.activeOrders!)
@@ -96,7 +87,7 @@ export function updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidder
       return
     }
     currentOrder = order
-
+    // calculated the total bidding token amount (sellAmount is amount of moxie token on each order)
     biddingTokenTotal = biddingTokenTotal.plus(order.sellAmount || ZERO)
 
     if (
@@ -111,7 +102,6 @@ export function updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidder
   if (!currentOrder) {
     return
   }
-
   if (
     biddingTokenTotal.ge(ZERO) &&
     biddingTokenTotal
@@ -199,6 +189,7 @@ export function updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidder
   } else {
     const clearingOrderBuyAmount = auctioningTokenAmountOfInitialOrder
     const clearingOrderSellAmount = biddingTokenAmountOfInitialOrder
+
     const volume = new BigDecimal(biddingTokenTotal).times(
       auctioningTokenAmountOfInitialOrder.divDecimal(
         new BigDecimal(biddingTokenAmountOfInitialOrder)

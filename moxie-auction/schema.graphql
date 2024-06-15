@@ -45,40 +45,6 @@ type User @entity {
   orders: [Order!]! @derivedFrom(field: "user")
 }
 
-# type AuctionDetail @entity {
-#   txHash: Bytes!
-#   id: ID!
-#   auctionId: BigInt!
-#   exactOrder: Order! # need to understand
-#   chainId: String! # not needed
-#   orders: [Order!]
-#   highestBid: Order
-#   lowestBid: Order
-#   ordersWithoutClaimed: [Order!] # need to understand
-#   symbolAuctioningToken: String!
-#   symbolBiddingToken: String!
-#   addressAuctioningToken: Bytes!
-#   addressBiddingToken: Bytes!
-#   decimalsAuctioningToken: BigInt!
-#   decimalsBiddingToken: BigInt!
-#   endTimeTimestamp: BigInt!
-#   orderCancellationEndDate: BigInt!
-#   startingTimeStamp: BigInt!
-#   minimumBiddingAmountPerOrder: BigInt!
-#   minFundingThreshold: BigInt!
-#   allowListManager: Bytes!
-#   allowListSigner: Bytes!
-#   currentVolume: BigDecimal!
-#   currentClearingOrderSellAmount: BigInt!
-#   currentClearingOrderBuyAmount: BigInt!
-#   currentClearingPrice: BigDecimal!
-#   currentBiddingAmount: BigInt!
-#   isAtomicClosureAllowed: Boolean!
-#   isPrivateAuction: Boolean!
-#   interestScore: BigDecimal! # need to understand
-#   uniqueBidders: BigInt
-# }
-
 type AuctionDetail @entity {
   txHash: Bytes!
   id: ID!

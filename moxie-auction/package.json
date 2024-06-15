@@ -6,6 +6,7 @@
     "build": "graph build",
     "deploy": "graph deploy --studio auction",
     "cbd": "graph codegen && graph build && graph deploy --studio auction",
+    "cbt":"graph codegen && graph build && graph test -d",
     "test": "graph test -d"
   },
   "dependencies": {
