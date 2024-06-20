@@ -1,5 +1,5 @@
 import { Address, BigInt, BigDecimal, log } from "@graphprotocol/graph-ts"
-import { Order, AuctionDetail, Token, User } from "../generated/schema"
+import { Order, AuctionDetail, Token, User, Summary } from "../generated/schema"
 import { ERC20Contract } from "../generated/EasyAuction/ERC20Contract"
 
 import sortOrders from "./utils/sortOrders"
@@ -268,4 +268,29 @@ export function getTokenDetails(tokenAddress: Address): Token {
   token.symbol = symbol
   token.save()
   return token
+}
+
+export function getOrCreateSummary(): Summary {
+  let summary = Summary.load("SUMMARY")
+  if (!summary) {
+    summary = new Summary("SUMMARY")
+    summary.totalBiddingValue = BigInt.fromI32(0)
+    summary.totalOrders = BigInt.fromI32(0)
+    summary.save()
+  }
+  return summary as Summary
+}
+
+export function increaseTotalBiddingValueAndOrdersCount(value: BigInt): void {
+  let summary = getOrCreateSummary()
+  summary.totalBiddingValue = summary.totalBiddingValue.plus(value)
+  summary.totalOrders = summary.totalOrders.plus(BigInt.fromI32(1))
+  summary.save()
+}
+
+export function decreaseTotalBiddingValueAndOrdersCount(value: BigInt): void {
+  let summary = getOrCreateSummary()
+  summary.totalBiddingValue = summary.totalBiddingValue.minus(value)
+  summary.totalOrders = summary.totalOrders.minus(BigInt.fromI32(1))
+  summary.save()
 }

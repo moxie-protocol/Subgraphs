@@ -5,7 +5,7 @@
 // While initiating an auction, the exactOrder/initialOrder sellAmount corresponds to AUT and buyAmount corresponds to BDT
 // While placing an order, the sellAmount corresponds to BDT and buyAmount corresponds to AUT
 
-import { Address, BigInt, BigDecimal } from "@graphprotocol/graph-ts"
+import { Address, BigInt, BigDecimal, log } from "@graphprotocol/graph-ts"
 import { AuctionDetail, Token, User } from "../generated/schema"
 import {
   EasyAuction,
@@ -39,6 +39,8 @@ import {
   loadToken,
   loadOrder,
   getTokenDetails,
+  decreaseTotalBiddingValueAndOrdersCount,
+  increaseTotalBiddingValueAndOrdersCount,
 } from "./utils"
 
 const ZERO = BigInt.zero()
@@ -78,6 +80,8 @@ export function handleAuctionCleared(event: AuctionCleared): void {
 export function handleCancellationSellOrder(
   event: CancellationSellOrder
 ): void {
+  // decreasing bid value and total Orders count in summary
+  decreaseTotalBiddingValueAndOrdersCount(event.params.sellAmount)
   handleCancellationSellOrderTx(event)
   let auctionId = event.params.auctionId
   let sellAmount = event.params.sellAmount
@@ -208,6 +212,8 @@ export function handleNewAuction(event: NewAuction): void {
   order.status = "Placed"
   order.save()
 
+  // increasing bid value and total Orders count in summary
+  increaseTotalBiddingValueAndOrdersCount(sellAmount)
   let auctionDetails = new AuctionDetail(auctionId.toString())
   auctionDetails.auctionId = auctionId
   auctionDetails.exactOrder = order.id
@@ -264,7 +270,18 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   let buyAmount = event.params.buyAmount
   let userId = event.params.userId
 
-  let user = loadUser(userId.toString())
+  // increasing bid value and total Orders count in summary
+  increaseTotalBiddingValueAndOrdersCount(sellAmount)
+
+  // let user = loadUser(userId.toString()) TODO: revisit after sync
+  let user = User.load(userId.toString())
+  if (!user) {
+    log.error(
+      "User not found, userId: {}  - this txn is not taken into account(TODO:validate)",
+      [userId.toString()]
+    )
+    return
+  }
 
   let auctionDetails = loadAuctionDetail(auctionId.toString())
   let auctioningToken = loadToken(auctionDetails.auctioningToken)

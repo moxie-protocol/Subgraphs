@@ -1,3 +1,11 @@
+type Summary @entity {
+  "hardcoded id: SUMMARY"
+  id: ID!
+  "total bidding value (combining all orders) in the system"
+  totalBiddingValue: BigInt!
+  "total orders in the system"
+  totalOrders: BigInt!
+}
 # type Order @entity {
 #   id: ID!
 #   auctionId: BigInt!
@@ -41,7 +49,7 @@ type User @entity {
   id: ID!
   address: Bytes! #TODO: this can be optional
   createdAuction: [AuctionDetail!]! # TODO: this can be optional
-  participatedAuction: [AuctionDetail!]! # TODO: this can be optiona
+  participatedAuction: [AuctionDetail!]! # TODO: this can be optional
   orders: [Order!]! @derivedFrom(field: "user")
 }
 
@@ -70,6 +78,7 @@ type AuctionDetail @entity {
   currentClearingOrderSellAmount: BigInt!
   currentClearingOrderBuyAmount: BigInt!
   currentClearingPrice: BigDecimal!
+  "Total sell amount of all orders in the auction"
   currentBiddingAmount: BigInt!
   isAtomicClosureAllowed: Boolean!
   isPrivateAuction: Boolean!
@@ -163,6 +172,7 @@ type NewSellOrder @entity {
   userId: BigInt!
   buyAmount: BigInt!
   sellAmount: BigInt!
+  blockNo: BigInt!
 }
 # event NewUser(uint64 indexed userId, address indexed userAddress);
 type NewUser @entity {
