@@ -1,3 +1,130 @@
-type SubjectOnboardingFinishedTx @entity {
+type MoxieBondingCurveBondingCurveInitializedTx @entity {
+  id: ID! #hash
+  subject: Bytes!
+  subjectToken: Bytes!
+  initialSupply: BigInt!
+  reserve: BigInt!
+  reserveRatio: BigInt!
+}
+
+type MoxieBondingCurveSubjectSharePurchasedTx @entity {
+  id: ID! #hash
+  subject: Bytes!
+  sellToken: Bytes!
+  sellAmount: BigInt!
+  buyToken: Bytes!
+  buyAmount: BigInt!
+  beneficiary: Bytes!
+}
+
+type MoxieBondingCurveSubjectShareSoldTx @entity {
+  id: ID! #hash
+  subject: Bytes!
+  sellToken: Bytes!
+  sellAmount: BigInt!
+  buyToken: Bytes!
+  buyAmount: BigInt!
+  beneficiary: Bytes!
+}
+
+type MoxieBondingCurveUpdateBeneficiaryTx @entity {
+  id: ID! #hash
+  beneficiary: Bytes!
+}
+
+type MoxieBondingCurveUpdateFeesTx @entity {
+  id: ID! #hash
+  protocolBuyFeePct: BigInt!
+  protocolSellFeePct: BigInt!
+  subjectBuyFeePct: BigInt!
+  subjectSellFeePct: BigInt!
+}
+
+type MoxieBondingCurveUpdateFormulaTx @entity {
+  id: ID! #hash
+  formula: Bytes!
+}
+
+type TokenManagerTokenDeployedTx @entity {
+  id: ID! #hash
+  beneficiary: Bytes!
+  token: Bytes!
+  initialSupply: BigInt!
+}
+
+type SubjectTokenTransferTx @entity {
+  id: ID! #hash
+  contractAddress: Bytes!
+  from: Bytes!
+  to: Bytes!
+  value: BigInt!
+}
+# actual entities
+
+type Subject @entity {
+  "address of the subject token"
   id: ID!
+  "name of the token"
+  name: String!
+  "symbol of the token"
+  symbol: String!
+  "decimals of the token"
+  decimals: BigInt!
+  "address of the beneficiary"
+  beneficiary: User
+  "reserve balance (moxie)/ total locked value"
+  reserve: BigInt!
+  "current price of the token"
+  currentPrice: BigDecimal!
+  "Total supply of the token"
+  totalSupply: BigInt!
+  "holders"
+  holders: [User!]!
+  "total number of unique holders"
+  uniqueHolders: BigInt!
+}
+
+type Portfolio @entity {
+  "User's address+-+Subject's token address"
+  id: ID!
+  "User's address"
+  user: User!
+  "Subject's token address"
+  subject: Subject!
+  "Net quantity of the subject token by the user"
+  netQuantity: BigInt!
+}
+
+type User @entity {
+  "Ethereum address of the user"
+  id: ID!
+  "User's Portfolio for each subject token he/she holds"
+  portfolio: [Portfolio!]! @derivedFrom(field: "user")
+  "buyOrders placed by the user"
+  buyOrders: [Order!]!
+  "sellOrders placed by the user"
+  sellOrders: [Order!]!
+}
+
+type Order @entity {
+  "tx hash+-+logIndex"
+  id: ID!
+  "Moxie Token address"
+  protocolToken: Bytes!
+  "Amount of moxie token"
+  protocolTokenAmount: BigInt!
+  "Subject Token address"
+  subjectToken: Subject!
+  "Amount of subject token"
+  subjectAmount: BigInt!
+  "Price of the subject token"
+  price: BigDecimal!
+  "BUY/SELL order type"
+  orderType: OrderType
+  "Seller/Buyer of Fan token"
+  user: User!
+}
+enum OrderType {
+  SELL
+  BUY
 }

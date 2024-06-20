@@ -6,7 +6,9 @@
     "build": "graph build",
     "cb": "graph codegen && graph build",
     "cbd": "graph codegen && graph build && graph deploy --studio protocol",
-    "test": "graph test -d"
+    "test": "graph test -d",
+    "cbt": "graph codegen && graph build && graph test -d",
+    "clean": "rm -rf generated/ build/"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.73.0",

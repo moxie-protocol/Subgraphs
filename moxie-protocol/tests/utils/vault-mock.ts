@@ -1,7 +1,7 @@
-import { VaultDeposit, VaultTransfer } from "../generated/Vault/Vault"
+import { VaultDeposit, VaultTransfer } from "../../generated/Vault/Vault"
 
 import { newMockEvent } from "matchstick-as"
-import { VaultDepositInput, VaultTransferInput } from "./types"
+import { VaultVaultTransferInput, VaultVaultDepositInput } from "./types"
 import {
   addressValue,
   getAddressEventParam,
@@ -12,7 +12,9 @@ import {
 } from "./utils"
 import { Address, Bytes } from "@graphprotocol/graph-ts"
 
-export function mockVaultTransfer(input: VaultTransferInput): VaultTransfer {
+export function mockVaultTransfer(
+  input: VaultVaultTransferInput
+): VaultTransfer {
   let vaultTransfer = changetype<VaultTransfer>(newMockEvent())
   let subject = getAddressEventParam("subject", input.subject)
   let token = getAddressEventParam("token", input.token)
@@ -23,7 +25,7 @@ export function mockVaultTransfer(input: VaultTransferInput): VaultTransfer {
   return vaultTransfer
 }
 
-export function mockVaultDeposit(input: VaultDepositInput): VaultDeposit {
+export function mockVaultDeposit(input: VaultVaultDepositInput): VaultDeposit {
   let vaultDeposit = changetype<VaultDeposit>(newMockEvent())
   let subject = getAddressEventParam("subject", input.subject)
   let token = getAddressEventParam("token", input.token)
@@ -32,6 +34,5 @@ export function mockVaultDeposit(input: VaultDepositInput): VaultDeposit {
   let totalReserve = getBigIntEventParam("totalReserve", input.totalReserve)
   vaultDeposit.parameters = [subject, token, sender, amount, totalReserve]
   vaultDeposit.transaction.hash = Bytes.fromHexString(input.hash)
-  vaultDeposit.address = Address.fromString(input.contractAddress)
   return vaultDeposit
 }

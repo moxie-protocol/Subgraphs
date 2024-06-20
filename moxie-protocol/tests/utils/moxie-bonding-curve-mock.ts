@@ -2,13 +2,13 @@ import {
   BondingCurveInitialized,
   SubjectSharePurchased,
   SubjectShareSold,
-} from "../generated/MoxieBondingCurve/MoxieBondingCurve"
+} from "../../generated/MoxieBondingCurve/MoxieBondingCurve"
 
 import { newMockEvent } from "matchstick-as"
 import {
-  BondingCurveInitializedInput,
-  SubjectSharePurchasedInput,
-  SubjectShareSoldInput,
+  MoxieBondingCurveBondingCurveInitializedInput,
+  MoxieBondingCurveSubjectSharePurchasedInput,
+  MoxieBondingCurveSubjectShareSoldInput,
 } from "./types"
 import {
   addressValue,
@@ -21,7 +21,7 @@ import {
 import { Address, Bytes } from "@graphprotocol/graph-ts"
 
 export function mockBondingCurveInitialized(
-  input: BondingCurveInitializedInput
+  input: MoxieBondingCurveBondingCurveInitializedInput
 ): BondingCurveInitialized {
   let bondingCurveInitialized = changetype<BondingCurveInitialized>(
     newMockEvent()
@@ -39,12 +39,11 @@ export function mockBondingCurveInitialized(
     reserveRatio,
   ]
   bondingCurveInitialized.transaction.hash = Bytes.fromHexString(input.hash)
-  bondingCurveInitialized.address = Address.fromString(input.contractAddress)
   return bondingCurveInitialized
 }
 
 export function mockSubjectSharePurchased(
-  input: SubjectSharePurchasedInput
+  input: MoxieBondingCurveSubjectSharePurchasedInput
 ): SubjectSharePurchased {
   let subjectSharePurchased = changetype<SubjectSharePurchased>(newMockEvent())
   let subject = getAddressEventParam("_subject", input.subject)
@@ -62,12 +61,11 @@ export function mockSubjectSharePurchased(
     beneficiary,
   ]
   subjectSharePurchased.transaction.hash = Bytes.fromHexString(input.hash)
-  subjectSharePurchased.address = Address.fromString(input.contractAddress)
   return subjectSharePurchased
 }
 
 export function mockSubjectShareSold(
-  input: SubjectShareSoldInput
+  input: MoxieBondingCurveSubjectShareSoldInput
 ): SubjectShareSold {
   let subjectShareSold = changetype<SubjectShareSold>(newMockEvent())
   let subject = getAddressEventParam("_subject", input.subject)
@@ -85,6 +83,5 @@ export function mockSubjectShareSold(
     beneficiary,
   ]
   subjectShareSold.transaction.hash = Bytes.fromHexString(input.hash)
-  subjectShareSold.address = Address.fromString(input.contractAddress)
   return subjectShareSold
 }
