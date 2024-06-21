@@ -72,21 +72,27 @@ export function handleSubjectSharePurchased(
   order.orderType = "BUY"
   order.user = user.id
   order.price = price
-  order.save()
-  // updating user's orders
-  let orders = user.buyOrders
-  orders.push(order.id)
-  user.buyOrders = orders
-  user.save()
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(
     event.params._beneficiary,
     event.params._buyToken
   )
-  portfolio.netQuantity = portfolio.netQuantity.plus(event.params._buyAmount)
+  portfolio.subjectTokenQuantity = portfolio.subjectTokenQuantity.plus(
+    event.params._buyAmount
+  )
+  portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.plus(
+    event.params._sellAmount
+  )
   portfolio.save()
-  // saving subject
+
+  order.portfolio = portfolio.id
+  order.save()
+  // updating user's orders
+  let orders = user.buyOrders
+  orders.push(order.id)
+  user.buyOrders = orders
+  user.save()
 }
 
 export function handleSubjectShareSold(event: SubjectShareSold): void {
@@ -127,6 +133,21 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.orderType = "SELL"
   order.user = user.id
   order.price = price
+
+  // updating user's portfolio
+  let portfolio = getOrCreatePortfolio(
+    event.transaction.from,
+    event.params._sellToken
+  )
+  portfolio.subjectTokenQuantity = portfolio.subjectTokenQuantity.minus(
+    event.params._sellAmount
+  )
+  portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(
+    event.params._buyAmount
+  )
+  portfolio.save()
+
+  order.portfolio = portfolio.id
   order.save()
 
   // updating user's orders
@@ -134,13 +155,6 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   orders.push(order.id)
   user.sellOrders = orders
   user.save()
-  // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(
-    event.params._beneficiary,
-    event.params._sellToken
-  )
-  portfolio.netQuantity = portfolio.netQuantity.minus(event.params._sellAmount)
-  portfolio.save()
 }
 
 export function handleUpdateBeneficiary(event: UpdateBeneficiary): void {

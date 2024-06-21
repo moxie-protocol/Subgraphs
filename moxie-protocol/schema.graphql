@@ -61,6 +61,35 @@ type SubjectTokenTransferTx @entity {
 }
 # actual entities
 
+type SubjectSnapshot @entity {
+  "subjectId+-+startTimestamp+-+endTimestamp"
+  id: ID!
+  "start block timestamp"
+  startTimestamp: BigInt!
+  "end block timestamp"
+  endTimestamp: BigInt!
+  "subject token address"
+  subject: Subject!
+  "name of the token"
+  name: String!
+  "symbol of the token"
+  symbol: String!
+  "decimals of the token"
+  decimals: BigInt!
+  "address of the beneficiary"
+  beneficiary: User
+  "reserve balance (moxie)/ total locked value"
+  reserve: BigInt!
+  "current price of the token"
+  currentPrice: BigDecimal!
+  "Total supply of the token"
+  totalSupply: BigInt!
+  "total number of unique holders"
+  uniqueHolders: BigInt!
+  "amount of moxie used to buy or sell this subject token"
+  volume: BigInt!
+}
+
 type Subject @entity {
   "address of the subject token"
   id: ID!
@@ -82,6 +111,10 @@ type Subject @entity {
   holders: [User!]!
   "total number of unique holders"
   uniqueHolders: BigInt!
+  "amount of moxie used to buy or sell this subject token"
+  volume: BigInt!
+  "snapshots"
+  snapshots: [SubjectSnapshot!]! @derivedFrom(field: "subject")
 }
 
 type Portfolio @entity {
@@ -92,7 +125,11 @@ type Portfolio @entity {
   "Subject's token address"
   subject: Subject!
   "Net quantity of the subject token by the user"
-  netQuantity: BigInt!
+  subjectTokenQuantity: BigInt!
+  "Moxie spent by user to buy the subject token"
+  protocolTokenSpent: BigInt!
+  "Orders associated with the user's portfolio"
+  orders: [Order!]! @derivedFrom(field: "portfolio")
 }
 
 type User @entity {
@@ -123,6 +160,8 @@ type Order @entity {
   orderType: OrderType
   "Seller/Buyer of Fan token"
   user: User!
+  "associated portfolio"
+  portfolio: Portfolio!
 }
 enum OrderType {
   SELL

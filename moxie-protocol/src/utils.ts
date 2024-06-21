@@ -36,7 +36,8 @@ export function getOrCreatePortfolio(
     subject.uniqueHolders = subject.uniqueHolders.plus(BigInt.fromI32(1))
     portfolio.user = user.id
     portfolio.subject = subject.id
-    portfolio.netQuantity = BigInt.fromI32(0)
+    portfolio.subjectTokenQuantity = BigInt.fromI32(0)
+    portfolio.protocolTokenSpent = BigInt.fromI32(0)
     portfolio.save()
   }
   return portfolio
