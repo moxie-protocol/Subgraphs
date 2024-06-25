@@ -84,6 +84,7 @@ type AuctionDetail @entity {
   isPrivateAuction: Boolean!
   interestScore: BigDecimal! # need to understand
   uniqueBidders: BigInt!
+  "set true when AuctionCleared is emitted"
   isCleared: Boolean!
 }
 
@@ -91,8 +92,7 @@ type Token @entity {
   id: ID! #address
   symbol: String!
   decimals: BigInt!
-  auctionsAsAuctioningToken: [AuctionDetail!]!
-    @derivedFrom(field: "auctioningToken")
+  auctionsAsAuctioningToken: [AuctionDetail!]! @derivedFrom(field: "auctioningToken")
   auctionsAsBiddingToken: [AuctionDetail!]! @derivedFrom(field: "biddingToken")
 }
 
