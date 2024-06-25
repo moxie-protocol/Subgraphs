@@ -6,11 +6,11 @@ schema:
 dataSources:
   - kind: ethereum/contract
     name: MoxieTokenLockManager
-    network: base-sepolia
+    network: {{network}}
     source:
-      address: "0x1B3a3109BE7C53b59DCAF98A3D0351E2edD774CC"
+      address: "{{tokenLockManager}}"
       abi: MoxieTokenLockManager
-      startBlock: 11775355 
+      startBlock: {{blockNumber}} 
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
