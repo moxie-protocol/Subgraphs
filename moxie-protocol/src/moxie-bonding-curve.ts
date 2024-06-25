@@ -1,36 +1,14 @@
 import { BigDecimal, BigInt } from "@graphprotocol/graph-ts"
-import {
-  BondingCurveInitialized,
-  SubjectSharePurchased,
-  SubjectShareSold,
-  UpdateBeneficiary,
-  UpdateFees,
-  UpdateFormula,
-} from "../generated/MoxieBondingCurve/MoxieBondingCurve"
+import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { Order } from "../generated/schema"
 
-import {
-  handleBondingCurveInitializedTx,
-  handleSubjectSharePurchasedTx,
-  handleSubjectShareSoldTx,
-  handleUpdateBeneficiaryTx,
-  handleUpdateFeesTx,
-  handleUpdateFormulaTx,
-} from "./moxie-bonding-curve-tx"
-import {
-  getOrCreatePortfolio,
-  getOrCreateSubject,
-  getOrCreateUser,
-} from "./utils"
-export function handleBondingCurveInitialized(
-  event: BondingCurveInitialized
-): void {
+import { handleBondingCurveInitializedTx, handleSubjectSharePurchasedTx, handleSubjectShareSoldTx, handleUpdateBeneficiaryTx, handleUpdateFeesTx, handleUpdateFormulaTx } from "./moxie-bonding-curve-tx"
+import { getOrCreatePortfolio, getOrCreateSubject, getOrCreateUser, saveSubject } from "./utils"
+export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   handleBondingCurveInitializedTx(event)
 }
 
-export function handleSubjectSharePurchased(
-  event: SubjectSharePurchased
-): void {
+export function handleSubjectSharePurchased(event: SubjectSharePurchased): void {
   // BUY - BUY fan tokens
   // mint subjectToken of shares_ to _onBehalfOf
   // msg.sender Transfer deposit amount (MOXIE) from subject to bonding curve
@@ -51,19 +29,15 @@ export function handleSubjectSharePurchased(
 
   handleSubjectSharePurchasedTx(event)
 
-  let price = event.params._buyAmount.divDecimal(
-    new BigDecimal(event.params._sellAmount)
-  )
+  let price = event.params._buyAmount.divDecimal(new BigDecimal(event.params._sellAmount))
   let user = getOrCreateUser(event.params._beneficiary)
 
   let subject = getOrCreateSubject(event.params._buyToken)
   subject.currentPrice = price
-  subject.save()
+  subject.volume = subject.volume.plus(event.params._sellAmount)
+  saveSubject(subject, event.block.timestamp)
   // Saving order entity
-  let orderId = event.transaction.hash
-    .toHex()
-    .concat("-")
-    .concat(event.logIndex.toString())
+  let orderId = event.transaction.hash.toHex().concat("-").concat(event.logIndex.toString())
   let order = new Order(orderId)
   order.protocolToken = event.params._sellToken
   order.protocolTokenAmount = event.params._sellAmount
@@ -74,16 +48,9 @@ export function handleSubjectSharePurchased(
   order.price = price
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(
-    event.params._beneficiary,
-    event.params._buyToken
-  )
-  portfolio.subjectTokenQuantity = portfolio.subjectTokenQuantity.plus(
-    event.params._buyAmount
-  )
-  portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.plus(
-    event.params._sellAmount
-  )
+  let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.block.timestamp)
+  portfolio.subjectTokenQuantity = portfolio.subjectTokenQuantity.plus(event.params._buyAmount)
+  portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.plus(event.params._sellAmount)
   portfolio.save()
 
   order.portfolio = portfolio.id
@@ -112,19 +79,15 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   //     address _beneficiary:_onBehalfOf
   // );
   handleSubjectShareSoldTx(event)
-  let price = event.params._sellAmount.divDecimal(
-    new BigDecimal(event.params._buyAmount)
-  )
+  let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
   let subject = getOrCreateSubject(event.params._sellToken)
   subject.currentPrice = price
-  subject.save()
+  subject.volume = subject.volume.plus(event.params._buyAmount)
+  saveSubject(subject, event.block.timestamp)
 
   let user = getOrCreateUser(event.transaction.from)
   // Saving order entity
-  let orderId = event.transaction.hash
-    .toHex()
-    .concat("-")
-    .concat(event.logIndex.toString())
+  let orderId = event.transaction.hash.toHex().concat("-").concat(event.logIndex.toString())
   let order = new Order(orderId)
   order.protocolToken = event.params._buyToken
   order.protocolTokenAmount = event.params._buyAmount
@@ -135,16 +98,9 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.price = price
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(
-    event.transaction.from,
-    event.params._sellToken
-  )
-  portfolio.subjectTokenQuantity = portfolio.subjectTokenQuantity.minus(
-    event.params._sellAmount
-  )
-  portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(
-    event.params._buyAmount
-  )
+  let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.block.timestamp)
+  portfolio.subjectTokenQuantity = portfolio.subjectTokenQuantity.minus(event.params._sellAmount)
+  portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(event.params._buyAmount)
   portfolio.save()
 
   order.portfolio = portfolio.id

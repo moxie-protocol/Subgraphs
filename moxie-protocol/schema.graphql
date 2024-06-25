@@ -62,10 +62,8 @@ type SubjectTokenTransferTx @entity {
 # actual entities
 
 type SubjectSnapshot @entity {
-  "subjectId+-+startTimestamp+-+endTimestamp"
+  "subjectId+-+endTimestamp"
   id: ID!
-  "start block timestamp"
-  startTimestamp: BigInt!
   "end block timestamp"
   endTimestamp: BigInt!
   "subject token address"

@@ -2,7 +2,7 @@ import { TokenDeployed } from "../generated/TokenManager/TokenManager"
 import { SubjectTokenContract } from "../generated/templates"
 
 import { handleTokenDeployedTx } from "./token-manager-tx"
-import { getOrCreateSubject, getOrCreateUser } from "./utils"
+import { getOrCreateSubject, getOrCreateUser, saveSubject } from "./utils"
 
 // emitted when a new SubjectErc20 is deployed
 export function handleTokenDeployed(event: TokenDeployed): void {
@@ -10,7 +10,6 @@ export function handleTokenDeployed(event: TokenDeployed): void {
   let token = event.params._token
   let subjectToken = getOrCreateSubject(token)
   subjectToken.beneficiary = getOrCreateUser(event.params._beneficiary).id
-  subjectToken.save()
-
+  saveSubject(subjectToken, event.block.timestamp)
   SubjectTokenContract.create(token)
 }
