@@ -78,14 +78,30 @@ type SubjectSnapshot @entity {
   beneficiary: User
   "reserve balance (moxie)/ total locked value"
   reserve: BigInt!
-  "current price of the token"
-  currentPrice: BigDecimal!
+
+  "price of the token at the start of the snapshot"
+  startPrice: BigDecimal!
+  "price of the token at the end of the snapshot"
+  endPrice: BigDecimal!
+  "hourly price change"
+  hourlyPriceChange: BigDecimal!
+
   "Total supply of the token"
   totalSupply: BigInt!
-  "total number of unique holders"
-  uniqueHolders: BigInt!
-  "amount of moxie used to buy or sell this subject token"
-  volume: BigInt!
+
+  "total number of unique holders at start of the snapshot"
+  startUniqueHolders: BigInt!
+  "total number of unique holders at end of the snapshot"
+  endUniqueHolders: BigInt!
+  "hourly unique holders change"
+  hourlyUniqueHoldersChange: BigInt!
+
+  "amount of moxie used to buy or sell this subject token at start of the snapshot"
+  startVolume: BigInt!
+  "amount of moxie used to buy or sell this subject token at end of the snapshot"
+  endVolume: BigInt!
+  "hourly volume change"
+  hourlyVolumeChange: BigInt!
 }
 
 type Subject @entity {

@@ -86,6 +86,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   saveSubject(subject, event.block.timestamp)
 
   let user = getOrCreateUser(event.transaction.from)
+  
   // Saving order entity
   let orderId = event.transaction.hash.toHex().concat("-").concat(event.logIndex.toString())
   let order = new Order(orderId)

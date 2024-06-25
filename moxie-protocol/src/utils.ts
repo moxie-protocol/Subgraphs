@@ -45,6 +45,8 @@ export function getOrCreateUser(userAddress: Address): User {
   let user = User.load(userAddress.toHexString())
   if (!user) {
     user = new User(userAddress.toHexString())
+    user.buyOrders = []
+    user.sellOrders = []
     user.save()
   }
   return user
@@ -57,6 +59,9 @@ function createSubjectSnapshot(subject: Subject, timestamp: BigInt): void {
   let snapshot = SubjectSnapshot.load(snapshotId)
   if (!snapshot) {
     snapshot = new SubjectSnapshot(snapshotId)
+    snapshot.startPrice = subject.currentPrice
+    snapshot.startUniqueHolders = subject.uniqueHolders
+    snapshot.startVolume = subject.volume
   }
   snapshot.endTimestamp = snapshotTimestamp
 
@@ -66,10 +71,16 @@ function createSubjectSnapshot(subject: Subject, timestamp: BigInt): void {
   snapshot.decimals = subject.decimals
   snapshot.beneficiary = subject.beneficiary
   snapshot.reserve = subject.reserve
-  snapshot.currentPrice = subject.currentPrice
+  snapshot.endPrice = subject.currentPrice
+  snapshot.hourlyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
+
   snapshot.totalSupply = subject.totalSupply
-  snapshot.uniqueHolders = subject.uniqueHolders
-  snapshot.volume = subject.volume
+
+  snapshot.endUniqueHolders = subject.uniqueHolders
+  snapshot.hourlyUniqueHoldersChange = snapshot.endUniqueHolders.minus(snapshot.startUniqueHolders) // TODO: confirm
+
+  snapshot.endVolume = subject.volume
+  snapshot.hourlyVolumeChange = snapshot.endVolume.minus(snapshot.startVolume) // TODO: confirm
   snapshot.save()
 }
 
