@@ -61,7 +61,50 @@ type SubjectTokenTransferTx @entity {
 }
 # actual entities
 
-type SubjectSnapshot @entity {
+type SubjectDailySnapshot @entity {
+  "subjectId+-+endTimestamp"
+  id: ID!
+  "end block timestamp"
+  endTimestamp: BigInt!
+  "subject token address"
+  subject: Subject!
+  "name of the token"
+  name: String!
+  "symbol of the token"
+  symbol: String!
+  "decimals of the token"
+  decimals: BigInt!
+  "address of the beneficiary"
+  beneficiary: User
+  "reserve balance (moxie)/ total locked value"
+  reserve: BigInt!
+
+  "price of the token at the start of the snapshot"
+  startPrice: BigDecimal!
+  "price of the token at the end of the snapshot"
+  endPrice: BigDecimal!
+  "hourly price change"
+  hourlyPriceChange: BigDecimal!
+
+  "Total supply of the token"
+  totalSupply: BigInt!
+
+  "total number of unique holders at start of the snapshot"
+  startUniqueHolders: BigInt!
+  "total number of unique holders at end of the snapshot"
+  endUniqueHolders: BigInt!
+  "hourly unique holders change"
+  hourlyUniqueHoldersChange: BigInt!
+
+  "amount of moxie used to buy or sell this subject token at start of the snapshot"
+  startVolume: BigInt!
+  "amount of moxie used to buy or sell this subject token at end of the snapshot"
+  endVolume: BigInt!
+  "hourly volume change"
+  hourlyVolumeChange: BigInt!
+}
+
+type SubjectHourlySnapshot @entity {
   "subjectId+-+endTimestamp"
   id: ID!
   "end block timestamp"
@@ -128,7 +171,8 @@ type Subject @entity {
   "amount of moxie used to buy or sell this subject token"
   volume: BigInt!
   "snapshots"
-  snapshots: [SubjectSnapshot!]! @derivedFrom(field: "subject")
+  hourlySnapshots: [SubjectHourlySnapshot!]! @derivedFrom(field: "subject")
+  dailySnapshots: [SubjectDailySnapshot!]! @derivedFrom(field: "subject")
 }
 
 type Portfolio @entity {

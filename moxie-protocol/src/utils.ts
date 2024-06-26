@@ -1,6 +1,6 @@
 import { Address, BigDecimal, BigInt } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { Portfolio, Subject, SubjectSnapshot, User } from "../generated/schema"
+import { Portfolio, Subject, SubjectDailySnapshot, SubjectHourlySnapshot, User } from "../generated/schema"
 
 export function getOrCreateSubject(tokenAddress: Address): Subject {
   let subject = Subject.load(tokenAddress.toHexString())
@@ -53,12 +53,45 @@ export function getOrCreateUser(userAddress: Address): User {
 }
 
 const SECONDS_IN_HOUR = BigInt.fromI32(60 * 60)
-function createSubjectSnapshot(subject: Subject, timestamp: BigInt): void {
+
+function createSubjectHourlySnapshot(subject: Subject, timestamp: BigInt): void {
   let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_HOUR)).plus(SECONDS_IN_HOUR)
   let snapshotId = subject.id.concat("-").concat(snapshotTimestamp.toString())
-  let snapshot = SubjectSnapshot.load(snapshotId)
+  let snapshot = SubjectHourlySnapshot.load(snapshotId)
   if (!snapshot) {
-    snapshot = new SubjectSnapshot(snapshotId)
+    snapshot = new SubjectHourlySnapshot(snapshotId)
+    snapshot.startPrice = subject.currentPrice
+    snapshot.startUniqueHolders = subject.uniqueHolders
+    snapshot.startVolume = subject.volume
+  }
+  snapshot.endTimestamp = snapshotTimestamp
+
+  snapshot.subject = subject.id
+  snapshot.name = subject.name
+  snapshot.symbol = subject.symbol
+  snapshot.decimals = subject.decimals
+  snapshot.beneficiary = subject.beneficiary
+  snapshot.reserve = subject.reserve
+  snapshot.endPrice = subject.currentPrice
+  snapshot.hourlyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
+
+  snapshot.totalSupply = subject.totalSupply
+
+  snapshot.endUniqueHolders = subject.uniqueHolders
+  snapshot.hourlyUniqueHoldersChange = snapshot.endUniqueHolders.minus(snapshot.startUniqueHolders) // TODO: confirm
+
+  snapshot.endVolume = subject.volume
+  snapshot.hourlyVolumeChange = snapshot.endVolume.minus(snapshot.startVolume) // TODO: confirm
+  snapshot.save()
+}
+const SECONDS_IN_DAY = BigInt.fromI32(60 * 60 * 24)
+
+function createSubjectDailySnapshot(subject: Subject, timestamp: BigInt): void {
+  let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_DAY)).plus(SECONDS_IN_DAY)
+  let snapshotId = subject.id.concat("-").concat(snapshotTimestamp.toString())
+  let snapshot = SubjectDailySnapshot.load(snapshotId)
+  if (!snapshot) {
+    snapshot = new SubjectDailySnapshot(snapshotId)
     snapshot.startPrice = subject.currentPrice
     snapshot.startUniqueHolders = subject.uniqueHolders
     snapshot.startVolume = subject.volume
@@ -86,5 +119,6 @@ function createSubjectSnapshot(subject: Subject, timestamp: BigInt): void {
 
 export function saveSubject(subject: Subject, timestamp: BigInt): void {
   subject.save()
-  createSubjectSnapshot(subject, timestamp)
+  createSubjectDailySnapshot(subject, timestamp)
+  createSubjectHourlySnapshot(subject, timestamp)
 }
