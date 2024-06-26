@@ -62,9 +62,12 @@ type AuctionDetail @entity {
   higestPriceBidOrder: Order
   lowestPriceBidOrder: Order
   orders: [Order!]
-  activeOrders: [Order!] # orders which are not claimed or cancelled
-  claimedOrders: [Order!] # orders which are claimed
-  cancelledOrders: [Order!] # orders which are cancelled
+  "orders which are not cancelled or claimed"
+  activeOrders: [Order!]
+  "orders which are claimed"
+  claimedOrders: [Order!]
+  "orders which are cancelled"
+  cancelledOrders: [Order!]
   auctioningToken: Token!
   biddingToken: Token!
   endTimeTimestamp: BigInt!
@@ -86,6 +89,8 @@ type AuctionDetail @entity {
   uniqueBidders: BigInt!
   "set true when AuctionCleared is emitted"
   isCleared: Boolean!
+  "totalOrders which are not cancelled"
+  totalOrders: BigInt!
 }
 
 type Token @entity {

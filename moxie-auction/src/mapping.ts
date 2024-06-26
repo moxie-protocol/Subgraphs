@@ -7,41 +7,11 @@
 
 import { Address, BigInt, BigDecimal, log } from "@graphprotocol/graph-ts"
 import { AuctionDetail, Token, User } from "../generated/schema"
-import {
-  EasyAuction,
-  AuctionCleared,
-  CancellationSellOrder,
-  ClaimedFromOrder,
-  NewAuction,
-  NewSellOrder,
-  NewUser,
-  OwnershipTransferred,
-  UserRegistration,
-} from "../generated/EasyAuction/EasyAuction"
+import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, NewAuction, NewSellOrder, NewUser, OwnershipTransferred, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Order } from "../generated/schema"
-import {
-  handleAuctionClearedTx,
-  handleCancellationSellOrderTx,
-  handleClaimedFromOrderTx,
-  handleNewAuctionTx,
-  handleNewSellOrderTx,
-  handleNewUserTx,
-  handleOwnershipTransferredTx,
-  handleUserRegistrationTx,
-} from "./transactions"
+import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "./transactions"
 
-import {
-  convertToPricePoint,
-  updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders,
-  getOrderEntityId,
-  loadUser,
-  loadAuctionDetail,
-  loadToken,
-  loadOrder,
-  getTokenDetails,
-  decreaseTotalBiddingValueAndOrdersCount,
-  increaseTotalBiddingValueAndOrdersCount,
-} from "./utils"
+import { convertToPricePoint, updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount } from "./utils"
 
 const ZERO = BigInt.zero()
 const ONE = BigInt.fromI32(1)
@@ -61,25 +31,16 @@ export function handleAuctionCleared(event: AuctionCleared): void {
 
   auctionDetails.currentClearingOrderBuyAmount = auctioningTokensSold
   auctionDetails.currentClearingOrderSellAmount = biddingTokensSold
-  const pricePoint = convertToPricePoint(
-    biddingTokensSold,
-    auctioningTokensSold,
-    decimalAuctioningToken.toI32(),
-    decimalBiddingToken.toI32()
-  )
+  const pricePoint = convertToPricePoint(biddingTokensSold, auctioningTokensSold, decimalAuctioningToken.toI32(), decimalBiddingToken.toI32())
   auctionDetails.currentClearingPrice = pricePoint.get("price")
   auctionDetails.currentVolume = pricePoint.get("volume")
   auctionDetails.currentBiddingAmount = biddingTokensSold
-  auctionDetails.interestScore = pricePoint
-    .get("volume")
-    .div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
+  auctionDetails.interestScore = pricePoint.get("volume").div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
   auctionDetails.isCleared = true
   auctionDetails.save()
 }
 
-export function handleCancellationSellOrder(
-  event: CancellationSellOrder
-): void {
+export function handleCancellationSellOrder(event: CancellationSellOrder): void {
   // decreasing bid value and total Orders count in summary
   decreaseTotalBiddingValueAndOrdersCount(event.params.sellAmount)
   handleCancellationSellOrderTx(event)
@@ -123,11 +84,10 @@ export function handleCancellationSellOrder(
 
   // removing cancelled order from ordersWithoutCancelled array
   auctionDetails.activeOrders = activeOrders
+  auctionDetails.totalOrders = auctionDetails.totalOrders.minus(ONE)
   auctionDetails.save()
 
-  updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders(
-    auctionDetails.auctionId
-  )
+  updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders(auctionDetails.auctionId)
 }
 
 // Remove claimed orders
@@ -140,14 +100,13 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
 
   let auctionDetails = loadAuctionDetail(auctionId.toString())
 
-  // Remove order from the list of orders in the activeOrders array
-  let activeOrders: string[] = []
-  if (auctionDetails.activeOrders) {
-    activeOrders = auctionDetails.activeOrders!
-  }
   let orderId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
   // setting order as claimed
-  let order = loadOrder(orderId)
+  let order = Order.load(orderId)
+  if (!order) {
+    log.error("Order not found, orderId: {}  - this txn is not taken into account(TODO:validate)", [orderId])
+    return
+  }
   if (order) {
     order.status = "Claimed"
     order.save()
@@ -161,6 +120,11 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   claimedOrders.push(order.id)
   auctionDetails.claimedOrders = claimedOrders
 
+  // Remove order from the list of orders in the activeOrders array
+  let activeOrders: string[] = []
+  if (auctionDetails.activeOrders) {
+    activeOrders = auctionDetails.activeOrders!
+  }
   // If orderId is present in the activeOrders array, remove it
   let index = activeOrders.indexOf(orderId)
   if (index > -1) {
@@ -191,12 +155,7 @@ export function handleNewAuction(event: NewAuction): void {
   let auctionContract = EasyAuction.bind(event.address)
   let isAtomicClosureAllowed = auctionContract.auctionData(auctionId).value11
 
-  let pricePoint = convertToPricePoint(
-    sellAmount,
-    buyAmount,
-    biddingTokenDetails.decimals.toI32(),
-    auctioningTokenDetails.decimals.toI32()
-  )
+  let pricePoint = convertToPricePoint(sellAmount, buyAmount, biddingTokenDetails.decimals.toI32(), auctioningTokenDetails.decimals.toI32())
 
   let isPrivateAuction = !allowListContract.equals(Address.zero())
 
@@ -222,11 +181,9 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.biddingToken = biddingTokenDetails.id
 
   auctionDetails.endTimeTimestamp = event.params.auctionEndDate
-  auctionDetails.orderCancellationEndDate =
-    event.params.orderCancellationEndDate
+  auctionDetails.orderCancellationEndDate = event.params.orderCancellationEndDate
   auctionDetails.startingTimeStamp = eventTimeStamp
-  auctionDetails.minimumBiddingAmountPerOrder =
-    event.params.minimumBiddingAmountPerOrder
+  auctionDetails.minimumBiddingAmountPerOrder = event.params.minimumBiddingAmountPerOrder
   auctionDetails.minFundingThreshold = event.params.minFundingThreshold
   auctionDetails.allowListManager = event.params.allowListContract
   auctionDetails.allowListSigner = allowListSigner
@@ -246,6 +203,7 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.txHash = event.transaction.hash
   auctionDetails.uniqueBidders = new BigInt(0)
   auctionDetails.isCleared = false
+  auctionDetails.totalOrders = new BigInt(0)
   auctionDetails.save()
   // adding auction to order
   order.auction = auctionDetails.id
@@ -276,10 +234,7 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   // let user = loadUser(userId.toString()) TODO: revisit after sync
   let user = User.load(userId.toString())
   if (!user) {
-    log.error(
-      "User not found, userId: {}  - this txn is not taken into account(TODO:validate)",
-      [userId.toString()]
-    )
+    log.error("User not found, userId: {}  - this txn is not taken into account(TODO:validate)", [userId.toString()])
     return
   }
 
@@ -294,12 +249,7 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   }
 
   let entityId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
-  let pricePoint = convertToPricePoint(
-    sellAmount,
-    buyAmount,
-    auctioningToken.decimals.toI32(),
-    biddingToken.decimals.toI32()
-  )
+  let pricePoint = convertToPricePoint(sellAmount, buyAmount, auctioningToken.decimals.toI32(), biddingToken.decimals.toI32())
 
   let order = new Order(entityId)
 
@@ -335,11 +285,10 @@ export function handleNewSellOrder(event: NewSellOrder): void {
     user.participatedAuction = participatedAuction
   }
   user.save()
+  auctionDetails.totalOrders = auctionDetails.totalOrders.plus(ONE)
   auctionDetails.save()
 
-  updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders(
-    auctionDetails.auctionId
-  )
+  updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders(auctionDetails.auctionId)
 }
 
 export function handleNewUser(event: NewUser): void {

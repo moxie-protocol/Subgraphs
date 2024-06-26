@@ -2,11 +2,13 @@
   "name": "moxie-auction",
   "license": "UNLICENSED",
   "scripts": {
-    "prepare:base-sepolia": "mustache ./config/base-sepolia.json subgraph.template.yaml > subgraph2.yaml",
+    "prepare:base-sepolia": "mustache ./config/base-sepolia.json subgraph.template.yaml > subgraph.yaml",
+    "prepare:testing": "mustache ./config/testing.json subgraph.template.yaml > subgraph.yaml",
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy": "graph deploy --studio auction",
     "cbd:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build && graph deploy --studio auction",
+    "cbd:testing": "yarn prepare:testing && graph codegen && graph build && graph deploy --studio auction",
     "cbt": "graph codegen && graph build && graph test -d",
     "cb": "graph codegen && graph build",
     "test": "graph test -d"
