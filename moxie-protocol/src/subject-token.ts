@@ -1,7 +1,8 @@
-import { Address, BigInt } from "@graphprotocol/graph-ts"
+import { Address, BigInt, log } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/templates/SubjectTokenContract/ERC20"
-import { getOrCreateSubject, saveSubject } from "./utils"
+import { getOrCreateSubject, loadSummary, saveSubject } from "./utils"
 import { handleTransferTx } from "./subject-token-tx"
+import { User } from "../generated/schema"
 
 export function handleTransfer(event: Transfer): void {
   handleTransferTx(event)
@@ -12,26 +13,36 @@ export function handleTransfer(event: Transfer): void {
 
   let subjectToken = getOrCreateSubject(contractAddress)
   let totalSupply = subjectToken.totalSupply
+  let summary = loadSummary()
   if (from == Address.zero()) {
     // minting
     totalSupply = totalSupply.plus(value)
+    summary.totalTokensIssued = summary.totalTokensIssued.plus(value)
   }
   let burn = to == Address.zero()
   if (burn) {
     // burning
     totalSupply = totalSupply.minus(value)
+    summary.totalTokensIssued = summary.totalTokensIssued.minus(value)
   }
+  summary.save()
   subjectToken.totalSupply = totalSupply
   // updating holders
   let toAddressString = to.toHexString()
   if (!burn) {
+    let uniqueHoldersCount = BigInt.fromI32(0)
     let holders = subjectToken.holders
     // checking if to address is already in holders list
-    let holder = holders.indexOf(toAddressString)
-    if (holder == -1) {
+    if (!holders.includes(toAddressString)) {
       holders.push(toAddressString)
+      for (let i = 0; i < holders.length; i++) {
+        let user = User.load(holders[i])
+        if (user) {
+          uniqueHoldersCount = uniqueHoldersCount.plus(BigInt.fromI32(1))
+        }
+      }
       subjectToken.holders = holders
-      subjectToken.uniqueHolders = BigInt.fromI32(holders.length)
+      subjectToken.uniqueHolders = uniqueHoldersCount
     }
   }
   saveSubject(subjectToken, event.block.timestamp)

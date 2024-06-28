@@ -1,9 +1,9 @@
-import { BigDecimal, BigInt } from "@graphprotocol/graph-ts"
-import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
-import { Order } from "../generated/schema"
+import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
+import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula, InitializeCall } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
+import { Order, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectFeeTransfer, User } from "../generated/schema"
 
 import { handleBondingCurveInitializedTx, handleSubjectSharePurchasedTx, handleSubjectShareSoldTx, handleUpdateBeneficiaryTx, handleUpdateFeesTx, handleUpdateFormulaTx } from "./moxie-bonding-curve-tx"
-import { getOrCreatePortfolio, getOrCreateSubject, getOrCreateUser, saveSubject } from "./utils"
+import { calculateBuySideFee, calculateSellSideFee, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubject, getOrCreateUser, getTxEntityId, handleNewBeneficiary, loadSummary, saveSubject } from "./utils"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   handleBondingCurveInitializedTx(event)
 }
@@ -35,10 +35,8 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let subject = getOrCreateSubject(event.params._buyToken)
   subject.currentPrice = price
   subject.volume = subject.volume.plus(event.params._sellAmount)
-  saveSubject(subject, event.block.timestamp)
   // Saving order entity
-  let orderId = event.transaction.hash.toHex().concat("-").concat(event.logIndex.toString())
-  let order = new Order(orderId)
+  let order = new Order(getTxEntityId(event))
   order.protocolToken = event.params._sellToken
   order.protocolTokenAmount = event.params._sellAmount
   order.subjectToken = subject.id
@@ -60,6 +58,55 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   orders.push(order.id)
   user.buyOrders = orders
   user.save()
+
+  const blockInfo = getOrCreateBlockInfo(event)
+  const summary = loadSummary()
+  let activeFeeBeneficiary = ProtocolFeeBeneficiary.load(summary.activeProtocolFeeBeneficiary)
+  if (!activeFeeBeneficiary) {
+    throw new Error("protocol beneficiary not found")
+  }
+  const txHash = event.transaction.hash.toHexString()
+  const fees = calculateBuySideFee(event.params._sellAmount)
+  let subjectFeeTransfer = new SubjectFeeTransfer(txHash)
+  subjectFeeTransfer.txHash = event.transaction.hash
+  subjectFeeTransfer.blockInfo = blockInfo.id
+  subjectFeeTransfer.subject = subject.id
+  subjectFeeTransfer.beneficiary = subject.beneficiary
+  subjectFeeTransfer.amount = fees.subjectFee
+  subjectFeeTransfer.order = order.id
+  subjectFeeTransfer.save()
+
+  let protocolFeeTransfer = new ProtocolFeeTransfer(txHash)
+  protocolFeeTransfer.txHash = event.transaction.hash
+  protocolFeeTransfer.blockInfo = blockInfo.id
+  protocolFeeTransfer.order = order.id
+  protocolFeeTransfer.subject = subject.id
+  protocolFeeTransfer.beneficiary = activeFeeBeneficiary.id
+  protocolFeeTransfer.amount = fees.protocolFee
+  protocolFeeTransfer.save()
+
+  subject.beneficiaryFee = subject.beneficiaryFee.plus(fees.subjectFee)
+  subject.protcolFee = subject.protcolFee.plus(fees.protocolFee)
+  saveSubject(subject, event.block.timestamp)
+
+  activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
+  activeFeeBeneficiary.save()
+
+  log.warning("loading beneficiaryUser ", [])
+
+  let beneficiary = subject.beneficiary
+  if (beneficiary) {
+    log.warning("beneficiaryUser {}", [beneficiary])
+    let beneficiaryUser = User.load(beneficiary)
+    if (beneficiaryUser) {
+      log.warning("beneficiaryUser loaded {}", [beneficiaryUser.id])
+      let subjectFeeTransfer = beneficiaryUser.subjectFeeTransfer
+      let pushResponse = subjectFeeTransfer.push(txHash)
+      log.warning("beneficiaryUser pushResponse {}", [pushResponse.toString()])
+      beneficiaryUser.subjectFeeTransfer = subjectFeeTransfer
+      beneficiaryUser.save()
+    }
+  }
 }
 
 export function handleSubjectShareSold(event: SubjectShareSold): void {
@@ -86,10 +133,9 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   saveSubject(subject, event.block.timestamp)
 
   let user = getOrCreateUser(event.transaction.from)
-  
+
   // Saving order entity
-  let orderId = event.transaction.hash.toHex().concat("-").concat(event.logIndex.toString())
-  let order = new Order(orderId)
+  let order = new Order(getTxEntityId(event))
   order.protocolToken = event.params._buyToken
   order.protocolTokenAmount = event.params._buyAmount
   order.subjectToken = subject.id
@@ -107,19 +153,73 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.portfolio = portfolio.id
   order.save()
 
+  const blockInfo = getOrCreateBlockInfo(event)
+  const summary = loadSummary()
+  let activeFeeBeneficiary = ProtocolFeeBeneficiary.load(summary.activeProtocolFeeBeneficiary)
+  if (!activeFeeBeneficiary) {
+    throw new Error("protocol beneficiary not found")
+  }
+  let txHash = event.transaction.hash.toHexString()
+  const fees = calculateSellSideFee(event.params._sellAmount)
+  let subjectFeeTransfer = new SubjectFeeTransfer(txHash)
+  subjectFeeTransfer.txHash = event.transaction.hash
+  subjectFeeTransfer.blockInfo = blockInfo.id
+  subjectFeeTransfer.subject = subject.id
+  subjectFeeTransfer.beneficiary = subject.beneficiary
+  subjectFeeTransfer.amount = fees.subjectFee
+  subjectFeeTransfer.order = order.id
+  subjectFeeTransfer.save()
+
   // updating user's orders
   let orders = user.sellOrders
   orders.push(order.id)
   user.sellOrders = orders
   user.save()
+
+  let protocolFeeTransfer = new ProtocolFeeTransfer(txHash)
+  protocolFeeTransfer.txHash = event.transaction.hash
+  protocolFeeTransfer.blockInfo = blockInfo.id
+  protocolFeeTransfer.order = order.id
+  protocolFeeTransfer.subject = subject.id
+  protocolFeeTransfer.beneficiary = activeFeeBeneficiary.id
+  protocolFeeTransfer.amount = fees.protocolFee
+  protocolFeeTransfer.save()
+
+  subject.beneficiaryFee = subject.beneficiaryFee.plus(fees.subjectFee)
+  subject.protcolFee = subject.protcolFee.plus(fees.protocolFee)
+  saveSubject(subject, event.block.timestamp)
+
+  activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
+  activeFeeBeneficiary.save()
+  log.warning("loading beneficiaryUser ", [])
+
+  let beneficiary = subject.beneficiary
+  if (beneficiary) {
+    log.warning("beneficiaryUser {}", [beneficiary])
+    let beneficiaryUser = User.load(beneficiary)
+    if (beneficiaryUser) {
+      log.warning("beneficiaryUser loaded {}", [beneficiaryUser.id])
+      let subjectFeeTransfer = beneficiaryUser.subjectFeeTransfer
+      let pushResponse = subjectFeeTransfer.push(txHash)
+      log.warning("beneficiaryUser pushResponse {}", [pushResponse.toString()])
+      beneficiaryUser.subjectFeeTransfer = subjectFeeTransfer
+      beneficiaryUser.save()
+    }
+  }
 }
 
 export function handleUpdateBeneficiary(event: UpdateBeneficiary): void {
   handleUpdateBeneficiaryTx(event)
+  handleNewBeneficiary(event.params._beneficiary)
 }
 
 export function handleUpdateFees(event: UpdateFees): void {
   handleUpdateFeesTx(event)
+  let summary = loadSummary()
+  summary.protocolBuyFeePct = event.params._protocolBuyFeePct
+  summary.protocolSellFeePct = event.params._protocolSellFeePct
+  summary.subjectBuyFeePct = event.params._subjectBuyFeePct
+  summary.subjectSellFeePct = event.params._subjectSellFeePct
 }
 
 export function handleUpdateFormula(event: UpdateFormula): void {

@@ -1,5 +1,5 @@
 import { VaultDeposit, VaultTransfer } from "../generated/Vault/Vault"
-import { getOrCreateSubject, saveSubject } from "./utils"
+import { getOrCreateSubject, loadSummary, saveSubject } from "./utils"
 
 export function handleVaultDeposit(event: VaultDeposit): void {
   // event VaultDeposit(
@@ -14,6 +14,10 @@ export function handleVaultDeposit(event: VaultDeposit): void {
   // subject.reserve = subject.reserve.plus(event.params.amount)
   subject.reserve = event.params.totalReserve
   saveSubject(subject, event.block.timestamp)
+
+  let summary = loadSummary()
+  summary.totalReserve = summary.totalReserve.plus(event.params.amount)
+  summary.save()
 }
 
 export function handleVaultTransfer(event: VaultTransfer): void {
@@ -30,4 +34,8 @@ export function handleVaultTransfer(event: VaultTransfer): void {
   // subject.reserve = subject.reserve.minus(event.params.amount)
   subject.reserve = event.params.totalReserve
   saveSubject(subject, event.block.timestamp)
+
+  let summary = loadSummary()
+  summary.totalReserve = summary.totalReserve.minus(event.params.amount)
+  summary.save()
 }

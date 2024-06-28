@@ -14,7 +14,9 @@ dataSources:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-        - Approval
+        - Subject
+        - User
+        - TokenManagerTokenDeployedTx
       abis:
         - name: TokenManager
           file: ./abis/TokenManager.json
@@ -37,7 +39,8 @@ dataSources:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-        - Approval
+        - Subject
+        - Summary
       abis:
         - name: Vault
           file: ./abis/Vault.json
@@ -59,7 +62,15 @@ dataSources:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-        - Approval
+        - Subject
+        - Portfolio
+        - Order
+        - MoxieBondingCurveBondingCurveInitializedTx
+        - MoxieBondingCurveSubjectSharePurchasedTx
+        - MoxieBondingCurveSubjectShareSoldTx
+        - MoxieBondingCurveUpdateBeneficiaryTx
+        - MoxieBondingCurveUpdateFeesTx
+        - MoxieBondingCurveUpdateFormulaTx
       abis:
         - name: MoxieBondingCurve
           file: ./abis/MoxieBondingCurve.json
@@ -76,6 +87,7 @@ dataSources:
           handler: handleUpdateFees
         - event: UpdateFormula(address)
           handler: handleUpdateFormula
+
       file: ./src/moxie-bonding-curve.ts
 templates:
   - kind: ethereum/contract
@@ -89,7 +101,8 @@ templates:
       language: wasm/assemblyscript
       file: ./src/subject-token.ts
       entities:
-        - TokenLockWallet
+        - Subject
+        - SubjectTokenTransferTx
       abis:
         - name: ERC20
           file: ./abis/ERC20.json

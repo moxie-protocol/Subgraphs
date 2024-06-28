@@ -1,5 +1,15 @@
+type BlockInfo @entity {
+  id: ID!
+  hash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
 type MoxieBondingCurveBondingCurveInitializedTx @entity {
-  id: ID! #hash
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
   subject: Bytes!
   subjectToken: Bytes!
   initialSupply: BigInt!
@@ -8,7 +18,10 @@ type MoxieBondingCurveBondingCurveInitializedTx @entity {
 }
 
 type MoxieBondingCurveSubjectSharePurchasedTx @entity {
-  id: ID! #hash
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
   subject: Bytes!
   sellToken: Bytes!
   sellAmount: BigInt!
@@ -18,7 +31,10 @@ type MoxieBondingCurveSubjectSharePurchasedTx @entity {
 }
 
 type MoxieBondingCurveSubjectShareSoldTx @entity {
-  id: ID! #hash
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
   subject: Bytes!
   sellToken: Bytes!
   sellAmount: BigInt!
@@ -28,12 +44,18 @@ type MoxieBondingCurveSubjectShareSoldTx @entity {
 }
 
 type MoxieBondingCurveUpdateBeneficiaryTx @entity {
-  id: ID! #hash
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
   beneficiary: Bytes!
 }
 
 type MoxieBondingCurveUpdateFeesTx @entity {
-  id: ID! #hash
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
   protocolBuyFeePct: BigInt!
   protocolSellFeePct: BigInt!
   subjectBuyFeePct: BigInt!
@@ -41,24 +63,59 @@ type MoxieBondingCurveUpdateFeesTx @entity {
 }
 
 type MoxieBondingCurveUpdateFormulaTx @entity {
-  id: ID! #hash
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
   formula: Bytes!
 }
 
 type TokenManagerTokenDeployedTx @entity {
-  id: ID! #hash
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
   beneficiary: Bytes!
   token: Bytes!
   initialSupply: BigInt!
 }
 
 type SubjectTokenTransferTx @entity {
-  id: ID! #hash
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
   contractAddress: Bytes!
   from: Bytes!
   to: Bytes!
   value: BigInt!
 }
+type VaultDepositTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+
+  subject: Bytes!
+  token: Bytes!
+  sender: Bytes!
+  amount: BigInt!
+  totalReserve: BigInt!
+}
+
+type VaultTransferTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+
+  subject: Bytes!
+  token: Bytes!
+  to: Bytes!
+  amount: BigInt!
+  totalReserve: BigInt!
+}
+
 # actual entities
 
 type SubjectDailySnapshot @entity {
@@ -68,12 +125,7 @@ type SubjectDailySnapshot @entity {
   endTimestamp: BigInt!
   "subject token address"
   subject: Subject!
-  "name of the token"
-  name: String!
-  "symbol of the token"
-  symbol: String!
-  "decimals of the token"
-  decimals: BigInt!
+
   "address of the beneficiary"
   beneficiary: User
   "reserve balance (moxie)/ total locked value"
@@ -83,8 +135,8 @@ type SubjectDailySnapshot @entity {
   startPrice: BigDecimal!
   "price of the token at the end of the snapshot"
   endPrice: BigDecimal!
-  "hourly price change"
-  hourlyPriceChange: BigDecimal!
+  "daily price change"
+  dailyPriceChange: BigDecimal!
 
   "Total supply of the token"
   totalSupply: BigInt!
@@ -93,15 +145,28 @@ type SubjectDailySnapshot @entity {
   startUniqueHolders: BigInt!
   "total number of unique holders at end of the snapshot"
   endUniqueHolders: BigInt!
-  "hourly unique holders change"
-  hourlyUniqueHoldersChange: BigInt!
+  "daily unique holders change"
+  dailyUniqueHoldersChange: BigInt!
 
   "amount of moxie used to buy or sell this subject token at start of the snapshot"
   startVolume: BigInt!
   "amount of moxie used to buy or sell this subject token at end of the snapshot"
   endVolume: BigInt!
-  "hourly volume change"
-  hourlyVolumeChange: BigInt!
+  "daily volume change"
+  dailyVolumeChange: BigInt!
+
+  "total beneficiary fee at start of the snapshot"
+  startBeneficiaryFee: BigInt!
+  "total beneficiary fee at end of the snapshot"
+  endBeneficiaryFee: BigInt!
+  "daily beneficiary fee change"
+  dailyBeneficiaryFeeChange: BigInt!
+  "total protocol fee at start of the snapshot"
+  startProtcolFee: BigInt!
+  "total protocol fee at end of the snapshot"
+  endProtcolFee: BigInt!
+  "daily protocol fee change"
+  dailyProtcolFeeChange: BigInt!
 }
 
 type SubjectHourlySnapshot @entity {
@@ -111,12 +176,7 @@ type SubjectHourlySnapshot @entity {
   endTimestamp: BigInt!
   "subject token address"
   subject: Subject!
-  "name of the token"
-  name: String!
-  "symbol of the token"
-  symbol: String!
-  "decimals of the token"
-  decimals: BigInt!
+
   "address of the beneficiary"
   beneficiary: User
   "reserve balance (moxie)/ total locked value"
@@ -145,6 +205,19 @@ type SubjectHourlySnapshot @entity {
   endVolume: BigInt!
   "hourly volume change"
   hourlyVolumeChange: BigInt!
+
+  "total beneficiary fee at start of the snapshot"
+  startBeneficiaryFee: BigInt!
+  "total beneficiary fee at end of the snapshot"
+  endBeneficiaryFee: BigInt!
+  "hourly beneficiary fee change"
+  hourlyBeneficiaryFeeChange: BigInt!
+  "total protocol fee at start of the snapshot"
+  startProtcolFee: BigInt!
+  "total protocol fee at end of the snapshot"
+  endProtcolFee: BigInt!
+  "hourly protocol fee change"
+  hourlyProtcolFeeChange: BigInt!
 }
 
 type Subject @entity {
@@ -173,6 +246,15 @@ type Subject @entity {
   "snapshots"
   hourlySnapshots: [SubjectHourlySnapshot!]! @derivedFrom(field: "subject")
   dailySnapshots: [SubjectDailySnapshot!]! @derivedFrom(field: "subject")
+
+  "total beneficiary fees collected"
+  beneficiaryFee: BigInt!
+  "total protocl fees collected"
+  protcolFee: BigInt!
+  "beneficiary fee transfer"
+  beneficiaryFeeTransfers: [SubjectFeeTransfer!]! @derivedFrom(field: "subject")
+  "protocol fee transfers"
+  protocolFeeTransfers: [ProtocolFeeTransfer!]! @derivedFrom(field: "subject")
 }
 
 type Portfolio @entity {
@@ -199,10 +281,12 @@ type User @entity {
   buyOrders: [Order!]!
   "sellOrders placed by the user"
   sellOrders: [Order!]!
+  "beneficiary fee transfers"
+  subjectFeeTransfer: [SubjectFeeTransfer!]!
 }
 
 type Order @entity {
-  "tx hash+-+logIndex"
+  "txHash+-+logIndex"
   id: ID!
   "Moxie Token address"
   protocolToken: Bytes!
@@ -220,8 +304,69 @@ type Order @entity {
   user: User!
   "associated portfolio"
   portfolio: Portfolio!
+  "subject fee transaction"
+  subjectFeeTransfer: SubjectFeeTransfer! @derivedFrom(field: "order")
+  "protocol fee transaction"
+  protocolFeeTransfer: ProtocolFeeTransfer! @derivedFrom(field: "order")
 }
 enum OrderType {
   SELL
   BUY
+}
+
+type ProtocolFeeBeneficiary @entity {
+  "address of the beneficiary"
+  id: ID!
+  "address of the beneficiary"
+  beneficiary: Bytes!
+  "total fees collected by the protocol"
+  totalFees: BigInt!
+
+  "protocol fee transfers"
+  protocolFeeTransfers: [ProtocolFeeTransfer!]! @derivedFrom(field: "beneficiary")
+}
+
+type ProtocolFeeTransfer @entity {
+  "txHash"
+  id: ID!
+  "txHash of the transaction"
+  txHash: Bytes!
+  "block information"
+  blockInfo: BlockInfo!
+  "order"
+  order: Order!
+  "subject token address"
+  subject: Subject!
+  "ProtocolFee Beneficiary"
+  beneficiary: ProtocolFeeBeneficiary!
+  "amount of moxie transferred"
+  amount: BigInt!
+}
+
+type SubjectFeeTransfer @entity {
+  "txHash"
+  id: ID!
+  "txHash of the transaction"
+  txHash: Bytes!
+  "block information"
+  blockInfo: BlockInfo!
+  "order"
+  order: Order!
+  "subject token address"
+  subject: Subject!
+  "address of the beneficiary"
+  beneficiary: User
+  "amount of moxie transferred"
+  amount: BigInt!
+}
+
+type Summary @entity {
+  id: ID!
+  totalTokensIssued: BigInt!
+  totalReserve: BigInt!
+  activeProtocolFeeBeneficiary: ProtocolFeeBeneficiary!
+  protocolBuyFeePct: BigInt!
+  protocolSellFeePct: BigInt!
+  subjectBuyFeePct: BigInt!
+  subjectSellFeePct: BigInt!
 }
