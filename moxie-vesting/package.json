@@ -1,5 +1,5 @@
 {
-  "name": "moxie-auction",
+  "name": "moxie-vesting",
   "license": "UNLICENSED",
   "scripts": {
     "prepare:base-sepolia": "mustache config/base-sepolia.json subgraph.template.yaml > subgraph.yaml",

@@ -17,7 +17,9 @@ dataSources:
       language: wasm/assemblyscript
       file: ./src/mappings/manager.ts
       entities:
-        - TODO
+        - TokenManager
+        - TokenLockWallet
+        - AuthorizedFunction
       abis:
         - name: MoxieTokenLockManager
           file: ./abis/MoxieTokenLockManager.json
