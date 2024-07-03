@@ -69,7 +69,7 @@ type AuctionDetail @entity {
   cancelledOrders: [Order!]
   auctioningToken: Token!
   biddingToken: Token!
-  endTimeTimestamp: BigInt!
+  auctionEndDate: BigInt!
   orderCancellationEndDate: BigInt!
   startingTimeStamp: BigInt!
   minimumBiddingAmountPerOrder: BigInt!

@@ -113,7 +113,7 @@ export class AuctionEntityInput {
   auctioningToken: TokenEntityInput
   biddingToken: TokenEntityInput
   activeOrders: OrderEntityInput[]
-  endTimeTimestamp: string
+  auctionEndDate: string
   orderCancellationEndDate: string
   startingTimeStamp: string
   minimumBiddingAmountPerOrder: string

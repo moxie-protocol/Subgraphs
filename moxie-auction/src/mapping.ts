@@ -177,7 +177,7 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.auctioningToken = auctioningTokenDetails.id
   auctionDetails.biddingToken = biddingTokenDetails.id
 
-  auctionDetails.endTimeTimestamp = event.params.auctionEndDate
+  auctionDetails.auctionEndDate = event.params.auctionEndDate
   auctionDetails.orderCancellationEndDate = event.params.orderCancellationEndDate
   auctionDetails.startingTimeStamp = eventTimeStamp
   auctionDetails.minimumBiddingAmountPerOrder = event.params.minimumBiddingAmountPerOrder

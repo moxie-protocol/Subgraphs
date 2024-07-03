@@ -100,7 +100,7 @@ describe("utils", () => {
             },
           },
         ],
-        endTimeTimestamp: "1617732000",
+        auctionEndDate: "1617732000",
         orderCancellationEndDate: "1617728400",
         startingTimeStamp: "1617704654",
         minimumBiddingAmountPerOrder: "500000000000000000000",
@@ -167,7 +167,7 @@ describe("utils", () => {
       auction.exactOrder = initialAuction.exactOrder.id
       auction.auctioningToken = initialAuction.auctioningToken.id
       auction.biddingToken = initialAuction.biddingToken.id
-      auction.endTimeTimestamp = BigInt.fromString(initialAuction.endTimeTimestamp)
+      auction.auctionEndDate = BigInt.fromString(initialAuction.auctionEndDate)
       auction.orderCancellationEndDate = BigInt.fromString(initialAuction.orderCancellationEndDate)
       auction.startingTimeStamp = BigInt.fromString(initialAuction.startingTimeStamp)
       auction.minimumBiddingAmountPerOrder = BigInt.fromString(initialAuction.minimumBiddingAmountPerOrder)
