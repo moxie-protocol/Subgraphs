@@ -1,5 +1,5 @@
-import { Address, BigInt, BigDecimal, log } from "@graphprotocol/graph-ts"
-import { Order, AuctionDetail, Token, User, Summary } from "../generated/schema"
+import { Address, BigInt, BigDecimal, log, ethereum } from "@graphprotocol/graph-ts"
+import { Order, AuctionDetail, Token, User, Summary, BlockInfo } from "../generated/schema"
 import { ERC20Contract } from "../generated/EasyAuction/ERC20Contract"
 
 import sortOrders from "./utils/sortOrders"
@@ -7,12 +7,7 @@ import sortOrders from "./utils/sortOrders"
 const ZERO = BigInt.zero()
 const TEN = BigInt.fromString("10")
 
-export function convertToPricePoint(
-  sellAmount: BigInt,
-  buyAmount: BigInt,
-  decimalsBuyToken: number,
-  decimalsSellToken: number
-): Map<string, BigDecimal> {
+export function convertToPricePoint(sellAmount: BigInt, buyAmount: BigInt, decimalsBuyToken: number, decimalsSellToken: number): Map<string, BigDecimal> {
   if (buyAmount.equals(ZERO)) {
     let pricePoint = new Map<string, BigDecimal>()
     pricePoint.set("price", BigDecimal.fromString("0"))
@@ -20,16 +15,10 @@ export function convertToPricePoint(
 
     return pricePoint
   }
-  let bidByAuctionDecimal = TEN.pow(<u8>decimalsBuyToken).divDecimal(
-    TEN.pow(<u8>decimalsSellToken).toBigDecimal()
-  )
+  let bidByAuctionDecimal = TEN.pow(<u8>decimalsBuyToken).divDecimal(TEN.pow(<u8>decimalsSellToken).toBigDecimal())
 
-  let price: BigDecimal = sellAmount
-    .divDecimal(buyAmount.toBigDecimal())
-    .times(bidByAuctionDecimal)
-  let volume: BigDecimal = sellAmount.divDecimal(
-    TEN.pow(<u8>decimalsSellToken).toBigDecimal()
-  )
+  let price: BigDecimal = sellAmount.divDecimal(buyAmount.toBigDecimal()).times(bidByAuctionDecimal)
+  let volume: BigDecimal = sellAmount.divDecimal(TEN.pow(<u8>decimalsSellToken).toBigDecimal())
 
   let pricePoint = new Map<string, BigDecimal>()
   pricePoint.set("price", price)
@@ -53,9 +42,7 @@ export function getUniqueBiddersCount(orderIds: string[]): BigInt {
 }
 
 // export function (auctionDetails: AuctionDetail,sortedOrders:string[]): void {
-export function updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders(
-  auctionId: BigInt
-): void {
+export function updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders(auctionId: BigInt): void {
   let auctionDetails = loadAuctionDetail(auctionId.toString())
   const auctioningToken = loadToken(auctionDetails.auctioningToken)
   const biddingToken = loadToken(auctionDetails.biddingToken)
@@ -90,11 +77,7 @@ export function updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidder
     // calculated the total bidding token amount (sellAmount is amount of moxie token on each order)
     biddingTokenTotal = biddingTokenTotal.plus(order.sellAmount || ZERO)
 
-    if (
-      biddingTokenTotal
-        .divDecimal(auctioningTokenAmountOfInitialOrder.toBigDecimal())
-        .ge(order.sellAmount.divDecimal(order.buyAmount.toBigDecimal()))
-    ) {
+    if (biddingTokenTotal.divDecimal(auctioningTokenAmountOfInitialOrder.toBigDecimal()).ge(order.sellAmount.divDecimal(order.buyAmount.toBigDecimal()))) {
       break
     }
   }
@@ -102,66 +85,33 @@ export function updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidder
   if (!currentOrder) {
     return
   }
-  if (
-    biddingTokenTotal.ge(ZERO) &&
-    biddingTokenTotal
-      .divDecimal(auctioningTokenAmountOfInitialOrder.toBigDecimal())
-      .ge(
-        currentOrder.sellAmount.divDecimal(
-          currentOrder.buyAmount.toBigDecimal()
-        )
-      )
-  ) {
-    let uncoveredBids = biddingTokenTotal.minus(
-      auctioningTokenAmountOfInitialOrder
-        .times(currentOrder.sellAmount)
-        .div(currentOrder.buyAmount)
-    )
+  if (biddingTokenTotal.ge(ZERO) && biddingTokenTotal.divDecimal(auctioningTokenAmountOfInitialOrder.toBigDecimal()).ge(currentOrder.sellAmount.divDecimal(currentOrder.buyAmount.toBigDecimal()))) {
+    let uncoveredBids = biddingTokenTotal.minus(auctioningTokenAmountOfInitialOrder.times(currentOrder.sellAmount).div(currentOrder.buyAmount))
 
     if (currentOrder.sellAmount.gt(uncoveredBids)) {
       let volume = currentOrder.sellAmount.minus(uncoveredBids)
-      let currentBiddingAmount = biddingTokenTotal
-        .minus(currentOrder.sellAmount)
-        .plus(volume)
+      let currentBiddingAmount = biddingTokenTotal.minus(currentOrder.sellAmount).plus(volume)
       auctionDetails.currentClearingOrderBuyAmount = currentOrder.buyAmount
       auctionDetails.currentClearingOrderSellAmount = currentOrder.sellAmount
 
-      auctionDetails.currentClearingPrice = convertToPricePoint(
-        currentOrder.sellAmount,
-        currentOrder.buyAmount,
-        decimalAuctioningToken.toI32(),
-        decimalBiddingToken.toI32()
-      ).get("price")
+      auctionDetails.currentClearingPrice = convertToPricePoint(currentOrder.sellAmount, currentOrder.buyAmount, decimalAuctioningToken.toI32(), decimalBiddingToken.toI32()).get("price")
       auctionDetails.currentVolume = new BigDecimal(volume)
       auctionDetails.currentBiddingAmount = currentBiddingAmount
-      auctionDetails.interestScore = currentBiddingAmount
-        .toBigDecimal()
-        .div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
+      auctionDetails.interestScore = currentBiddingAmount.toBigDecimal().div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
 
       auctionDetails.save()
       return
     } else {
-      let clearingOrderSellAmount = biddingTokenTotal.minus(
-        currentOrder.sellAmount
-      )
+      let clearingOrderSellAmount = biddingTokenTotal.minus(currentOrder.sellAmount)
       let clearingOrderBuyAmount = auctioningTokenAmountOfInitialOrder
-      const currentBiddingAmount = biddingTokenTotal.minus(
-        currentOrder.sellAmount
-      )
+      const currentBiddingAmount = biddingTokenTotal.minus(currentOrder.sellAmount)
       auctionDetails.currentClearingOrderBuyAmount = clearingOrderBuyAmount
       auctionDetails.currentClearingOrderSellAmount = clearingOrderSellAmount
-      const currentClearingPrice = convertToPricePoint(
-        clearingOrderSellAmount,
-        clearingOrderBuyAmount,
-        decimalAuctioningToken.toI32(),
-        decimalBiddingToken.toI32()
-      ).get("price")
+      const currentClearingPrice = convertToPricePoint(clearingOrderSellAmount, clearingOrderBuyAmount, decimalAuctioningToken.toI32(), decimalBiddingToken.toI32()).get("price")
       auctionDetails.currentClearingPrice = currentClearingPrice
       auctionDetails.currentVolume = BigDecimal.fromString("0")
       auctionDetails.currentBiddingAmount = currentBiddingAmount
-      auctionDetails.interestScore = currentBiddingAmount
-        .toBigDecimal()
-        .div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
+      auctionDetails.interestScore = currentBiddingAmount.toBigDecimal().div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
 
       auctionDetails.save()
       return
@@ -171,18 +121,11 @@ export function updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidder
     const clearingOrderSellAmount = biddingTokenTotal
     auctionDetails.currentClearingOrderBuyAmount = clearingOrderBuyAmount
     auctionDetails.currentClearingOrderSellAmount = clearingOrderSellAmount
-    const currentClearingPrice = convertToPricePoint(
-      clearingOrderSellAmount,
-      clearingOrderBuyAmount,
-      decimalAuctioningToken.toI32(),
-      decimalBiddingToken.toI32()
-    ).get("price")
+    const currentClearingPrice = convertToPricePoint(clearingOrderSellAmount, clearingOrderBuyAmount, decimalAuctioningToken.toI32(), decimalBiddingToken.toI32()).get("price")
     auctionDetails.currentClearingPrice = currentClearingPrice
     auctionDetails.currentVolume = BigDecimal.fromString("0")
     auctionDetails.currentBiddingAmount = biddingTokenTotal
-    auctionDetails.interestScore = biddingTokenTotal
-      .toBigDecimal()
-      .div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
+    auctionDetails.interestScore = biddingTokenTotal.toBigDecimal().div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
 
     auctionDetails.save()
     return
@@ -190,37 +133,21 @@ export function updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidder
     const clearingOrderBuyAmount = auctioningTokenAmountOfInitialOrder
     const clearingOrderSellAmount = biddingTokenAmountOfInitialOrder
 
-    const volume = new BigDecimal(biddingTokenTotal).times(
-      auctioningTokenAmountOfInitialOrder.divDecimal(
-        new BigDecimal(biddingTokenAmountOfInitialOrder)
-      )
-    )
+    const volume = new BigDecimal(biddingTokenTotal).times(auctioningTokenAmountOfInitialOrder.divDecimal(new BigDecimal(biddingTokenAmountOfInitialOrder)))
     auctionDetails.currentClearingOrderBuyAmount = clearingOrderBuyAmount
     auctionDetails.currentClearingOrderSellAmount = clearingOrderSellAmount
-    const currentClearingPrice = convertToPricePoint(
-      clearingOrderSellAmount,
-      clearingOrderBuyAmount,
-      decimalAuctioningToken.toI32(),
-      decimalBiddingToken.toI32()
-    ).get("price")
+    const currentClearingPrice = convertToPricePoint(clearingOrderSellAmount, clearingOrderBuyAmount, decimalAuctioningToken.toI32(), decimalBiddingToken.toI32()).get("price")
     auctionDetails.currentClearingPrice = currentClearingPrice
     auctionDetails.currentVolume = volume
     auctionDetails.currentBiddingAmount = biddingTokenTotal
-    auctionDetails.interestScore = biddingTokenTotal
-      .toBigDecimal()
-      .div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
+    auctionDetails.interestScore = biddingTokenTotal.toBigDecimal().div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
 
     auctionDetails.save()
     return
   }
 }
 
-export function getOrderEntityId(
-  auctionId: BigInt,
-  sellAmount: BigInt,
-  buyAmount: BigInt,
-  userId: BigInt
-): string {
+export function getOrderEntityId(auctionId: BigInt, sellAmount: BigInt, buyAmount: BigInt, userId: BigInt): string {
   return `${auctionId.toString()}-${sellAmount.toString()}-${buyAmount.toString()}-${userId.toString()}`
 }
 
@@ -293,4 +220,20 @@ export function decreaseTotalBiddingValueAndOrdersCount(value: BigInt): void {
   summary.totalBiddingValue = summary.totalBiddingValue.minus(value)
   summary.totalOrders = summary.totalOrders.minus(BigInt.fromI32(1))
   summary.save()
+}
+
+export function getTxEntityId(event: ethereum.Event): string {
+  return event.transaction.hash.toHexString().concat("-").concat(event.logIndex.toString())
+}
+
+export function getOrCreateBlockInfo(event: ethereum.Event): BlockInfo {
+  let blockInfo = BlockInfo.load(event.block.number.toString())
+  if (!blockInfo) {
+    blockInfo = new BlockInfo(event.block.number.toString())
+    blockInfo.timestamp = event.block.timestamp
+    blockInfo.blockNumber = event.block.number
+    blockInfo.hash = event.block.hash
+    blockInfo.save()
+  }
+  return blockInfo
 }

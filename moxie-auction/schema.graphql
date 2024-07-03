@@ -1,3 +1,10 @@
+type BlockInfo @entity {
+  id: ID!
+  hash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
 type Summary @entity {
   "hardcoded id: SUMMARY"
   id: ID!
@@ -6,31 +13,25 @@ type Summary @entity {
   "total orders in the system"
   totalOrders: BigInt!
 }
-# type Order @entity {
-#   id: ID!
-#   auctionId: BigInt!
-#   sellAmount: BigInt!
-#   buyAmount: BigInt! # uint256
-#   userId: BigInt! # uint96
-#   userAddress: Bytes!
-#   price: BigDecimal! # need to understand
-#   volume: BigDecimal! # need to understand
-#   timestamp: BigInt!
-#   txId: Bytes!
-#   auction: AuctionDetail!
-#   status: Status
-# }
 
 type Order @entity {
   id: ID!
   sellAmount: BigInt!
-  buyAmount: BigInt! # uint256
-  price: BigDecimal! # sellAmount / buyAmount
-  volume: BigDecimal! # sellAmount * 10 ^ -decimalsSellToken
+  buyAmount: BigInt!
+  "sellAmount / buyAmount"
+  price: BigDecimal!
+  "sellAmount * 10 ^ -decimalsSellToken"
+  volume: BigDecimal!
   timestamp: BigInt!
   auction: AuctionDetail
   user: User!
+  "added to easiness on querying user's orders by address"
+  userAddress: Bytes!
   status: Status!
+  "transaction hash of the order"
+  txHash: Bytes!
+  "block information of the order transaction"
+  blockInfo: BlockInfo!
 }
 
 enum Status {
@@ -39,28 +40,24 @@ enum Status {
   Cancelled
 }
 
-# type User @entity {
-#   id: ID!
-#   address: Bytes!
-#   orders: [Order!]!
-# }
-
 type User @entity {
   id: ID!
-  address: Bytes! #TODO: this can be optional
-  createdAuction: [AuctionDetail!]! # TODO: this can be optional
-  participatedAuction: [AuctionDetail!]! # TODO: this can be optional
+  address: Bytes!
+  createdAuction: [AuctionDetail!]!
+  participatedAuction: [AuctionDetail!]!
   orders: [Order!]! @derivedFrom(field: "user")
 }
 
 type AuctionDetail @entity {
-  txHash: Bytes!
   id: ID!
   auctionId: BigInt!
+
   exactOrder: Order!
-  # chainId: String!  # not needed
+  "order with highest price"
   higestPriceBidOrder: Order
+  "order with lowest price"
   lowestPriceBidOrder: Order
+  "all orders in the auction(contains placed, claimed, cancelled orders)"
   orders: [Order!]
   "orders which are not cancelled or claimed"
   activeOrders: [Order!]
@@ -91,6 +88,11 @@ type AuctionDetail @entity {
   isCleared: Boolean!
   "totalOrders which are not cancelled"
   totalOrders: BigInt!
+
+  "transaction hash of the auction creation"
+  txHash: Bytes!
+  "block information of auction creation"
+  blockInfo: BlockInfo!
 }
 
 type Token @entity {
@@ -102,7 +104,9 @@ type Token @entity {
 }
 
 type AuctionCleared @entity {
+  "txhash+-+logIndex"
   id: ID!
+  blockInfo: BlockInfo!
   auctionId: BigInt!
   soldAuctioningTokens: BigInt!
   soldBiddingTokens: BigInt!
@@ -115,7 +119,9 @@ type AuctionCleared @entity {
 #       uint96 sellAmount
 # );
 type CancellationSellOrder @entity {
+  "txhash+-+logIndex"
   id: ID!
+  blockInfo: BlockInfo!
   auctionId: BigInt!
   userId: BigInt!
   buyAmount: BigInt!
@@ -129,7 +135,9 @@ type CancellationSellOrder @entity {
 # );
 
 type ClaimedFromOrder @entity {
+  "txhash+-+logIndex"
   id: ID!
+  blockInfo: BlockInfo!
   auctionId: BigInt!
   userId: BigInt!
   buyAmount: BigInt!
@@ -150,7 +158,9 @@ type ClaimedFromOrder @entity {
 #     bytes allowListData
 # );
 type NewAuction @entity {
+  "txhash+-+logIndex"
   id: ID!
+  blockInfo: BlockInfo!
   auctionId: BigInt!
   auctioningToken: Bytes!
   biddingToken: Bytes!
@@ -172,7 +182,9 @@ type NewAuction @entity {
 #     uint96 sellAmount
 # );
 type NewSellOrder @entity {
+  "txhash+-+logIndex"
   id: ID!
+  blockInfo: BlockInfo!
   auctionId: BigInt!
   userId: BigInt!
   buyAmount: BigInt!
@@ -181,19 +193,25 @@ type NewSellOrder @entity {
 }
 # event NewUser(uint64 indexed userId, address indexed userAddress);
 type NewUser @entity {
+  "txhash+-+logIndex"
   id: ID!
+  blockInfo: BlockInfo!
   userId: BigInt!
   userAddress: Bytes!
 }
 # event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 type OwnershipTransferred @entity {
+  "txhash+-+logIndex"
   id: ID!
+  blockInfo: BlockInfo!
   previousOwner: Bytes!
   newOwner: Bytes!
 }
 # event UserRegistration(address indexed user, uint64 userId);
 type UserRegistration @entity {
+  "txhash+-+logIndex"
   id: ID!
+  blockInfo: BlockInfo!
   user: Bytes!
   userId: BigInt!
 }

@@ -11,7 +11,7 @@ import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, N
 import { Order } from "../generated/schema"
 import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "./transactions"
 
-import { convertToPricePoint, updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount } from "./utils"
+import { convertToPricePoint, updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo } from "./utils"
 
 const ZERO = BigInt.zero()
 const ONE = BigInt.fromI32(1)
@@ -165,10 +165,13 @@ export function handleNewAuction(event: NewAuction): void {
   order.buyAmount = buyAmount
   order.sellAmount = sellAmount
   order.user = user.id
+  order.userAddress = user.address
   order.volume = pricePoint.get("volume")
   order.price = ONE.divDecimal(pricePoint.get("price")) // 1/ (sellAmount/buyAmount)
   order.timestamp = eventTimeStamp
   order.status = "Placed"
+  order.txHash = event.transaction.hash
+  order.blockInfo = getOrCreateBlockInfo(event).id
   order.save()
 
   // increasing bid value and total Orders count in summary
@@ -200,10 +203,11 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.cancelledOrders = []
   auctionDetails.activeOrders = []
 
-  auctionDetails.txHash = event.transaction.hash
   auctionDetails.uniqueBidders = new BigInt(0)
   auctionDetails.isCleared = false
   auctionDetails.totalOrders = new BigInt(0)
+  auctionDetails.txHash = event.transaction.hash
+  auctionDetails.blockInfo = getOrCreateBlockInfo(event).id
   auctionDetails.save()
   // adding auction to order
   order.auction = auctionDetails.id
@@ -261,7 +265,10 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   order.timestamp = event.block.timestamp
   order.auction = auctionDetails.id
   order.user = user.id
+  order.userAddress = user.address
   order.status = "Placed"
+  order.txHash = event.transaction.hash
+  order.blockInfo = getOrCreateBlockInfo(event).id
   order.save()
 
   let orders: string[] = []
