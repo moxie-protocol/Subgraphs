@@ -6,9 +6,9 @@ dataSources:
     name: TokenManager
     network: base-sepolia
     source:
-      address: "0x374F9809147A57CbaE5E3EDcd612540acF264330"
+      address: "0x4da743d6C8151B938ef5835A5d1FdE897A11654B"
       abi: TokenManager
-      startBlock: 11570338
+      startBlock: 12109019
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -31,9 +31,9 @@ dataSources:
     name: Vault
     network: base-sepolia
     source:
-      address: "0xEBA41D777c97FDEFd02FaCD1D1F70938d671208C"
+      address: "0xD5Dd4AFb34610e3aAFA57C62d301E5B0527e952E"
       abi: Vault
-      startBlock: 11570340
+      startBlock: 12109021
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -54,9 +54,9 @@ dataSources:
     name: MoxieBondingCurve
     network: base-sepolia
     source:
-      address: "0xc3216954C25d18a366A67A86c64C7db9c8D62e45"
+      address: "0xa244B8f81F4317F191168a103C67D0Ea9760B880"
       abi: MoxieBondingCurve
-      startBlock: 11570346
+      startBlock: 12109027
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -87,7 +87,8 @@ dataSources:
           handler: handleUpdateFees
         - event: UpdateFormula(address)
           handler: handleUpdateFormula
-
+        - event: Initialized(uint64)
+          handler: handleInitialized
       file: ./src/moxie-bonding-curve.ts
 templates:
   - kind: ethereum/contract

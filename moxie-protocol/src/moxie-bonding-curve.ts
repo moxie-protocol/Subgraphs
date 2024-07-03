@@ -1,9 +1,10 @@
 import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
-import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula, InitializeCall } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
-import { Order, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectFeeTransfer, User } from "../generated/schema"
+import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
+import { Order, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectFeeTransfer, Summary, User } from "../generated/schema"
 
 import { handleBondingCurveInitializedTx, handleSubjectSharePurchasedTx, handleSubjectShareSoldTx, handleUpdateBeneficiaryTx, handleUpdateFeesTx, handleUpdateFormulaTx } from "./moxie-bonding-curve-tx"
 import { calculateBuySideFee, calculateSellSideFee, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubject, getOrCreateUser, getTxEntityId, handleNewBeneficiary, loadSummary, saveSubject } from "./utils"
+import { SUMMARY_ID } from "./constants"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   handleBondingCurveInitializedTx(event)
 }
@@ -47,7 +48,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.block.timestamp)
-  portfolio.subjectTokenQuantity = portfolio.subjectTokenQuantity.plus(event.params._buyAmount)
+  portfolio.balance = portfolio.balance.plus(event.params._buyAmount)
   portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.plus(event.params._sellAmount)
   portfolio.save()
 
@@ -146,7 +147,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.block.timestamp)
-  portfolio.subjectTokenQuantity = portfolio.subjectTokenQuantity.minus(event.params._sellAmount)
+  portfolio.balance = portfolio.balance.minus(event.params._sellAmount)
   portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(event.params._buyAmount)
   portfolio.save()
 
@@ -224,4 +225,29 @@ export function handleUpdateFees(event: UpdateFees): void {
 
 export function handleUpdateFormula(event: UpdateFormula): void {
   handleUpdateFormulaTx(event)
+}
+
+export function handleInitialized(event: Initialized): void {
+  let bondingCurve = MoxieBondingCurve.bind(event.address)
+  let feeBeneficiary = bondingCurve.feeBeneficiary()
+  let protocolBuyFeePct = bondingCurve.protocolBuyFeePct()
+  let protocolSellFeePct = bondingCurve.protocolSellFeePct()
+  let subjectBuyFeePct = bondingCurve.subjectBuyFeePct()
+  let subjectSellFeePct = bondingCurve.subjectSellFeePct()
+
+  let beneficiary = new ProtocolFeeBeneficiary(feeBeneficiary.toHexString())
+  beneficiary.beneficiary = feeBeneficiary
+  beneficiary.totalFees = BigInt.fromI32(0)
+  beneficiary.save()
+
+  let summary = new Summary(SUMMARY_ID)
+  summary.activeProtocolFeeBeneficiary = beneficiary.id
+  summary.protocolBuyFeePct = protocolBuyFeePct
+  summary.protocolSellFeePct = protocolSellFeePct
+  summary.subjectBuyFeePct = subjectBuyFeePct
+  summary.subjectSellFeePct = subjectSellFeePct
+
+  summary.totalReserve = BigInt.fromI32(0)
+  summary.totalTokensIssued = BigInt.fromI32(0)
+  summary.save()
 }

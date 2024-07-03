@@ -1,7 +1,7 @@
 import { Address, BigDecimal, BigInt, ethereum, log } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Portfolio, ProtocolFeeBeneficiary, Subject, SubjectDailySnapshot, SubjectHourlySnapshot, Summary, User } from "../generated/schema"
-import { PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, initialProtocolDataPoints } from "./constants"
+import { PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
 
 export function getOrCreateSubject(tokenAddress: Address): Subject {
   let subject = Subject.load(tokenAddress.toHexString())
@@ -34,7 +34,7 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     let subject = getOrCreateSubject(subjectAddress)
     portfolio.user = user.id
     portfolio.subject = subject.id
-    portfolio.subjectTokenQuantity = BigInt.fromI32(0)
+    portfolio.balance = BigInt.fromI32(0)
     portfolio.protocolTokenSpent = BigInt.fromI32(0)
     portfolio.save()
   }
@@ -136,21 +136,7 @@ export function saveSubject(subject: Subject, timestamp: BigInt): void {
 export function loadSummary(): Summary {
   let summary = Summary.load(SUMMARY_ID)
   if (!summary) {
-    let beneficiary = new ProtocolFeeBeneficiary(initialProtocolDataPoints.beneficiary.toHexString())
-    beneficiary.beneficiary = initialProtocolDataPoints.beneficiary
-    beneficiary.totalFees = BigInt.fromI32(0)
-    beneficiary.save()
-
-    summary = new Summary(SUMMARY_ID)
-    summary.activeProtocolFeeBeneficiary = beneficiary.id
-
-    summary.protocolBuyFeePct = initialProtocolDataPoints.protocolBuyFeePct
-    summary.protocolSellFeePct = initialProtocolDataPoints.protocolBuyFeePct
-    summary.subjectBuyFeePct = initialProtocolDataPoints.subjectBuyFeePct
-    summary.subjectSellFeePct = initialProtocolDataPoints.subjectSellFeePct
-
-    summary.totalReserve = BigInt.fromI32(0)
-    summary.totalTokensIssued = BigInt.fromI32(0)
+    throw new Error("Summary not found!")
   }
   return summary
 }

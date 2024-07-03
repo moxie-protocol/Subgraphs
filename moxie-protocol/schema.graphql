@@ -265,7 +265,7 @@ type Portfolio @entity {
   "Subject's token address"
   subject: Subject!
   "Net quantity of the subject token by the user"
-  subjectTokenQuantity: BigInt!
+  balance: BigInt!
   "Moxie spent by user to buy the subject token"
   protocolTokenSpent: BigInt!
   "Orders associated with the user's portfolio"
