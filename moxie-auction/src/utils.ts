@@ -42,7 +42,7 @@ export function getUniqueBiddersCount(orderIds: string[]): BigInt {
 }
 
 // export function (auctionDetails: AuctionDetail,sortedOrders:string[]): void {
-export function updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders(auctionId: BigInt): void {
+export function updateAuctionStats(auctionId: BigInt): void {
   let auctionDetails = loadAuctionDetail(auctionId.toString())
   const auctioningToken = loadToken(auctionDetails.auctioningToken)
   const biddingToken = loadToken(auctionDetails.biddingToken)
@@ -197,33 +197,39 @@ export function getTokenDetails(tokenAddress: Address): Token {
   return token
 }
 
-export function getOrCreateSummary(): Summary {
+export function loadSummary(): Summary {
   let summary = Summary.load("SUMMARY")
   if (!summary) {
     summary = new Summary("SUMMARY")
     summary.totalBiddingValue = BigInt.fromI32(0)
     summary.totalOrders = BigInt.fromI32(0)
+    summary.totalAuctions = BigInt.fromI32(0)
     summary.save()
   }
   return summary as Summary
 }
 
 export function increaseTotalBiddingValueAndOrdersCount(value: BigInt): void {
-  let summary = getOrCreateSummary()
+  let summary = loadSummary()
   summary.totalBiddingValue = summary.totalBiddingValue.plus(value)
   summary.totalOrders = summary.totalOrders.plus(BigInt.fromI32(1))
   summary.save()
 }
 
 export function decreaseTotalBiddingValueAndOrdersCount(value: BigInt): void {
-  let summary = getOrCreateSummary()
+  let summary = loadSummary()
   summary.totalBiddingValue = summary.totalBiddingValue.minus(value)
   summary.totalOrders = summary.totalOrders.minus(BigInt.fromI32(1))
   summary.save()
 }
 
 export function getTxEntityId(event: ethereum.Event): string {
-  return event.transaction.hash.toHexString().concat("-").concat(event.logIndex.toString())
+  let txHash = event.transaction.hash.toHexString()
+  let logIndex = event.logIndex.toString()
+  if (txHash == "" || logIndex == "") {
+    throw new Error("txHash or logIndex is null")
+  }
+  return txHash.concat("-").concat(logIndex)
 }
 
 export function getOrCreateBlockInfo(event: ethereum.Event): BlockInfo {

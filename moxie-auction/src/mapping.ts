@@ -11,7 +11,7 @@ import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, N
 import { Order } from "../generated/schema"
 import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "./transactions"
 
-import { convertToPricePoint, updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary } from "./utils"
 
 const ZERO = BigInt.zero()
 const ONE = BigInt.fromI32(1)
@@ -51,18 +51,14 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
 
   let auctionDetails = loadAuctionDetail(auctionId.toString())
 
-  // Remove order from the list orders
-  let orders: string[] = []
-  if (auctionDetails.orders) {
-    orders = auctionDetails.orders!
-  }
-  let orderId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
   // setting order as cancelled
+  let orderId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
   let order = loadOrder(orderId)
   if (order) {
     order.status = "Cancelled"
     order.save()
   }
+
   // added cancelled order to cancelledOrders array
   let cancelledOrders: string[] = []
   if (auctionDetails.cancelledOrders) {
@@ -71,23 +67,21 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
   cancelledOrders.push(order.id)
   auctionDetails.cancelledOrders = cancelledOrders
 
-  let index = orders.indexOf(orderId)
   // removing cancelled order from activeOrders array
   let activeOrders: string[] = []
   if (auctionDetails.activeOrders) {
     activeOrders = auctionDetails.activeOrders!
   }
-  index = activeOrders.indexOf(orderId)
+  let index = activeOrders.indexOf(orderId)
   if (index > -1) {
-    let removedOrder = activeOrders.splice(index, 1)
+    activeOrders.splice(index, 1)
   }
-
-  // removing cancelled order from ordersWithoutCancelled array
   auctionDetails.activeOrders = activeOrders
+
   auctionDetails.totalOrders = auctionDetails.totalOrders.minus(ONE)
   auctionDetails.save()
 
-  updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders(auctionDetails.auctionId)
+  updateAuctionStats(auctionDetails.auctionId)
 }
 
 // Remove claimed orders
@@ -165,7 +159,7 @@ export function handleNewAuction(event: NewAuction): void {
   order.buyAmount = buyAmount
   order.sellAmount = sellAmount
   order.user = user.id
-  order.userAddress = user.address
+  order.userWalletAddress = user.address
   order.volume = pricePoint.get("volume")
   order.price = ONE.divDecimal(pricePoint.get("price")) // 1/ (sellAmount/buyAmount)
   order.timestamp = eventTimeStamp
@@ -219,6 +213,11 @@ export function handleNewAuction(event: NewAuction): void {
     user.createdAuction = createdAuction
   }
   user.save()
+
+  // incrementing totalAuctionsCount in summary
+  let summary = loadSummary()
+  summary.totalAuctions = summary.totalAuctions.plus(ONE)
+  summary.save()
 }
 
 /**
@@ -248,9 +247,6 @@ export function handleNewSellOrder(event: NewSellOrder): void {
     throw new Error("Auctioning token not found , address: ")
   }
   let biddingToken = loadToken(auctionDetails.biddingToken)
-  if (!biddingToken) {
-    throw new Error("Bidding token not found")
-  }
 
   let entityId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
   let pricePoint = convertToPricePoint(sellAmount, buyAmount, auctioningToken.decimals.toI32(), biddingToken.decimals.toI32())
@@ -265,7 +261,7 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   order.timestamp = event.block.timestamp
   order.auction = auctionDetails.id
   order.user = user.id
-  order.userAddress = user.address
+  order.userWalletAddress = user.address
   order.status = "Placed"
   order.txHash = event.transaction.hash
   order.blockInfo = getOrCreateBlockInfo(event).id
@@ -295,7 +291,7 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   auctionDetails.totalOrders = auctionDetails.totalOrders.plus(ONE)
   auctionDetails.save()
 
-  updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders(auctionDetails.auctionId)
+  updateAuctionStats(auctionDetails.auctionId)
 }
 
 export function handleNewUser(event: NewUser): void {

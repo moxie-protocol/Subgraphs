@@ -12,6 +12,8 @@ type Summary @entity {
   totalBiddingValue: BigInt!
   "total orders in the system"
   totalOrders: BigInt!
+  "total auctions in the system"
+  totalAuctions: BigInt!
 }
 
 type Order @entity {
@@ -26,7 +28,7 @@ type Order @entity {
   auction: AuctionDetail
   user: User!
   "added to easiness on querying user's orders by address"
-  userAddress: Bytes!
+  userWalletAddress: Bytes!
   status: Status!
   "transaction hash of the order"
   txHash: Bytes!
@@ -189,7 +191,6 @@ type NewSellOrder @entity {
   userId: BigInt!
   buyAmount: BigInt!
   sellAmount: BigInt!
-  blockNo: BigInt!
 }
 # event NewUser(uint64 indexed userId, address indexed userAddress);
 type NewUser @entity {

@@ -58,7 +58,6 @@ export function handleNewSellOrderTx(event: NewSellOrder): void {
   newSellOrder.userId = event.params.userId
   newSellOrder.buyAmount = event.params.buyAmount
   newSellOrder.sellAmount = event.params.sellAmount
-  newSellOrder.blockNo = event.block.number
   newSellOrder.save()
 }
 

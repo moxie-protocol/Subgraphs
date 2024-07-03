@@ -1,67 +1,18 @@
-import {
-  describe,
-  test,
-  clearStore,
-  beforeEach,
-  assert,
-} from "matchstick-as/assembly/index"
+import { describe, test, clearStore, beforeEach, assert } from "matchstick-as/assembly/index"
 import { AuctionDetail, User, Order, Token } from "../generated/schema"
-import {
-  mockAuctionCleared,
-  mockCancellationSellOrder,
-  mockClaimedFromOrder,
-  mockNewAuction,
-  mockNewSellOrder,
-  mockNewUser,
-  mockOwnershipTransferred,
-  mockUserRegistration,
-} from "./mocks"
-import {
-  AuctionClearedInput,
-  AuctionEntityInput,
-  CancellationSellOrderInput,
-  ClaimedFromOrderInput,
-  NewAuctionInput,
-  NewSellOrderInput,
-  NewUserInput,
-  OrderEntityInput,
-  OwnershipTransferredInput,
-  UserRegistrationInput,
-} from "./types"
-import {
-  handleAuctionClearedTx,
-  handleCancellationSellOrderTx,
-  handleClaimedFromOrderTx,
-  handleNewAuctionTx,
-  handleNewSellOrderTx,
-  handleNewUserTx,
-  handleOwnershipTransferredTx,
-  handleUserRegistrationTx,
-} from "../src/transactions"
-import {
-  Address,
-  BigDecimal,
-  BigInt,
-  Bytes,
-  log,
-} from "@graphprotocol/graph-ts"
+import { mockAuctionCleared, mockCancellationSellOrder, mockClaimedFromOrder, mockNewAuction, mockNewSellOrder, mockNewUser, mockOwnershipTransferred, mockUserRegistration } from "./mocks"
+import { AuctionClearedInput, AuctionEntityInput, CancellationSellOrderInput, ClaimedFromOrderInput, NewAuctionInput, NewSellOrderInput, NewUserInput, OrderEntityInput, OwnershipTransferredInput, UserRegistrationInput } from "./types"
+import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "../src/transactions"
+import { Address, BigDecimal, BigInt, Bytes, log } from "@graphprotocol/graph-ts"
 import { sortOrders } from "../src/utils/sortOrders"
-import {
-  convertToPricePoint,
-  updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders,
-} from "../src/utils"
+import { convertToPricePoint, updateAuctionStats } from "../src/utils"
 describe("utils", () => {
   beforeEach(() => {
     clearStore()
   })
   describe("sortOrders", () => {
     test("test sortOrders", () => {
-      let orders: Array<string> = [
-        "2-200-100-2",
-        "1-100-100-1",
-        "4-400-100-4",
-        "3-300-100-3",
-      ]
+      let orders: Array<string> = ["2-200-100-2", "1-100-100-1", "4-400-100-4", "3-300-100-3"]
       let sortedOrders = sortOrders(orders)
       // user sells 100 moxies to buy 100 fan token , price of fan token is 1
       assert.stringEquals(sortedOrders[0], "1-100-100-1")
@@ -73,12 +24,7 @@ describe("utils", () => {
       assert.stringEquals(sortedOrders[3], "4-400-100-4")
     })
     test("test sortOrders 2", () => {
-      let orders: Array<string> = [
-        "2-100-200-2",
-        "1-100-100-1",
-        "4-100-400-4",
-        "3-100-300-3",
-      ]
+      let orders: Array<string> = ["2-100-200-2", "1-100-100-1", "4-100-400-4", "3-100-300-3"]
       let sortedOrders = sortOrders(orders)
       // user sells 100 moxies to buy 400 fan token , price of fan token is 0.25
       assert.stringEquals(sortedOrders[0], "4-100-400-4")
@@ -94,43 +40,26 @@ describe("utils", () => {
     test("test convertToPricePoint", () => {
       // user wants to sell 100 moxies to buy 200 fan token
       // calculated price of fan token is 0.5
-      let pricePoint = convertToPricePoint(
-        BigInt.fromString("100"),
-        BigInt.fromString("200"),
-        18,
-        18
-      )
+      let pricePoint = convertToPricePoint(BigInt.fromString("100"), BigInt.fromString("200"), 18, 18)
       assert.stringEquals(pricePoint!.get("price")!.toString(), "0.5")
       // 100 * 10 ^ -18
-      assert.stringEquals(
-        pricePoint!.get("volume")!.toString(),
-        "0.0000000000000001"
-      )
+      assert.stringEquals(pricePoint!.get("volume")!.toString(), "0.0000000000000001")
     })
 
     test("test convertToPricePoint 2", () => {
       // user wants to sell 100 moxies to buy 200 fan token
       // calculated price of fan token is 0.5
-      let pricePoint = convertToPricePoint(
-        BigInt.fromString("100"),
-        BigInt.fromString("200"),
-        18,
-        18
-      )
+      let pricePoint = convertToPricePoint(BigInt.fromString("100"), BigInt.fromString("200"), 18, 18)
       assert.stringEquals(pricePoint!.get("price")!.toString(), "0.5")
       // 100 * 10 ^ -18
-      assert.stringEquals(
-        pricePoint!.get("volume")!.toString(),
-        "0.0000000000000001"
-      )
+      assert.stringEquals(pricePoint!.get("volume")!.toString(), "0.0000000000000001")
     })
   })
 
-  describe("updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders", () => {
-    test("test updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders", () => {
+  describe("updateAuctionStats", () => {
+    test("test updateAuctionStats", () => {
       const initialAuction: AuctionEntityInput = {
-        txHash:
-          "0xc3c8012e80d9875c5362f57aea8152c155e1a4c8a0b77b2a61fdeba41ebdb007",
+        txHash: "0xc3c8012e80d9875c5362f57aea8152c155e1a4c8a0b77b2a61fdeba41ebdb007",
         id: "10",
         auctionId: "10",
         exactOrder: {
@@ -191,24 +120,18 @@ describe("utils", () => {
       }
       let user1 = new User(initialAuction.exactOrder.user.address)
       user1.id = initialAuction.exactOrder.user.id
-      user1.address = Bytes.fromHexString(
-        initialAuction.exactOrder.user.address
-      )
+      user1.address = Bytes.fromHexString(initialAuction.exactOrder.user.address)
       user1.createdAuction = []
       user1.participatedAuction = []
       user1.save()
       let user2 = new User(initialAuction.activeOrders[0].user.address)
       user2.id = initialAuction.activeOrders[0].user.id
-      user2.address = Bytes.fromHexString(
-        initialAuction.activeOrders[0].user.address
-      )
+      user2.address = Bytes.fromHexString(initialAuction.activeOrders[0].user.address)
       user2.createdAuction = []
       user2.participatedAuction = []
       user2.save()
       let order1 = new Order(initialAuction.exactOrder.id)
-      order1.sellAmount = BigInt.fromString(
-        initialAuction.exactOrder.sellAmount
-      )
+      order1.sellAmount = BigInt.fromString(initialAuction.exactOrder.sellAmount)
       order1.buyAmount = BigInt.fromString(initialAuction.exactOrder.buyAmount)
       order1.price = BigDecimal.fromString(initialAuction.exactOrder.price)
       order1.volume = BigDecimal.fromString(initialAuction.exactOrder.volume)
@@ -219,28 +142,18 @@ describe("utils", () => {
 
       let order2 = new Order(initialAuction.activeOrders[0].id)
       order2.id = initialAuction.activeOrders[0].id
-      order2.sellAmount = BigInt.fromString(
-        initialAuction.activeOrders[0].sellAmount
-      )
-      order2.buyAmount = BigInt.fromString(
-        initialAuction.activeOrders[0].buyAmount
-      )
+      order2.sellAmount = BigInt.fromString(initialAuction.activeOrders[0].sellAmount)
+      order2.buyAmount = BigInt.fromString(initialAuction.activeOrders[0].buyAmount)
       order2.price = BigDecimal.fromString(initialAuction.activeOrders[0].price)
-      order2.volume = BigDecimal.fromString(
-        initialAuction.activeOrders[0].volume
-      )
-      order2.timestamp = BigInt.fromString(
-        initialAuction.activeOrders[0].timestamp
-      )
+      order2.volume = BigDecimal.fromString(initialAuction.activeOrders[0].volume)
+      order2.timestamp = BigInt.fromString(initialAuction.activeOrders[0].timestamp)
       order2.status = initialAuction.activeOrders[0].status
       order2.user = initialAuction.activeOrders[0].user.id
       order2.save()
 
       let token1 = new Token(initialAuction.auctioningToken.id)
       token1.symbol = initialAuction.auctioningToken.symbol
-      token1.decimals = BigInt.fromString(
-        initialAuction.auctioningToken.decimals
-      )
+      token1.decimals = BigInt.fromString(initialAuction.auctioningToken.decimals)
       token1.save()
 
       let token2 = new Token(initialAuction.biddingToken.id)
@@ -254,55 +167,27 @@ describe("utils", () => {
       auction.exactOrder = initialAuction.exactOrder.id
       auction.auctioningToken = initialAuction.auctioningToken.id
       auction.biddingToken = initialAuction.biddingToken.id
-      auction.endTimeTimestamp = BigInt.fromString(
-        initialAuction.endTimeTimestamp
-      )
-      auction.orderCancellationEndDate = BigInt.fromString(
-        initialAuction.orderCancellationEndDate
-      )
-      auction.startingTimeStamp = BigInt.fromString(
-        initialAuction.startingTimeStamp
-      )
-      auction.minimumBiddingAmountPerOrder = BigInt.fromString(
-        initialAuction.minimumBiddingAmountPerOrder
-      )
-      auction.minFundingThreshold = BigInt.fromString(
-        initialAuction.minFundingThreshold
-      )
-      auction.allowListManager = Bytes.fromHexString(
-        initialAuction.allowListManager
-      )
-      auction.allowListSigner = Bytes.fromHexString(
-        initialAuction.allowListSigner
-      )
-      auction.currentVolume = BigDecimal.fromString(
-        initialAuction.currentVolume
-      )
-      auction.currentClearingOrderSellAmount = BigInt.fromString(
-        initialAuction.currentClearingOrderSellAmount
-      )
-      auction.currentClearingOrderBuyAmount = BigInt.fromString(
-        initialAuction.currentClearingOrderBuyAmount
-      )
-      auction.currentClearingPrice = BigDecimal.fromString(
-        initialAuction.currentClearingPrice
-      )
-      auction.currentBiddingAmount = BigInt.fromString(
-        initialAuction.currentBiddingAmount
-      )
+      auction.endTimeTimestamp = BigInt.fromString(initialAuction.endTimeTimestamp)
+      auction.orderCancellationEndDate = BigInt.fromString(initialAuction.orderCancellationEndDate)
+      auction.startingTimeStamp = BigInt.fromString(initialAuction.startingTimeStamp)
+      auction.minimumBiddingAmountPerOrder = BigInt.fromString(initialAuction.minimumBiddingAmountPerOrder)
+      auction.minFundingThreshold = BigInt.fromString(initialAuction.minFundingThreshold)
+      auction.allowListManager = Bytes.fromHexString(initialAuction.allowListManager)
+      auction.allowListSigner = Bytes.fromHexString(initialAuction.allowListSigner)
+      auction.currentVolume = BigDecimal.fromString(initialAuction.currentVolume)
+      auction.currentClearingOrderSellAmount = BigInt.fromString(initialAuction.currentClearingOrderSellAmount)
+      auction.currentClearingOrderBuyAmount = BigInt.fromString(initialAuction.currentClearingOrderBuyAmount)
+      auction.currentClearingPrice = BigDecimal.fromString(initialAuction.currentClearingPrice)
+      auction.currentBiddingAmount = BigInt.fromString(initialAuction.currentBiddingAmount)
       auction.activeOrders = [initialAuction.activeOrders[0].id]
       auction.isAtomicClosureAllowed = initialAuction.isAtomicClosureAllowed
       auction.isPrivateAuction = initialAuction.isPrivateAuction
-      auction.interestScore = BigDecimal.fromString(
-        initialAuction.interestScore
-      )
+      auction.interestScore = BigDecimal.fromString(initialAuction.interestScore)
       auction.uniqueBidders = BigInt.fromString(initialAuction.uniqueBidders)
       auction.isCleared = initialAuction.isCleared
       auction.save()
 
-      updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders(
-        BigInt.fromString(initialAuction.id)
-      )
+      updateAuctionStats(BigInt.fromString(initialAuction.id))
       let updatedAuction = AuctionDetail.load(initialAuction.id)
       if (!updatedAuction) {
         throw new Error("Auction not found")
@@ -350,36 +235,17 @@ describe("utils", () => {
       loadAuction.activeOrders = activeOrders
       loadAuction.save()
 
-      updateClearingOrderAndVolumeAndLowestAndHigestBidAndUniqueBidders(
-        BigInt.fromString(loadAuction.id)
-      )
+      updateAuctionStats(BigInt.fromString(loadAuction.id))
       loadAuction = AuctionDetail.load(initialAuction.id)
       if (!loadAuction) {
         throw new Error("Auction not found")
       }
-      assert.stringEquals(
-        loadAuction.currentClearingPrice.toString(),
-        BigInt.fromString(initialAuction.exactOrder.buyAmount)
-          .div(BigInt.fromString(initialAuction.exactOrder.sellAmount))
-          .toString()
-      )
-      let biddingTokenTotal = BigInt.fromString(
-        initialAuction.activeOrders[0].sellAmount
-      ).plus(BigInt.fromString(order3Input.sellAmount))
+      assert.stringEquals(loadAuction.currentClearingPrice.toString(), BigInt.fromString(initialAuction.exactOrder.buyAmount).div(BigInt.fromString(initialAuction.exactOrder.sellAmount)).toString())
+      let biddingTokenTotal = BigInt.fromString(initialAuction.activeOrders[0].sellAmount).plus(BigInt.fromString(order3Input.sellAmount))
 
-      let volume = new BigDecimal(biddingTokenTotal).times(
-        BigDecimal.fromString(initialAuction.exactOrder.sellAmount).div(
-          BigDecimal.fromString(initialAuction.exactOrder.buyAmount)
-        )
-      )
-      assert.stringEquals(
-        volume.toString(),
-        loadAuction.currentVolume.toString()
-      )
-      assert.stringEquals(
-        loadAuction.currentBiddingAmount.toString(),
-        biddingTokenTotal.toString()
-      )
+      let volume = new BigDecimal(biddingTokenTotal).times(BigDecimal.fromString(initialAuction.exactOrder.sellAmount).div(BigDecimal.fromString(initialAuction.exactOrder.buyAmount)))
+      assert.stringEquals(volume.toString(), loadAuction.currentVolume.toString())
+      assert.stringEquals(loadAuction.currentBiddingAmount.toString(), biddingTokenTotal.toString())
     })
   })
 })
