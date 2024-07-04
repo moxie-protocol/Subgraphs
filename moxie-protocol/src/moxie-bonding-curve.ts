@@ -77,7 +77,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   subjectFeeTransfer.order = order.id
   subjectFeeTransfer.save()
 
-  let protocolFeeTransfer = new ProtocolFeeTransfer(txHash)
+  let protocolFeeTransfer = new ProtocolFeeTransfer(getTxEntityId(event))
   protocolFeeTransfer.txHash = event.transaction.hash
   protocolFeeTransfer.blockInfo = blockInfo.id
   protocolFeeTransfer.order = order.id
@@ -177,7 +177,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   user.sellOrders = orders
   user.save()
 
-  let protocolFeeTransfer = new ProtocolFeeTransfer(txHash)
+  let protocolFeeTransfer = new ProtocolFeeTransfer(getTxEntityId(event))
   protocolFeeTransfer.txHash = event.transaction.hash
   protocolFeeTransfer.blockInfo = blockInfo.id
   protocolFeeTransfer.order = order.id
