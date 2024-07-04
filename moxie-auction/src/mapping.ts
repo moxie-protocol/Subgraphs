@@ -6,12 +6,12 @@
 // While placing an order, the sellAmount corresponds to BDT and buyAmount corresponds to AUT
 
 import { Address, BigInt, BigDecimal, log } from "@graphprotocol/graph-ts"
-import { AuctionDetail, Token, User } from "../generated/schema"
+import { AuctionDetail, OrderTxn, Token, User } from "../generated/schema"
 import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, NewAuction, NewSellOrder, NewUser, OwnershipTransferred, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Order } from "../generated/schema"
 import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "./transactions"
 
-import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId } from "./utils"
 
 const ZERO = BigInt.zero()
 const ONE = BigInt.fromI32(1)
@@ -82,6 +82,14 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
   auctionDetails.save()
 
   updateAuctionStats(auctionDetails.auctionId)
+
+  // adding order transaction
+  let orderTxn = new OrderTxn(getTxEntityId(event))
+  orderTxn.order = orderId
+  orderTxn.txHash = event.transaction.hash
+  orderTxn.blockInfo = getOrCreateBlockInfo(event).id
+  orderTxn.newStatus = "Cancelled"
+  orderTxn.save()
 }
 
 // Remove claimed orders
@@ -126,6 +134,13 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   }
   auctionDetails.activeOrders = activeOrders
   auctionDetails.save()
+  // adding order transaction
+  let orderTxn = new OrderTxn(getTxEntityId(event))
+  orderTxn.order = orderId
+  orderTxn.txHash = event.transaction.hash
+  orderTxn.blockInfo = getOrCreateBlockInfo(event).id
+  orderTxn.newStatus = "Claimed"
+  orderTxn.save()
 }
 
 export function handleNewAuction(event: NewAuction): void {
@@ -292,6 +307,14 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   auctionDetails.save()
 
   updateAuctionStats(auctionDetails.auctionId)
+
+  // adding order transaction
+  let orderTxn = new OrderTxn(getTxEntityId(event))
+  orderTxn.order = order.id
+  orderTxn.txHash = event.transaction.hash
+  orderTxn.blockInfo = getOrCreateBlockInfo(event).id
+  orderTxn.newStatus = "Placed"
+  orderTxn.save()
 }
 
 export function handleNewUser(event: NewUser): void {

@@ -34,6 +34,17 @@ type Order @entity {
   txHash: Bytes!
   "block information of the order transaction"
   blockInfo: BlockInfo!
+  "order transactions"
+  orderTxns: [OrderTxn!]! @derivedFrom(field: "order")
+}
+
+type OrderTxn @entity {
+  "txhash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+  order: Order!
+  newStatus: Status!
 }
 
 enum Status {
