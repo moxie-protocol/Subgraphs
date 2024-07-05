@@ -5,8 +5,8 @@
 // While initiating an auction, the exactOrder/initialOrder sellAmount corresponds to AUT and buyAmount corresponds to BDT
 // While placing an order, the sellAmount corresponds to BDT and buyAmount corresponds to AUT
 
-import { Address, BigInt, BigDecimal, log } from "@graphprotocol/graph-ts"
-import { AuctionDetail, OrderTxn, Token, User } from "../generated/schema"
+import { Address, BigInt, BigDecimal, log, Bytes } from "@graphprotocol/graph-ts"
+import { AuctionDetail, ClearingPriceOrder, OrderTxn, Token, User } from "../generated/schema"
 import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, NewAuction, NewSellOrder, NewUser, OwnershipTransferred, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Order } from "../generated/schema"
 import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "./transactions"
@@ -32,11 +32,30 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   auctionDetails.currentClearingOrderBuyAmount = auctioningTokensSold
   auctionDetails.currentClearingOrderSellAmount = biddingTokensSold
   const pricePoint = convertToPricePoint(biddingTokensSold, auctioningTokensSold, decimalAuctioningToken.toI32(), decimalBiddingToken.toI32())
-  auctionDetails.currentClearingPrice = pricePoint.get("price")
+  let calculatedCurrentClearingPrice = pricePoint.get("price")
   auctionDetails.currentVolume = pricePoint.get("volume")
   auctionDetails.currentBiddingAmount = biddingTokensSold
   auctionDetails.interestScore = pricePoint.get("volume").div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
   auctionDetails.isCleared = true
+
+  let clearingPriceOrderString = event.params.clearingPriceOrder.toHexString()
+  let clearingPriceOrder = new ClearingPriceOrder(getTxEntityId(event))
+  let userId = "0x" + clearingPriceOrderString.substring(2, 18)
+  let buyAmount = "0x" + clearingPriceOrderString.substring(19, 42)
+  let sellAmount = "0x" + clearingPriceOrderString.substring(43, 66)
+
+  let sellAmountBigDec = BigDecimal.fromString(parseInt(sellAmount).toString())
+  let buyAmountBigDec = BigDecimal.fromString(parseInt(buyAmount).toString())
+  let clearingPriceFromContract = sellAmountBigDec.div(buyAmountBigDec)
+  if (calculatedCurrentClearingPrice != clearingPriceFromContract) {
+    log.error("Mismatch in clearing price. Calculated: {}, from contract: {} getTxEntityId(event) {}", [calculatedCurrentClearingPrice.toString(), clearingPriceFromContract.toString(), getTxEntityId(event)])
+  }
+  auctionDetails.currentClearingPrice = calculatedCurrentClearingPrice
+  clearingPriceOrder.userId = BigDecimal.fromString(parseInt(userId).toString())
+  clearingPriceOrder.buyAmount = BigDecimal.fromString(parseInt(buyAmount).toString())
+  clearingPriceOrder.sellAmount = BigDecimal.fromString(parseInt(sellAmount).toString())
+  clearingPriceOrder.save()
+  auctionDetails.clearingPriceOrder = clearingPriceOrder.id
   auctionDetails.save()
 }
 
