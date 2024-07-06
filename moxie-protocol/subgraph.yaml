@@ -6,9 +6,9 @@ dataSources:
     name: TokenManager
     network: base-sepolia
     source:
-      address: "0xCe86409C3c9cc3B1dCb17b63F53609de97Fa6A6F"
+      address: "0xE665ceBF6111B6bCd8B84538D31F4048666B489a"
       abi: TokenManager
-      startBlock: 12201323
+      startBlock: 12228958
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -31,9 +31,9 @@ dataSources:
     name: Vault
     network: base-sepolia
     source:
-      address: "0xA8f23F75627b974849bb9F7c3F1b03Ff2C128bC1"
+      address: "0x2E412b90838dcD9dD336196558798D8ac3aF48dB"
       abi: Vault
-      startBlock: 12201326
+      startBlock: 12228960
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -54,9 +54,9 @@ dataSources:
     name: MoxieBondingCurve
     network: base-sepolia
     source:
-      address: "0x2196DBaF2782612A0437659c1F7516322E90DA61"
+      address: "0x0f0EcB17575c232077075EF9d78fC9afad808B4D"
       abi: MoxieBondingCurve
-      startBlock: 12201334
+      startBlock: 12228966
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
