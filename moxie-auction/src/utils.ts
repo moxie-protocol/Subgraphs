@@ -1,7 +1,7 @@
 import { Address, BigInt, BigDecimal, log, ethereum } from "@graphprotocol/graph-ts"
-import { Order, AuctionDetail, Token, User, Summary, BlockInfo } from "../generated/schema"
+import { Order, AuctionDetail, Token, User, Summary, BlockInfo, EasyAuction } from "../generated/schema"
 import { ERC20Contract } from "../generated/EasyAuction/ERC20Contract"
-
+import { SubjectTokenContract } from "../generated/templates"
 import sortOrders from "./utils/sortOrders"
 
 const ZERO = BigInt.zero()
@@ -194,6 +194,7 @@ export function getTokenDetails(tokenAddress: Address): Token {
   token.decimals = BigInt.fromI32(decimals)
   token.symbol = symbol
   token.save()
+  SubjectTokenContract.create(tokenAddress)
   return token
 }
 
@@ -242,4 +243,19 @@ export function getOrCreateBlockInfo(event: ethereum.Event): BlockInfo {
     blockInfo.save()
   }
   return blockInfo
+}
+export function getOrCreateEasyAuction(easyAuction: Address): void {
+  let auction = EasyAuction.load(easyAuction.toHexString())
+  if (!auction) {
+    auction = new EasyAuction(easyAuction.toHexString())
+    auction.save()
+  }
+}
+
+export function isEasyAuction(recipient: Address): boolean {
+  let auction = EasyAuction.load(recipient.toHexString())
+  if (auction) {
+    return true
+  }
+  return false
 }

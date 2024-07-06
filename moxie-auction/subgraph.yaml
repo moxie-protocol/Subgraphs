@@ -4,11 +4,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: EasyAuction
-    network: base-sepolia
+    network: mainnet
     source:
-      address: "0x64f1a4538844167560c5E8712472828634BA0Efb"
+      address: "0x0b7ffc1f4ad541a4ed16b40d8c37f0929158d101"
       abi: EasyAuction
-      startBlock: 12201289
+      startBlock: 12135186
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -45,4 +45,22 @@ dataSources:
         - event: UserRegistration(indexed address,uint64)
           handler: handleUserRegistration
       file: ./src/mapping.ts
-
+templates:
+  - kind: ethereum/contract
+    name: SubjectTokenContract
+    network: mainnet
+    source:
+      abi: ERC20
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/erc20.ts
+      entities:
+        - TODO
+      abis:
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer

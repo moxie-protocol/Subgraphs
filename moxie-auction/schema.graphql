@@ -45,6 +45,7 @@ type OrderTxn @entity {
   blockInfo: BlockInfo!
   order: Order!
   newStatus: Status!
+  transfers: AggregateTransfer
 }
 
 enum Status {
@@ -106,6 +107,8 @@ type AuctionDetail @entity {
   txHash: Bytes!
   "block information of auction creation"
   blockInfo: BlockInfo!
+  "transfers related to the auction"
+  initialization: AggregateTransfer
   clearingPriceOrder: ClearingPriceOrder
 }
 
@@ -234,4 +237,26 @@ type UserRegistration @entity {
   blockInfo: BlockInfo!
   user: Bytes!
   userId: BigInt!
+}
+
+type Transfer @entity {
+  "txhash+-+logIndex"
+  id: ID!
+  token: Token!
+  blockInfo: BlockInfo!
+  from: Bytes!
+  to: Bytes!
+  value: BigInt!
+  aggregate: AggregateTransfer!
+}
+
+type AggregateTransfer @entity {
+  "txHash"
+  id: ID!
+  transfers: [Transfer!]! @derivedFrom(field: "aggregate")
+}
+
+type EasyAuction @entity {
+  "address of easyauction"
+  id: ID!
 }
