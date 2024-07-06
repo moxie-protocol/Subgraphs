@@ -8,9 +8,9 @@ dataSources:
     name: MoxieTokenLockManager
     network: base-sepolia
     source:
-      address: "0x2522f61FeC068b05dE64Dd91C8b1E8Cd2b6515c1"
+      address: "0xE8B58DB33fcE7d7D729462bd4908327D067bdDfa"
       abi: MoxieTokenLockManager
-      startBlock: 12169529 
+      startBlock: 12238008 
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
