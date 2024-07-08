@@ -255,6 +255,8 @@ type Subject @entity {
   beneficiaryFeeTransfers: [SubjectFeeTransfer!]! @derivedFrom(field: "subject")
   "protocol fee transfers"
   protocolFeeTransfers: [ProtocolFeeTransfer!]! @derivedFrom(field: "subject")
+  "portfolios with this subject"
+  portfolio: [Portfolio!]! @derivedFrom(field: "subject")
 }
 
 type Portfolio @entity {
@@ -285,6 +287,8 @@ type User @entity {
   sellOrders: [Order!]!
   "beneficiary fee transfers"
   subjectFeeTransfer: [SubjectFeeTransfer!]!
+  "total moxie spent by the user"
+  protocolTokenSpent: BigInt!
 }
 
 type Order @entity {
@@ -310,6 +314,8 @@ type Order @entity {
   subjectFeeTransfer: SubjectFeeTransfer! @derivedFrom(field: "order")
   "protocol fee transaction"
   protocolFeeTransfer: ProtocolFeeTransfer! @derivedFrom(field: "order")
+  "block information"
+  blockInfo: BlockInfo!
 }
 enum OrderType {
   SELL
@@ -329,7 +335,7 @@ type ProtocolFeeBeneficiary @entity {
 }
 
 type ProtocolFeeTransfer @entity {
-  "txHash"
+  "txHash+-+logIndex"
   id: ID!
   "txHash of the transaction"
   txHash: Bytes!

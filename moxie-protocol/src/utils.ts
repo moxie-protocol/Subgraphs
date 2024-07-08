@@ -51,6 +51,7 @@ export function getOrCreateUser(userAddress: Address): User {
     user.buyOrders = []
     user.sellOrders = []
     user.subjectFeeTransfer = []
+    user.protocolTokenSpent = BigInt.fromI32(0)
     user.save()
   }
   return user

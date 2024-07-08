@@ -29,7 +29,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   // );
 
   handleSubjectSharePurchasedTx(event)
-
+  const blockInfo = getOrCreateBlockInfo(event)
   let price = event.params._buyAmount.divDecimal(new BigDecimal(event.params._sellAmount))
   let user = getOrCreateUser(event.params._beneficiary)
 
@@ -45,6 +45,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   order.orderType = "BUY"
   order.user = user.id
   order.price = price
+  order.blockInfo = blockInfo.id
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.transaction.hash)
@@ -58,9 +59,10 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let orders = user.buyOrders
   orders.push(order.id)
   user.buyOrders = orders
+  // increasing protocol token spent
+  user.protocolTokenSpent = user.protocolTokenSpent.plus(event.params._sellAmount)
   user.save()
 
-  const blockInfo = getOrCreateBlockInfo(event)
   const summary = loadSummary()
   let activeFeeBeneficiary = ProtocolFeeBeneficiary.load(summary.activeProtocolFeeBeneficiary)
   if (!activeFeeBeneficiary) {
@@ -127,6 +129,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   //     address _beneficiary:_onBehalfOf
   // );
   handleSubjectShareSoldTx(event)
+  const blockInfo = getOrCreateBlockInfo(event)
   let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
   let subject = getOrCreateSubject(event.params._sellToken)
   subject.currentPrice = price
@@ -144,6 +147,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.orderType = "SELL"
   order.user = user.id
   order.price = price
+  order.blockInfo = blockInfo.id
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.transaction.hash)
@@ -154,7 +158,6 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.portfolio = portfolio.id
   order.save()
 
-  const blockInfo = getOrCreateBlockInfo(event)
   const summary = loadSummary()
   let activeFeeBeneficiary = ProtocolFeeBeneficiary.load(summary.activeProtocolFeeBeneficiary)
   if (!activeFeeBeneficiary) {
@@ -175,6 +178,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   let orders = user.sellOrders
   orders.push(order.id)
   user.sellOrders = orders
+  // decreasing protocol token spent
+  user.protocolTokenSpent = user.protocolTokenSpent.minus(event.params._buyAmount)
   user.save()
 
   let protocolFeeTransfer = new ProtocolFeeTransfer(getTxEntityId(event))

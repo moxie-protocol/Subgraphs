@@ -1,5 +1,6 @@
 import { VaultDeposit, VaultTransfer } from "../generated/Vault/Vault"
 import { getOrCreateSubject, loadSummary, saveSubject } from "./utils"
+import { handleVaultDepositTx, handleVaultTransferTx } from "./vault-tx"
 
 export function handleVaultDeposit(event: VaultDeposit): void {
   // event VaultDeposit(
@@ -9,6 +10,7 @@ export function handleVaultDeposit(event: VaultDeposit): void {
   //      uint256 amount, : _value
   //      uint256 totalReserve : reserves[_subjectToken][_token]
   //  );
+  handleVaultDepositTx(event)
   let subjectToken = event.params.subject
   let subject = getOrCreateSubject(subjectToken)
   // subject.reserve = subject.reserve.plus(event.params.amount)
@@ -29,6 +31,7 @@ export function handleVaultTransfer(event: VaultTransfer): void {
   //     uint256 totalReserve :reserves[_subjectToken][_token])
   // );
   // Transfers tokens(MOXIE) of amount _value to _to
+  handleVaultTransferTx(event)
   let subjectToken = event.params.subject
   let subject = getOrCreateSubject(subjectToken)
   // subject.reserve = subject.reserve.minus(event.params.amount)
