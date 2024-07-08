@@ -270,6 +270,8 @@ type Portfolio @entity {
   protocolTokenSpent: BigInt!
   "Orders associated with the user's portfolio"
   orders: [Order!]! @derivedFrom(field: "portfolio")
+  "initializing transaction hash"
+  initTxHash: Bytes!
 }
 
 type User @entity {

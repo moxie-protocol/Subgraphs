@@ -47,8 +47,8 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   order.price = price
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.block.timestamp)
-  portfolio.balance = portfolio.balance.plus(event.params._buyAmount)
+  let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.transaction.hash)
+  // portfolio.balance = portfolio.balance.plus(event.params._buyAmount)
   portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.plus(event.params._sellAmount)
   portfolio.save()
 
@@ -146,8 +146,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.price = price
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.block.timestamp)
-  portfolio.balance = portfolio.balance.minus(event.params._sellAmount)
+  let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.transaction.hash)
+  // portfolio.balance = portfolio.balance.minus(event.params._sellAmount)
   portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(event.params._buyAmount)
   portfolio.save()
 

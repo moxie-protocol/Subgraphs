@@ -1,4 +1,4 @@
-import { Address, BigDecimal, BigInt, ethereum, log } from "@graphprotocol/graph-ts"
+import { Address, BigDecimal, BigInt, Bytes, ethereum, log } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Portfolio, ProtocolFeeBeneficiary, Subject, SubjectDailySnapshot, SubjectHourlySnapshot, Summary, User } from "../generated/schema"
 import { PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
@@ -25,7 +25,7 @@ export function getOrCreateSubject(tokenAddress: Address): Subject {
   return subject
 }
 
-export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Address, timestamp: BigInt): Portfolio {
+export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Address, txHash: Bytes): Portfolio {
   let user = getOrCreateUser(userAddress)
   let portfolioId = userAddress.toHexString() + "-" + subjectAddress.toHexString()
   let portfolio = Portfolio.load(portfolioId)
@@ -34,8 +34,11 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     let subject = getOrCreateSubject(subjectAddress)
     portfolio.user = user.id
     portfolio.subject = subject.id
-    portfolio.balance = BigInt.fromI32(0)
+    let token = ERC20.bind(subjectAddress)
+    portfolio.balance = token.balanceOf(userAddress)
+    log.info("Portfolio {} initialized {} balance: {}", [portfolioId, txHash.toHexString(), portfolio.balance.toString()])
     portfolio.protocolTokenSpent = BigInt.fromI32(0)
+    portfolio.initTxHash = txHash
     portfolio.save()
   }
   return portfolio
