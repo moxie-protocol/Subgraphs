@@ -168,6 +168,12 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   orderTxn.txHash = event.transaction.hash
   orderTxn.blockInfo = getOrCreateBlockInfo(event).id
   orderTxn.newStatus = "Claimed"
+  // loading transfers
+  let agg = AggregateTransfer.load(event.transaction.hash.toHexString())
+  if (!agg) {
+    agg = new AggregateTransfer(event.transaction.hash.toHexString())
+  }
+  orderTxn.transfers = agg.id
   orderTxn.save()
 }
 
@@ -345,6 +351,12 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   orderTxn.txHash = event.transaction.hash
   orderTxn.blockInfo = getOrCreateBlockInfo(event).id
   orderTxn.newStatus = "Placed"
+  // loading transfers
+  let agg = AggregateTransfer.load(event.transaction.hash.toHexString())
+  if (!agg) {
+    agg = new AggregateTransfer(event.transaction.hash.toHexString())
+  }
+  orderTxn.transfers = agg.id
   orderTxn.save()
 }
 
