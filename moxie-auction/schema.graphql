@@ -56,8 +56,8 @@ enum Status {
 type User @entity {
   id: ID!
   address: Bytes!
-  createdAuction: [AuctionDetail!]!
-  participatedAuction: [AuctionDetail!]!
+  createdAuctions: [AuctionDetail!]!
+  participatedAuctions: [AuctionDetail!]!
   orders: [Order!]! @derivedFrom(field: "user")
 }
 

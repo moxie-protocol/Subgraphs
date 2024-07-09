@@ -241,10 +241,10 @@ export function handleNewAuction(event: NewAuction): void {
   order.auction = auctionDetails.id
   order.save()
   // Check if auctionId is present in createdAuction list. If not, add it.
-  let createdAuction = user.createdAuction
-  if (!createdAuction.includes(auctionId.toString())) {
-    createdAuction.push(auctionId.toString())
-    user.createdAuction = createdAuction
+  let createdAuctions = user.createdAuctions
+  if (!createdAuctions.includes(auctionId.toString())) {
+    createdAuctions.push(auctionId.toString())
+    user.createdAuctions = createdAuctions
   }
   user.save()
 
@@ -316,10 +316,10 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   auctionDetails.activeOrders = activeOrders
 
   // Check if auctionId is present in participatedAuction list. If not, add it.
-  let participatedAuction = user.participatedAuction
-  if (!participatedAuction.includes(auctionId.toString())) {
-    participatedAuction.push(auctionId.toString())
-    user.participatedAuction = participatedAuction
+  let participatedAuctions = user.participatedAuctions
+  if (!participatedAuctions.includes(auctionId.toString())) {
+    participatedAuctions.push(auctionId.toString())
+    user.participatedAuctions = participatedAuctions
   }
   user.save()
   auctionDetails.totalOrders = auctionDetails.totalOrders.plus(ONE)
@@ -342,8 +342,8 @@ export function handleNewUser(event: NewUser): void {
   let userAddress = event.params.userAddress
   let user = new User(userId.toString())
   user.address = userAddress
-  user.createdAuction = new Array()
-  user.participatedAuction = new Array()
+  user.createdAuctions = new Array()
+  user.participatedAuctions = new Array()
   user.save()
 }
 
