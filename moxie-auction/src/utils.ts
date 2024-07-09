@@ -259,3 +259,7 @@ export function isEasyAuction(recipient: Address): boolean {
   }
   return false
 }
+
+export function getEncodedOrderId(userId: BigInt, buyAmount: BigInt, sellAmount: BigInt): string {
+  return "0x" + userId.toHexString().slice(2).padStart(16, "0") + buyAmount.toHexString().slice(2).padStart(24, "0") + sellAmount.toHexString().slice(2).padStart(24, "0")
+}

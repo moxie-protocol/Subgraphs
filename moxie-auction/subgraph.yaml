@@ -6,9 +6,9 @@ dataSources:
     name: EasyAuction
     network: mainnet
     source:
-      address: "0x0b7ffc1f4ad541a4ed16b40d8c37f0929158d101"
+      address: "0x28E8A1817Af21d39d6820Fd930FDE618e03d4d8d"
       abi: EasyAuction
-      startBlock: 12135186
+      startBlock: 12228929
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6

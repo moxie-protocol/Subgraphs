@@ -11,7 +11,7 @@ import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, N
 import { Order } from "../generated/schema"
 import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "./transactions"
 
-import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId, getOrCreateEasyAuction } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getOrCreateEasyAuction, getTxEntityId, getEncodedOrderId } from "./utils"
 
 const ZERO = BigInt.zero()
 const ONE = BigInt.fromI32(1)
@@ -216,6 +216,8 @@ export function handleNewAuction(event: NewAuction): void {
   order.status = "Placed"
   order.txHash = event.transaction.hash
   order.blockInfo = getOrCreateBlockInfo(event).id
+  order.isExactOrder = true
+  order.encodedOrderId = getEncodedOrderId(userId, buyAmount, sellAmount)
   order.save()
 
   // increasing bid value and total Orders count in summary
@@ -258,10 +260,10 @@ export function handleNewAuction(event: NewAuction): void {
   order.auction = auctionDetails.id
   order.save()
   // Check if auctionId is present in createdAuction list. If not, add it.
-  let createdAuction = user.createdAuction
-  if (!createdAuction.includes(auctionId.toString())) {
-    createdAuction.push(auctionId.toString())
-    user.createdAuction = createdAuction
+  let createdAuctions = user.createdAuctions
+  if (!createdAuctions.includes(auctionId.toString())) {
+    createdAuctions.push(auctionId.toString())
+    user.createdAuctions = createdAuctions
   }
   user.save()
 
@@ -317,6 +319,8 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   order.status = "Placed"
   order.txHash = event.transaction.hash
   order.blockInfo = getOrCreateBlockInfo(event).id
+  order.isExactOrder = false
+  order.encodedOrderId = getEncodedOrderId(userId, buyAmount, sellAmount)
   order.save()
 
   let orders: string[] = []
@@ -334,10 +338,10 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   auctionDetails.activeOrders = activeOrders
 
   // Check if auctionId is present in participatedAuction list. If not, add it.
-  let participatedAuction = user.participatedAuction
-  if (!participatedAuction.includes(auctionId.toString())) {
-    participatedAuction.push(auctionId.toString())
-    user.participatedAuction = participatedAuction
+  let participatedAuctions = user.participatedAuctions
+  if (!participatedAuctions.includes(auctionId.toString())) {
+    participatedAuctions.push(auctionId.toString())
+    user.participatedAuctions = participatedAuctions
   }
   user.save()
   auctionDetails.totalOrders = auctionDetails.totalOrders.plus(ONE)
@@ -367,8 +371,8 @@ export function handleNewUser(event: NewUser): void {
   let userAddress = event.params.userAddress
   let user = new User(userId.toString())
   user.address = userAddress
-  user.createdAuction = new Array()
-  user.participatedAuction = new Array()
+  user.createdAuctions = new Array()
+  user.participatedAuctions = new Array()
   user.save()
 }
 
