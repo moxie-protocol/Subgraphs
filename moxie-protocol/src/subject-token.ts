@@ -50,16 +50,12 @@ export function handleTransfer(event: Transfer): void {
   // updating portfolios
   if (!mint) {
     let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash)
-    if (fromAddressPortfolio.initTxHash != event.transaction.hash) {
-      fromAddressPortfolio.balance = fromAddressPortfolio.balance.minus(value)
-      fromAddressPortfolio.save()
-    }
+    fromAddressPortfolio.balance = fromAddressPortfolio.balance.minus(value)
+    fromAddressPortfolio.save()
   }
   if (!burn) {
     let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash)
-    if (toAddressPortfolio.initTxHash != event.transaction.hash) {
-      toAddressPortfolio.balance = toAddressPortfolio.balance.plus(value)
-      toAddressPortfolio.save()
-    }
+    toAddressPortfolio.balance = toAddressPortfolio.balance.plus(value)
+    toAddressPortfolio.save()
   }
 }

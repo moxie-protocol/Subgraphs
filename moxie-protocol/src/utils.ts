@@ -34,11 +34,9 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     let subject = getOrCreateSubject(subjectAddress)
     portfolio.user = user.id
     portfolio.subject = subject.id
-    let token = ERC20.bind(subjectAddress)
-    portfolio.balance = token.balanceOf(userAddress)
+    portfolio.balance = BigInt.fromI32(0)
     log.info("Portfolio {} initialized {} balance: {}", [portfolioId, txHash.toHexString(), portfolio.balance.toString()])
     portfolio.protocolTokenSpent = BigInt.fromI32(0)
-    portfolio.initTxHash = txHash
     portfolio.save()
   }
   return portfolio
