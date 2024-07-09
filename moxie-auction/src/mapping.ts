@@ -11,7 +11,7 @@ import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, N
 import { Order } from "../generated/schema"
 import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "./transactions"
 
-import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId, getEncodedOrderId } from "./utils"
 
 const ZERO = BigInt.zero()
 const ONE = BigInt.fromI32(1)
@@ -200,6 +200,8 @@ export function handleNewAuction(event: NewAuction): void {
   order.status = "Placed"
   order.txHash = event.transaction.hash
   order.blockInfo = getOrCreateBlockInfo(event).id
+  order.isExactOrder = true
+  order.encodedOrderId = getEncodedOrderId(userId, buyAmount, sellAmount)
   order.save()
 
   // increasing bid value and total Orders count in summary
@@ -299,6 +301,8 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   order.status = "Placed"
   order.txHash = event.transaction.hash
   order.blockInfo = getOrCreateBlockInfo(event).id
+  order.isExactOrder = false
+  order.encodedOrderId = getEncodedOrderId(userId, buyAmount, sellAmount)
   order.save()
 
   let orders: string[] = []

@@ -5,7 +5,7 @@ import { AuctionClearedInput, AuctionEntityInput, CancellationSellOrderInput, Cl
 import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "../src/transactions"
 import { Address, BigDecimal, BigInt, Bytes, log } from "@graphprotocol/graph-ts"
 import { sortOrders } from "../src/utils/sortOrders"
-import { convertToPricePoint, updateAuctionStats } from "../src/utils"
+import { convertToPricePoint, getEncodedOrderId, updateAuctionStats } from "../src/utils"
 describe("utils", () => {
   beforeEach(() => {
     clearStore()
@@ -121,14 +121,14 @@ describe("utils", () => {
       let user1 = new User(initialAuction.exactOrder.user.address)
       user1.id = initialAuction.exactOrder.user.id
       user1.address = Bytes.fromHexString(initialAuction.exactOrder.user.address)
-      user1.createdAuction = []
-      user1.participatedAuction = []
+      user1.createdAuctions = []
+      user1.participatedAuctions = []
       user1.save()
       let user2 = new User(initialAuction.activeOrders[0].user.address)
       user2.id = initialAuction.activeOrders[0].user.id
       user2.address = Bytes.fromHexString(initialAuction.activeOrders[0].user.address)
-      user2.createdAuction = []
-      user2.participatedAuction = []
+      user2.createdAuctions = []
+      user2.participatedAuctions = []
       user2.save()
       let order1 = new Order(initialAuction.exactOrder.id)
       order1.sellAmount = BigInt.fromString(initialAuction.exactOrder.sellAmount)
@@ -209,8 +209,8 @@ describe("utils", () => {
       let user3 = new User(order3Input.user.address)
       user3.id = order3Input.user.id
       user3.address = Bytes.fromHexString(order3Input.user.address)
-      user3.createdAuction = []
-      user3.participatedAuction = []
+      user3.createdAuctions = []
+      user3.participatedAuctions = []
       user3.save()
 
       let order3 = new Order(order3Input.id)
@@ -247,5 +247,12 @@ describe("utils", () => {
       assert.stringEquals(volume.toString(), loadAuction.currentVolume.toString())
       assert.stringEquals(loadAuction.currentBiddingAmount.toString(), biddingTokenTotal.toString())
     })
+  })
+
+  describe("getEncodedOrderId", () => {
+    let userId = BigInt.fromI32(6)
+    let buyAmount = BigInt.fromString("501891953019004282")
+    let sellAmount = BigInt.fromString("1003783906038008565844")
+    assert.stringEquals(getEncodedOrderId(userId, buyAmount, sellAmount), "0x00000000000000060000000006f714127753257a000000366a4cd0443994d054")
   })
 })

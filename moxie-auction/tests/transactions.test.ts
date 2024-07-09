@@ -1,50 +1,8 @@
-import {
-  describe,
-  test,
-  clearStore,
-  beforeEach,
-  assert,
-} from "matchstick-as/assembly/index"
-import {
-  AuctionCleared as AuctionClearedEntity,
-  CancellationSellOrder as CancellationSellOrderEntity,
-  UserRegistration as UserRegistrationEntity,
-  ClaimedFromOrder as ClaimedFromOrderEntity,
-  NewAuction as NewAuctionEntity,
-  NewSellOrder as NewSellOrderEntity,
-  NewUser as NewUserEntity,
-  OwnershipTransferred as OwnershipTransferredEntity,
-} from "../generated/schema"
-import {
-  mockAuctionCleared,
-  mockCancellationSellOrder,
-  mockClaimedFromOrder,
-  mockNewAuction,
-  mockNewSellOrder,
-  mockNewUser,
-  mockOwnershipTransferred,
-  mockUserRegistration,
-} from "./mocks"
-import {
-  AuctionClearedInput,
-  CancellationSellOrderInput,
-  ClaimedFromOrderInput,
-  NewAuctionInput,
-  NewSellOrderInput,
-  NewUserInput,
-  OwnershipTransferredInput,
-  UserRegistrationInput,
-} from "./types"
-import {
-  handleAuctionClearedTx,
-  handleCancellationSellOrderTx,
-  handleClaimedFromOrderTx,
-  handleNewAuctionTx,
-  handleNewSellOrderTx,
-  handleNewUserTx,
-  handleOwnershipTransferredTx,
-  handleUserRegistrationTx,
-} from "../src/transactions"
+import { describe, test, clearStore, beforeEach, assert } from "matchstick-as/assembly/index"
+import { AuctionCleared as AuctionClearedEntity, CancellationSellOrder as CancellationSellOrderEntity, UserRegistration as UserRegistrationEntity, ClaimedFromOrder as ClaimedFromOrderEntity, NewAuction as NewAuctionEntity, NewSellOrder as NewSellOrderEntity, NewUser as NewUserEntity, OwnershipTransferred as OwnershipTransferredEntity } from "../generated/schema"
+import { mockAuctionCleared, mockCancellationSellOrder, mockClaimedFromOrder, mockNewAuction, mockNewSellOrder, mockNewUser, mockOwnershipTransferred, mockUserRegistration } from "./mocks"
+import { AuctionClearedInput, CancellationSellOrderInput, ClaimedFromOrderInput, NewAuctionInput, NewSellOrderInput, NewUserInput, OwnershipTransferredInput, UserRegistrationInput } from "./types"
+import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "../src/transactions"
 import { Address, BigInt, Bytes, log } from "@graphprotocol/graph-ts"
 
 describe("transactions", () => {
@@ -56,8 +14,7 @@ describe("transactions", () => {
       soldBiddingTokens: "30000000",
       soldAuctioningTokens: "15000000000000000",
       hash: "0x0889345580fb47cf4efa2338971dde6a6ed30c654fb02f2f051cb6d0b3d663d7",
-      clearingPriceOrder:
-        "0x00000000000000000000000002c68af0bb140000000000000000000017d78400",
+      clearingPriceOrder: "0x00000000000000000000000002c68af0bb140000000000000000000017d78400",
       auctionId: "5",
     }
     const event = mockAuctionCleared(sample)
@@ -66,18 +23,9 @@ describe("transactions", () => {
     // asserts
     let createdEntity = AuctionClearedEntity.load(sample.hash)!
     assert.stringEquals(createdEntity.auctionId.toString(), sample.auctionId)
-    assert.stringEquals(
-      createdEntity.soldAuctioningTokens.toString(),
-      sample.soldAuctioningTokens
-    )
-    assert.stringEquals(
-      createdEntity.soldBiddingTokens.toString(),
-      sample.soldBiddingTokens
-    )
-    assert.stringEquals(
-      createdEntity.clearingPriceOrder.toHexString(),
-      sample.clearingPriceOrder
-    )
+    assert.stringEquals(createdEntity.soldAuctioningTokens.toString(), sample.soldAuctioningTokens)
+    assert.stringEquals(createdEntity.soldBiddingTokens.toString(), sample.soldBiddingTokens)
+    assert.stringEquals(createdEntity.clearingPriceOrder.toHexString(), sample.clearingPriceOrder)
   })
   test("test handleCancellationSellOrderTx", () => {
     const sample: CancellationSellOrderInput = {
@@ -129,8 +77,7 @@ describe("transactions", () => {
       minimumBiddingAmountPerOrder: "1000000",
       minFundingThreshold: "10000000",
       allowListContract: "0x0f4648d997e486ce06577d6ee2fecbca84b834f4",
-      allowListData:
-        "0x0000000000000000000000002e173510024d480d195d8875e4d55e9b6198b654",
+      allowListData: "0x0000000000000000000000002e173510024d480d195d8875e4d55e9b6198b654",
     }
     const event = mockNewAuction(sample)
     // calling the handler
@@ -138,47 +85,17 @@ describe("transactions", () => {
     // asserts
     let createdEntity = NewAuctionEntity.load(sample.hash)!
     assert.stringEquals(createdEntity.auctionId.toString(), sample.auctionId)
-    assert.stringEquals(
-      createdEntity.auctioningToken.toHexString(),
-      sample._auctioningToken
-    )
-    assert.stringEquals(
-      createdEntity.biddingToken.toHexString(),
-      sample._biddingToken
-    )
-    assert.stringEquals(
-      createdEntity.orderCancellationEndDate.toString(),
-      sample.orderCancellationEndDate
-    )
-    assert.stringEquals(
-      createdEntity.auctionEndDate.toString(),
-      sample.auctionEndDate
-    )
+    assert.stringEquals(createdEntity.auctioningToken.toHexString(), sample._auctioningToken)
+    assert.stringEquals(createdEntity.biddingToken.toHexString(), sample._biddingToken)
+    assert.stringEquals(createdEntity.orderCancellationEndDate.toString(), sample.orderCancellationEndDate)
+    assert.stringEquals(createdEntity.auctionEndDate.toString(), sample.auctionEndDate)
     assert.stringEquals(createdEntity.userId.toString(), sample.userId)
-    assert.stringEquals(
-      createdEntity.auctionedSellAmount.toString(),
-      sample._auctionedSellAmount
-    )
-    assert.stringEquals(
-      createdEntity.minBuyAmount.toString(),
-      sample._minBuyAmount
-    )
-    assert.stringEquals(
-      createdEntity.minimumBiddingAmountPerOrder.toString(),
-      sample.minimumBiddingAmountPerOrder
-    )
-    assert.stringEquals(
-      createdEntity.minFundingThreshold.toString(),
-      sample.minFundingThreshold
-    )
-    assert.stringEquals(
-      createdEntity.allowListContract.toHexString(),
-      sample.allowListContract
-    )
-    assert.stringEquals(
-      createdEntity.allowListData.toHexString(),
-      sample.allowListData
-    )
+    assert.stringEquals(createdEntity.auctionedSellAmount.toString(), sample._auctionedSellAmount)
+    assert.stringEquals(createdEntity.minBuyAmount.toString(), sample._minBuyAmount)
+    assert.stringEquals(createdEntity.minimumBiddingAmountPerOrder.toString(), sample.minimumBiddingAmountPerOrder)
+    assert.stringEquals(createdEntity.minFundingThreshold.toString(), sample.minFundingThreshold)
+    assert.stringEquals(createdEntity.allowListContract.toHexString(), sample.allowListContract)
+    assert.stringEquals(createdEntity.allowListData.toHexString(), sample.allowListData)
   })
 
   test("test handleNewSellOrderTx", () => {
@@ -211,10 +128,7 @@ describe("transactions", () => {
     // asserts
     let createdEntity = NewUserEntity.load(sample.hash)!
     assert.stringEquals(createdEntity.userId.toString(), sample.userId)
-    assert.stringEquals(
-      createdEntity.userAddress.toHexString(),
-      sample.userAddress
-    )
+    assert.stringEquals(createdEntity.userAddress.toHexString(), sample.userAddress)
   })
   test("test handleOwnershipTransferredTx", () => {
     const sample: OwnershipTransferredInput = {
@@ -227,10 +141,7 @@ describe("transactions", () => {
     handleOwnershipTransferredTx(event)
     // asserts
     let createdEntity = OwnershipTransferredEntity.load(sample.hash)!
-    assert.stringEquals(
-      createdEntity.previousOwner.toHexString(),
-      sample.previousOwner
-    )
+    assert.stringEquals(createdEntity.previousOwner.toHexString(), sample.previousOwner)
     assert.stringEquals(createdEntity.newOwner.toHexString(), sample.newOwner)
   })
   test("test handleUserRegistrationTx", () => {
