@@ -83,7 +83,7 @@ type TokenManagerTokenDeployedTx @entity {
 type SubjectTokenTransferTx @entity {
   "txHash+-+logIndex"
   id: ID!
-  txHash: Bytes!
+  txHash: AuctionTransfer!
   blockInfo: BlockInfo!
   contractAddress: Bytes!
   from: Bytes!
@@ -272,7 +272,6 @@ type Portfolio @entity {
   protocolTokenSpent: BigInt!
   "Orders associated with the user's portfolio"
   orders: [Order!]! @derivedFrom(field: "portfolio")
-
 }
 
 type User @entity {
@@ -284,6 +283,10 @@ type User @entity {
   buyOrders: [Order!]!
   "sellOrders placed by the user"
   sellOrders: [Order!]!
+  "auctionOrders placed by the user"
+  auctionOrders: [Order!]!
+  "orders including auction & buyOrders"
+  protocolOrders: [Order!]!
   "beneficiary fee transfers"
   subjectFeeTransfer: [SubjectFeeTransfer!]!
   "total moxie spent by the user"
@@ -301,6 +304,10 @@ type Order @entity {
   subjectToken: Subject!
   "Amount of subject token"
   subjectAmount: BigInt!
+  "Amount of subject token Left to be sold in the order"
+  subjectAmountLeft: BigInt!
+  "investment amount in moxie"
+  protocolTokenInvestment: BigDecimal!
   "Price of the subject token"
   price: BigDecimal!
   "BUY/SELL order type"
@@ -319,6 +326,7 @@ type Order @entity {
 enum OrderType {
   SELL
   BUY
+  AUCTION
 }
 
 type ProtocolFeeBeneficiary @entity {
@@ -376,4 +384,74 @@ type Summary @entity {
   protocolSellFeePct: BigInt!
   subjectBuyFeePct: BigInt!
   subjectSellFeePct: BigInt!
+}
+
+type MoxieTransfer @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: AuctionTransfer!
+  from: Bytes!
+  to: Bytes!
+  value: BigInt!
+  blockInfo: BlockInfo!
+}
+
+type AuctionNewSellOrder @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: AuctionTransfer!
+  "auctioning token Subject"
+  subject: Subject!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+}
+
+type AuctionClaimedFromOrder @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: AuctionTransfer!
+  "auctioning token Subject"
+  subject: Subject!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+}
+
+type AuctionCancellationSellOrder @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: AuctionTransfer!
+  "auctioning token Subject"
+  subject: Subject!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+}
+
+type AuctioningToken @entity {
+  "auctionId"
+  id: ID!
+  "auctioning token Subject"
+  subject: Subject!
+}
+
+type AuctionOrder @entity {
+  "subjectId+-+userId+-+buyAmount+-+sellAmount"
+  id: ID!
+  "associated protocol order"
+  order: Order!
+  auctionClaimedFromOrder: AuctionClaimedFromOrder
+  auctionCancellationSellOrder: AuctionCancellationSellOrder
+  auctionNewSellOrder: AuctionNewSellOrder
+}
+
+type AuctionTransfer @entity {
+  "txhash"
+  id: ID!
+  subjectTokenTransfer: [SubjectTokenTransferTx!]! @derivedFrom(field: "txHash")
+  moxieTransfer: [MoxieTransfer!]! @derivedFrom(field: "txHash")
+  auctionClaimedFromOrder: [AuctionClaimedFromOrder!]! @derivedFrom(field: "txHash")
+  auctionNewSellOrder: [AuctionNewSellOrder!]! @derivedFrom(field: "txHash")
+  auctionCancellationSellOrder: [AuctionCancellationSellOrder!]! @derivedFrom(field: "txHash")
 }

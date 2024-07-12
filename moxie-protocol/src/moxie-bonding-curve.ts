@@ -40,8 +40,10 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let order = new Order(getTxEntityId(event))
   order.protocolToken = event.params._sellToken
   order.protocolTokenAmount = event.params._sellAmount
+  order.protocolTokenInvestment = new BigDecimal(event.params._sellAmount)
   order.subjectToken = subject.id
   order.subjectAmount = event.params._buyAmount
+  order.subjectAmountLeft = event.params._buyAmount
   order.orderType = "BUY"
   order.user = user.id
   order.price = price
@@ -59,6 +61,10 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let orders = user.buyOrders
   orders.push(order.id)
   user.buyOrders = orders
+  // updating user's protocolOrders
+  let protocolOrders = user.protocolOrders
+  protocolOrders.push(order.id)
+  user.protocolOrders = orders
   // increasing protocol token spent
   user.protocolTokenSpent = user.protocolTokenSpent.plus(event.params._sellAmount)
   user.save()
@@ -144,6 +150,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.protocolTokenAmount = event.params._buyAmount
   order.subjectToken = subject.id
   order.subjectAmount = event.params._sellAmount
+  order.subjectAmountLeft = BigInt.zero()
+  order.protocolTokenInvestment = new BigDecimal(BigInt.zero())
   order.orderType = "SELL"
   order.user = user.id
   order.price = price
@@ -180,6 +188,22 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   user.sellOrders = orders
   // decreasing protocol token spent
   user.protocolTokenSpent = user.protocolTokenSpent.minus(event.params._buyAmount)
+  let protocolOrders = user.protocolOrders
+  let subjectTokenSpentRemaining = event.params._sellAmount
+  for (let i = 0; i < protocolOrders.length; i++) {
+    let protocolOrder = Order.load(protocolOrders[i])
+    if (!protocolOrder) {
+      throw new Error("protocol order not found " + protocolOrders[i])
+    }
+    if (subjectTokenSpentRemaining.gt(protocolOrder.subjectAmountLeft)) {
+      subjectTokenSpentRemaining = subjectTokenSpentRemaining.minus(protocolOrder.subjectAmountLeft)
+      protocolOrder.subjectAmountLeft = BigInt.fromI32(0)
+    } else {
+      protocolOrder.subjectAmountLeft = protocolOrder.subjectAmountLeft.minus(subjectTokenSpentRemaining)
+    }
+    protocolOrder.protocolTokenInvestment = protocolOrder.subjectAmountLeft.times(protocolOrder.protocolTokenAmount).divDecimal(new BigDecimal(protocolOrder.subjectAmount))
+    protocolOrder.save()
+  }
   user.save()
 
   let protocolFeeTransfer = new ProtocolFeeTransfer(getTxEntityId(event))

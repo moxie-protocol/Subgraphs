@@ -1,6 +1,6 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { BlockInfo, Portfolio, ProtocolFeeBeneficiary, Subject, SubjectDailySnapshot, SubjectHourlySnapshot, Summary, User } from "../generated/schema"
+import { AuctionTransfer, BlockInfo, Portfolio, ProtocolFeeBeneficiary, Subject, SubjectDailySnapshot, SubjectHourlySnapshot, Summary, User } from "../generated/schema"
 import { PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
 
 export function getOrCreateSubject(tokenAddress: Address): Subject {
@@ -48,7 +48,9 @@ export function getOrCreateUser(userAddress: Address): User {
     user = new User(userAddress.toHexString())
     user.buyOrders = []
     user.sellOrders = []
+    user.auctionOrders = []
     user.subjectFeeTransfer = []
+    user.protocolOrders = []
     user.protocolTokenSpent = BigInt.fromI32(0)
     user.save()
   }
@@ -190,4 +192,13 @@ export function calculateSellSideFee(_depositAmount: BigInt): Fees {
   let protocolFee_ = _depositAmount.times(summary.protocolSellFeePct).div(PCT_BASE)
   let subjectFee_ = _depositAmount.times(summary.subjectSellFeePct).div(PCT_BASE)
   return new Fees(protocolFee_, subjectFee_)
+}
+
+export function getOrCreateAuctionTransferId(txHash: Bytes): string {
+  let auctionTransfer = AuctionTransfer.load(txHash.toHexString())
+  if (!auctionTransfer) {
+    auctionTransfer = new AuctionTransfer(txHash.toHexString())
+    auctionTransfer.save()
+  }
+  return auctionTransfer.id
 }
