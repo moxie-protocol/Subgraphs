@@ -30,11 +30,12 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 
   handleSubjectSharePurchasedTx(event)
   const blockInfo = getOrCreateBlockInfo(event)
-  let price = event.params._buyAmount.divDecimal(new BigDecimal(event.params._sellAmount))
+  let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
   let user = getOrCreateUser(event.params._beneficiary)
 
   let subject = getOrCreateSubject(event.params._buyToken)
-  subject.currentPrice = price
+  subject.currentPriceinMoxie = price
+  subject.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subject.volume = subject.volume.plus(event.params._sellAmount)
   // Saving order entity
   let order = new Order(getTxEntityId(event))
@@ -89,8 +90,8 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   protocolFeeTransfer.save()
 
   subject.beneficiaryFee = subject.beneficiaryFee.plus(fees.subjectFee)
-  subject.protcolFee = subject.protcolFee.plus(fees.protocolFee)
-  saveSubject(subject, event.block.timestamp)
+  subject.protocolFee = subject.protocolFee.plus(fees.protocolFee)
+  saveSubject(subject, event)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()
@@ -132,9 +133,10 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   const blockInfo = getOrCreateBlockInfo(event)
   let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
   let subject = getOrCreateSubject(event.params._sellToken)
-  subject.currentPrice = price
+  subject.currentPriceinMoxie = price
+  subject.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subject.volume = subject.volume.plus(event.params._buyAmount)
-  saveSubject(subject, event.block.timestamp)
+  saveSubject(subject, event)
 
   let user = getOrCreateUser(event.transaction.from)
 
@@ -192,8 +194,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   protocolFeeTransfer.save()
 
   subject.beneficiaryFee = subject.beneficiaryFee.plus(fees.subjectFee)
-  subject.protcolFee = subject.protcolFee.plus(fees.protocolFee)
-  saveSubject(subject, event.block.timestamp)
+  subject.protocolFee = subject.protocolFee.plus(fees.protocolFee)
+  saveSubject(subject, event)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()

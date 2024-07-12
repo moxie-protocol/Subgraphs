@@ -162,11 +162,11 @@ type SubjectDailySnapshot @entity {
   "daily beneficiary fee change"
   dailyBeneficiaryFeeChange: BigInt!
   "total protocol fee at start of the snapshot"
-  startProtcolFee: BigInt!
+  startProtocolFee: BigInt!
   "total protocol fee at end of the snapshot"
-  endProtcolFee: BigInt!
+  endProtocolFee: BigInt!
   "daily protocol fee change"
-  dailyProtcolFeeChange: BigInt!
+  dailyProtocolFeeChange: BigInt!
 }
 
 type SubjectHourlySnapshot @entity {
@@ -213,11 +213,11 @@ type SubjectHourlySnapshot @entity {
   "hourly beneficiary fee change"
   hourlyBeneficiaryFeeChange: BigInt!
   "total protocol fee at start of the snapshot"
-  startProtcolFee: BigInt!
+  startProtocolFee: BigInt!
   "total protocol fee at end of the snapshot"
-  endProtcolFee: BigInt!
+  endProtocolFee: BigInt!
   "hourly protocol fee change"
-  hourlyProtcolFeeChange: BigInt!
+  hourlyProtocolFeeChange: BigInt!
 }
 
 type Subject @entity {
@@ -233,8 +233,10 @@ type Subject @entity {
   beneficiary: User
   "reserve balance (moxie)/ total locked value"
   reserve: BigInt!
-  "current price of the token"
-  currentPrice: BigDecimal!
+  "current price of the token in Moxie"
+  currentPriceinMoxie: BigDecimal!
+  "current price of the token in Moxie in wei unit"
+  currentPriceinWeiInMoxie: BigDecimal!
   "Total supply of the token"
   totalSupply: BigInt!
   "holders"
@@ -249,14 +251,19 @@ type Subject @entity {
 
   "total beneficiary fees collected"
   beneficiaryFee: BigInt!
-  "total protocl fees collected"
-  protcolFee: BigInt!
+  "total protocol fees collected"
+  protocolFee: BigInt!
   "beneficiary fee transfer"
   beneficiaryFeeTransfers: [SubjectFeeTransfer!]! @derivedFrom(field: "subject")
   "protocol fee transfers"
   protocolFeeTransfers: [ProtocolFeeTransfer!]! @derivedFrom(field: "subject")
   "portfolios with this subject"
   portfolio: [Portfolio!]! @derivedFrom(field: "subject")
+  "block information"
+  blockInfo: BlockInfo!
+
+
+  #TODO! Add field for timestamp of last update
 }
 
 type Portfolio @entity {
