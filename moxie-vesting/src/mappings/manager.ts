@@ -7,21 +7,23 @@ import {
   FunctionCallAuth,
   TokenDestinationAllowed,
   MoxiePassTokenUpdated,
+  SubjectTokenDestinationAllowed,
+  TokenManagerUpdated,
 } from "../../generated/MoxieTokenLockManager/MoxieTokenLockManager"
 
 import { MoxieTokenLockWallet } from "../../generated/templates"
 
 import {
-  TokenManager,
+  TokenLockManager,
   TokenLockWallet,
   AuthorizedFunction,
 } from "../../generated/schema"
 
 export function handleMasterCopyUpdated(event: MasterCopyUpdated): void {
   // Creates the manager
-  let manager = TokenManager.load(event.address.toHexString())
+  let manager = TokenLockManager.load(event.address.toHexString())
   if (manager == null) {
-    manager = new TokenManager(event.address.toHexString())
+    manager = new TokenLockManager(event.address.toHexString())
     manager.tokens = BigInt.fromI32(0)
     manager.tokenLockCount = BigInt.fromI32(0)
   }
@@ -44,7 +46,7 @@ export function handleMasterCopyUpdated(event: MasterCopyUpdated): void {
  */
 export function handleTokenLockCreated(event: TokenLockCreated): void {
   // Get manager
-  let manager = TokenManager.load(event.address.toHexString())!
+  let manager = TokenLockManager.load(event.address.toHexString())!
   manager.tokenLockCount = manager.tokenLockCount.plus(BigInt.fromI32(1))
   manager.save()
 
@@ -85,14 +87,14 @@ export function handleTokenLockCreated(event: TokenLockCreated): void {
 
 export function handleTokensDeposited(event: TokensDeposited): void {
   // Get manager
-  let manager = TokenManager.load(event.address.toHexString())!
+  let manager = TokenLockManager.load(event.address.toHexString())!
   manager.tokens = manager.tokens.plus(event.params.amount)
   manager.save()
 }
 
 export function handleTokensWithdrawn(event: TokensWithdrawn): void {
   // Get manager
-  let manager = TokenManager.load(event.address.toHexString())!
+  let manager = TokenLockManager.load(event.address.toHexString())!
   manager.tokens = manager.tokens.minus(event.params.amount)
   manager.save()
 }
@@ -122,7 +124,7 @@ export function handleTokenDestinationAllowed(
   event: TokenDestinationAllowed
 ): void {
   // Get manager
-  let manager = TokenManager.load(event.address.toHexString())!
+  let manager = TokenLockManager.load(event.address.toHexString())!
 
   // Update destinations
   let destinations = manager.tokenDestinations
@@ -153,7 +155,45 @@ export function handleTokenDestinationAllowed(
 export function handleMoxiePassTokenUpdated(
   event: MoxiePassTokenUpdated
 ): void {
-  let manager = TokenManager.load(event.address.toHexString())!
+  let manager = TokenLockManager.load(event.address.toHexString())!
   manager.moxiePassToken = event.params.moxiePassToken
+  manager.save()
+}
+
+export function handleSubjectTokenDestinationAllowed(
+  event: SubjectTokenDestinationAllowed
+): void {
+  let manager = TokenLockManager.load(event.address.toHexString())!
+ // Update destinations
+ let destinations = manager.subjectTokenDestinations
+ if (destinations == null) {
+   destinations = []
+ }
+ let index = destinations.indexOf(event.params.dst)
+
+ // It was not there before
+ if (index == -1) {
+   // Lets add it in
+   if (event.params.allowed) {
+     destinations.push(event.params.dst)
+   }
+   // If false was passed, we do nothing
+   // It was there before
+ } else {
+   // We are revoking access
+   if (index != -1 && !event.params.allowed) {
+     destinations.splice(index, 1)
+   }
+   // Otherwise do nothing
+ }
+ manager.subjectTokenDestinations = destinations
+ manager.save()
+}
+
+export function handleTokenManagerUpdated(
+  event: TokenManagerUpdated,
+): void {
+  let manager = TokenLockManager.load(event.params.tokenManager.toHexString())!
+  manager.tokenManager = event.params.tokenManager
   manager.save()
 }

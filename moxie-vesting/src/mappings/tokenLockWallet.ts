@@ -13,7 +13,7 @@ import {
   LockCanceled,
 } from "../../generated/templates/MoxieTokenLockWallet/MoxieTokenLockWallet"
 
-import { TokenLockWallet, TokenManager } from "../../generated/schema"
+import { TokenLockWallet, TokenLockManager } from "../../generated/schema"
 
 export function handleTokensReleased(event: TokensReleased): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
@@ -44,7 +44,7 @@ export function handleTokensRevoked(event: TokensRevoked): void {
 
 export function handleManagerUpdated(event: ManagerUpdated): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
-  let manager = TokenManager.load(event.params._newManager.toHexString())
+  let manager = TokenLockManager.load(event.params._newManager.toHexString())
   if (manager == null) {
     log.error("Manager not found: {}", [event.params._newManager.toHexString()])
     throw new Error("Manager not found")
@@ -98,7 +98,7 @@ export function handleLockAccepted(event: LockAccepted): void {
 }
 export function handleLockCanceled(event: LockCanceled): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
-  let manager = TokenManager.load(tokenLockWallet.manager)!
+  let manager = TokenLockManager.load(tokenLockWallet.manager)!
   manager.tokens = manager.tokens.plus(tokenLockWallet.balance)
   tokenLockWallet.balance = BigInt.fromI32(0)
   tokenLockWallet.save()

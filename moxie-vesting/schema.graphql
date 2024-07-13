@@ -1,7 +1,7 @@
 """
 The Token manager data
 """
-type TokenManager @entity {
+type TokenLockManager @entity {
   "Token manager address"
   id: ID!
   "Master copy address"
@@ -10,12 +10,16 @@ type TokenManager @entity {
   tokens: BigInt!
   "List of addresses that are allowed to pull funds"
   tokenDestinations: [Bytes!]
+  "List of subject addresses that are allowed to pull funds"
+  subjectTokenDestinations: [Bytes!]
   "List of function call authorizations"
   authorizedFunctions: [AuthorizedFunction!] @derivedFrom(field: "manager")
   "Token lock count of contracts created"
   tokenLockCount: BigInt!
   "moxie pass token"
   moxiePassToken: Bytes
+  "token manager address"
+  tokenManager: Bytes
 }
 
 """
@@ -31,7 +35,7 @@ type AuthorizedFunction @entity {
   "Hash of the function signature"
   sigHash: Bytes!
   "Token lock Manager"
-  manager: TokenManager!
+  manager: TokenLockManager!
 }
 """
 Token Lock Wallets which hold locked MOXIE
@@ -40,7 +44,7 @@ type TokenLockWallet @entity {
   "The address of the token lock wallet"
   id: ID!
   "The Manager address"
-  manager: TokenManager!
+  manager: TokenLockManager!
   "The hash of the initializer"
   initHash: Bytes!
   "Address of the beneficiary of locked tokens"

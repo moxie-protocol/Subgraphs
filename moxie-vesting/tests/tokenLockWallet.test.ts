@@ -5,7 +5,7 @@ import {
   beforeEach,
   assert,
 } from "matchstick-as/assembly/index"
-import { TokenLockWallet, TokenManager } from "../generated/schema"
+import { TokenLockWallet, TokenLockManager } from "../generated/schema"
 import {} from "./manager.test"
 import {
   mockTokenLockManagerUpdated,
@@ -38,7 +38,7 @@ const DUMMY_ADDRESS = "0xbe5e630383b5baecf0db7b15c50d410edd5a2255"
 const TOKENS = BigInt.fromI32(100000)
 
 function createDummytokenLockWallet(): TokenLockWallet {
-  let manager = new TokenManager(DUMMY_ADDRESS)
+  let manager = new TokenLockManager(DUMMY_ADDRESS)
   manager.tokens = TOKENS
   manager.tokenLockCount = BigInt.fromI32(0)
   manager.masterCopy = Bytes.fromHexString(MASTER_COPY)

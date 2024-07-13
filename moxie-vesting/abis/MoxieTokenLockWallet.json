@@ -64,6 +64,44 @@
   },
   {
     "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_subjectToken",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_destination",
+        "type": "address"
+      }
+    ],
+    "name": "SubjectTokenDestinationsApproved",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_subjectToken",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "_destination",
+        "type": "address"
+      }
+    ],
+    "name": "SubjectTokenDestinationsRevoked",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
     "inputs": [],
     "name": "TokenDestinationsApproved",
     "type": "event"
@@ -158,6 +196,19 @@
   {
     "inputs": [],
     "name": "approveProtocol",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_subject",
+        "type": "address"
+      }
+    ],
+    "name": "approveSubjectToken",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -529,6 +580,19 @@
   {
     "inputs": [],
     "name": "revokeProtocol",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_subject",
+        "type": "address"
+      }
+    ],
+    "name": "revokeSubjectToken",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

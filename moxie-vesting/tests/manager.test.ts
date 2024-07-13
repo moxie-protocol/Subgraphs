@@ -6,7 +6,7 @@ import {
   assert,
 } from "matchstick-as/assembly/index"
 import {
-  TokenManager,
+  TokenLockManager,
   TokenLockWallet,
   AuthorizedFunction,
 } from "../generated/schema"
@@ -39,8 +39,8 @@ import { Address, BigInt, Bytes, log } from "@graphprotocol/graph-ts"
 const DUMMY_ADDRESS = "0xbe5e630383b5baecf0db7b15c50d410edd5a2255"
 const MASTER_COPY = "0xbe5e630383b5baecf0db7b15c50d410edd5a2255"
 const TOKENS = BigInt.fromI32(100000)
-export function createDummyTokenManager(): TokenManager {
-  let manager = new TokenManager(DUMMY_ADDRESS)
+export function createDummyTokenManager(): TokenLockManager {
+  let manager = new TokenLockManager(DUMMY_ADDRESS)
   manager.tokens = TOKENS
   manager.tokenLockCount = BigInt.fromI32(0)
   manager.masterCopy = Bytes.fromHexString(MASTER_COPY)
@@ -61,7 +61,7 @@ describe("Manager", () => {
     // calling the handler
     handleMasterCopyUpdated(event)
     // asserts
-    let createdEntity = TokenManager.load(sample1.contractAddress)!
+    let createdEntity = TokenLockManager.load(sample1.contractAddress)!
     assert.stringEquals(
       createdEntity.masterCopy.toHexString(),
       sample1.masterCopy
@@ -77,7 +77,7 @@ describe("Manager", () => {
     }
     const event = mockMoxiePassTokenUpdated(sample)
     handleMoxiePassTokenUpdated(event)
-    let createdEntity = TokenManager.load(DUMMY_ADDRESS)!
+    let createdEntity = TokenLockManager.load(DUMMY_ADDRESS)!
     assert.stringEquals(
       createdEntity!.moxiePassToken!.toHexString(),
       sample.moxiePassToken
@@ -95,7 +95,7 @@ describe("Manager", () => {
     }
     const event = mockTokensWithdrawn(sample)
     handleTokensWithdrawn(event)
-    let createdEntity = TokenManager.load(DUMMY_ADDRESS)!
+    let createdEntity = TokenLockManager.load(DUMMY_ADDRESS)!
     assert.stringEquals(
       createdEntity!.tokens.toString(),
       TOKENS.minus(withdrawnAmount).toString()
@@ -112,7 +112,7 @@ describe("Manager", () => {
     }
     const event = mockTokensDeposited(sample)
     handleTokensDeposited(event)
-    let createdEntity = TokenManager.load(DUMMY_ADDRESS)!
+    let createdEntity = TokenLockManager.load(DUMMY_ADDRESS)!
     assert.stringEquals(
       createdEntity!.tokens.toString(),
       TOKENS.plus(withdrawnAmount).toString()
@@ -150,7 +150,7 @@ describe("Manager", () => {
   })
   test("test handleTokenLockCreated", () => {
     createDummyTokenManager()
-    let createdEntity = TokenManager.load(DUMMY_ADDRESS)!
+    let createdEntity = TokenLockManager.load(DUMMY_ADDRESS)!
     assert.stringEquals(createdEntity!.tokenLockCount.toString(), "0")
     const sample: TokenLockCreatedInput = {
       hash: "0x000266c0a8904b3047dfab75698ff61be54a055aea90b19b531ca1d3d50ec0f7",
@@ -169,7 +169,7 @@ describe("Manager", () => {
     }
     const event = mockTokenLockCreated(sample)
     handleTokenLockCreated(event)
-    let updatedEntity = TokenManager.load(DUMMY_ADDRESS)!
+    let updatedEntity = TokenLockManager.load(DUMMY_ADDRESS)!
     assert.stringEquals(updatedEntity!.tokenLockCount.toString(), "1")
   })
 })

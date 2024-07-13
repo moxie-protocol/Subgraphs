@@ -17,7 +17,7 @@ dataSources:
       language: wasm/assemblyscript
       file: ./src/mappings/manager.ts
       entities:
-        - TokenManager
+        - TokenLockManager
         - TokenLockWallet
         - AuthorizedFunction
       abis:
@@ -38,6 +38,11 @@ dataSources:
           handler: handleTokenDestinationAllowed
         - event: MoxiePassTokenUpdated(indexed address)
           handler: handleMoxiePassTokenUpdated
+        - event: SubjectTokenDestinationAllowed(indexed address,bool)
+          handler: handleSubjectTokenDestinationAllowed
+        - event: TokenManagerUpdated(indexed address)
+          handler: handleTokenManagerUpdated
+        
 templates:
   - kind: ethereum/contract
     name: MoxieTokenLockWallet
