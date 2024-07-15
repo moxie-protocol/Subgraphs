@@ -1,7 +1,7 @@
 import { Address, BigDecimal, BigInt, store } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/MoxieToken/MoxieToken"
 import { AuctionCancellationSellOrder, AuctionClaimedFromOrder, AuctionNewSellOrder, AuctionOrder, MoxieTransfer, Order } from "../generated/schema"
-import { createUserProtocolOrder, getOrCreateAuctionTransferId, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubject, getOrCreateUser, getTxEntityId, savePortfolio, saveSubject, saveUser } from "./utils"
+import { createUserProtocolOrder, getOrCreateAuctionTransferId, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubject, getOrCreateUser, getTxEntityId, loadSummary, savePortfolio, saveSubject, saveUser } from "./utils"
 import { ORDER_TYPE_AUCTION as AUCTION, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_CLAIMED as CLAIMED, AUCTION_ORDER_PLACED as PLACED } from "./constants"
 
 export function handleTransfer(event: Transfer): void {
@@ -58,6 +58,11 @@ export function handleTransferTx(event: Transfer): void {
     subject.protocolTokenSpent = subject.protocolTokenSpent.plus(event.params.value)
     subject.protocolTokenInvested = subject.protocolTokenInvested.plus(new BigDecimal(event.params.value))
     saveSubject(subject, event.block)
+
+    let summary = loadSummary()
+    summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.plus(new BigDecimal(event.params.value))
+    summary.save()
+
     // creating AuctionOrder entity so that other auction events can refer this existing order
     let auctionOrder = new AuctionOrder(getAuctionOrderId(auctionNewSellOrder.subject, auctionNewSellOrder.userId, auctionNewSellOrder.buyAmount, auctionNewSellOrder.sellAmount))
     auctionOrder.order = order.id
@@ -97,6 +102,10 @@ export function handleTransferTx(event: Transfer): void {
     subject.protocolTokenSpent = subject.protocolTokenSpent.minus(event.params.value)
     subject.protocolTokenInvested = subject.protocolTokenInvested.minus(new BigDecimal(event.params.value))
     saveSubject(subject, event.block)
+
+    let summary = loadSummary()
+    summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.minus(new BigDecimal(event.params.value))
+    summary.save()
   }
   let auctionClaimedFromOrder = AuctionClaimedFromOrder.load(entityId)
   if (auctionClaimedFromOrder) {
@@ -131,6 +140,10 @@ export function handleTransferTx(event: Transfer): void {
     subject.protocolTokenSpent = subject.protocolTokenSpent.minus(event.params.value)
     subject.protocolTokenInvested = subject.protocolTokenInvested.minus(new BigDecimal(event.params.value))
     saveSubject(subject, event.block)
+
+    let summary = loadSummary()
+    summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.minus(new BigDecimal(event.params.value))
+    summary.save()
   }
 }
 

@@ -74,6 +74,9 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   saveUser(user, event.block)
 
   const summary = loadSummary()
+  summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+  summary.save()
+
   let activeFeeBeneficiary = ProtocolFeeBeneficiary.load(summary.activeProtocolFeeBeneficiary)
   if (!activeFeeBeneficiary) {
     throw new Error("protocol beneficiary not found")
@@ -198,7 +201,9 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
     user.protocolTokenInvested = user.protocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
     subject.protocolTokenInvested = subject.protocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
+    summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
   }
+  summary.save()
   saveUser(user, event.block)
   savePortfolio(portfolio, event.block)
   saveSubject(subject, event.block)
@@ -267,5 +272,6 @@ export function handleInitialized(event: Initialized): void {
 
   summary.totalReserve = BigInt.fromI32(0)
   summary.totalTokensIssued = BigInt.fromI32(0)
+  summary.totalProtocolTokenInvested = new BigDecimal(BigInt.fromI32(0))
   summary.save()
 }

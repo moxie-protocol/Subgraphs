@@ -428,7 +428,10 @@ type SubjectFeeTransfer @entity {
 type Summary @entity {
   id: ID!
   totalTokensIssued: BigInt!
+  "total reserve in the vault"
   totalReserve: BigInt!
+  "total protocol token spent by all users - after reducing when user sells the token"
+  totalProtocolTokenInvested: BigDecimal!
   activeProtocolFeeBeneficiary: ProtocolFeeBeneficiary!
   protocolBuyFeePct: BigInt!
   protocolSellFeePct: BigInt!
