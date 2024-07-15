@@ -63,11 +63,11 @@ function createSubjectHourlySnapshot(subject: Subject, timestamp: BigInt): void 
   let snapshot = SubjectHourlySnapshot.load(snapshotId)
   if (!snapshot) {
     snapshot = new SubjectHourlySnapshot(snapshotId)
-    snapshot.startPrice = subject.currentPrice
+    snapshot.startPrice = subject.currentPriceinMoxie
     snapshot.startUniqueHolders = subject.uniqueHolders
     snapshot.startVolume = subject.volume
     snapshot.startBeneficiaryFee = subject.beneficiaryFee
-    snapshot.startProtcolFee = subject.protcolFee
+    snapshot.startProtocolFee = subject.protocolFee
   }
   snapshot.endTimestamp = snapshotTimestamp
 
@@ -75,7 +75,7 @@ function createSubjectHourlySnapshot(subject: Subject, timestamp: BigInt): void 
 
   snapshot.beneficiary = subject.beneficiary
   snapshot.reserve = subject.reserve
-  snapshot.endPrice = subject.currentPrice
+  snapshot.endPrice = subject.currentPriceinMoxie
   snapshot.hourlyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
 
   snapshot.totalSupply = subject.totalSupply
@@ -89,8 +89,8 @@ function createSubjectHourlySnapshot(subject: Subject, timestamp: BigInt): void 
   snapshot.endBeneficiaryFee = subject.beneficiaryFee
   snapshot.hourlyBeneficiaryFeeChange = snapshot.endBeneficiaryFee.minus(snapshot.startBeneficiaryFee) // TODO: confirm
 
-  snapshot.endProtcolFee = subject.protcolFee
-  snapshot.hourlyProtcolFeeChange = snapshot.endProtcolFee.minus(snapshot.startProtcolFee) // TODO: confirm
+  snapshot.endProtocolFee = subject.protocolFee
+  snapshot.hourlyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
   snapshot.save()
 }
 
@@ -100,11 +100,11 @@ function createSubjectDailySnapshot(subject: Subject, timestamp: BigInt): void {
   let snapshot = SubjectDailySnapshot.load(snapshotId)
   if (!snapshot) {
     snapshot = new SubjectDailySnapshot(snapshotId)
-    snapshot.startPrice = subject.currentPrice
+    snapshot.startPrice = subject.currentPriceinMoxie
     snapshot.startUniqueHolders = subject.uniqueHolders
     snapshot.startVolume = subject.volume
     snapshot.startBeneficiaryFee = subject.beneficiaryFee
-    snapshot.startProtcolFee = subject.protcolFee
+    snapshot.startProtocolFee = subject.protocolFee
   }
   snapshot.endTimestamp = snapshotTimestamp
 
@@ -112,7 +112,7 @@ function createSubjectDailySnapshot(subject: Subject, timestamp: BigInt): void {
 
   snapshot.beneficiary = subject.beneficiary
   snapshot.reserve = subject.reserve
-  snapshot.endPrice = subject.currentPrice
+  snapshot.endPrice = subject.currentPriceinMoxie
   snapshot.dailyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
 
   snapshot.totalSupply = subject.totalSupply
@@ -126,15 +126,16 @@ function createSubjectDailySnapshot(subject: Subject, timestamp: BigInt): void {
   snapshot.endBeneficiaryFee = subject.beneficiaryFee
   snapshot.dailyBeneficiaryFeeChange = snapshot.endBeneficiaryFee.minus(snapshot.startBeneficiaryFee) // TODO: confirm
 
-  snapshot.endProtcolFee = subject.protcolFee
-  snapshot.dailyProtcolFeeChange = snapshot.endProtcolFee.minus(snapshot.startProtcolFee) // TODO: confirm
+  snapshot.endProtocolFee = subject.protocolFee
+  snapshot.dailyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
   snapshot.save()
 }
 
-export function saveSubject(subject: Subject, timestamp: BigInt): void {
+export function saveSubject(subject: Subject, event: ethereum.Event): void {
+  subject.blockInfo = getOrCreateBlockInfo(event).id
   subject.save()
-  createSubjectDailySnapshot(subject, timestamp)
-  createSubjectHourlySnapshot(subject, timestamp)
+  createSubjectDailySnapshot(subject, event.block.timestamp)
+  createSubjectHourlySnapshot(subject, event.block.timestamp)
 }
 
 export function loadSummary(): Summary {
@@ -162,10 +163,10 @@ export function getTxEntityId(event: ethereum.Event): string {
 }
 
 export function handleNewBeneficiary(beneficiary: Address): void {
-  let protcolFeeBeneficiaryEntity = new ProtocolFeeBeneficiary(beneficiary.toHexString())
-  protcolFeeBeneficiaryEntity.beneficiary = beneficiary
-  protcolFeeBeneficiaryEntity.totalFees = BigInt.zero()
-  protcolFeeBeneficiaryEntity.save()
+  let protocolFeeBeneficiaryEntity = new ProtocolFeeBeneficiary(beneficiary.toHexString())
+  protocolFeeBeneficiaryEntity.beneficiary = beneficiary
+  protocolFeeBeneficiaryEntity.totalFees = BigInt.fromI32(0)
+  protocolFeeBeneficiaryEntity.save()
 
   let summary = loadSummary()
   summary.activeProtocolFeeBeneficiary = beneficiary.toHexString()

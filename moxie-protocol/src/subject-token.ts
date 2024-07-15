@@ -47,7 +47,7 @@ export function handleTransfer(event: Transfer): void {
       subjectToken.uniqueHolders = uniqueHoldersCount
     }
   }
-  saveSubject(subjectToken, event.block.timestamp)
+  saveSubject(subjectToken, event)
   // updating portfolios
   if (!mint) {
     let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash)

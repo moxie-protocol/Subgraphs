@@ -15,7 +15,8 @@ export function handleVaultDeposit(event: VaultDeposit): void {
   let subject = getOrCreateSubject(subjectToken)
   // subject.reserve = subject.reserve.plus(event.params.amount)
   subject.reserve = event.params.totalReserve
-  saveSubject(subject, event.block.timestamp)
+  subject.volume = subject.reserve
+  saveSubject(subject, event)
 
   let summary = loadSummary()
   summary.totalReserve = summary.totalReserve.plus(event.params.amount)
@@ -36,7 +37,8 @@ export function handleVaultTransfer(event: VaultTransfer): void {
   let subject = getOrCreateSubject(subjectToken)
   // subject.reserve = subject.reserve.minus(event.params.amount)
   subject.reserve = event.params.totalReserve
-  saveSubject(subject, event.block.timestamp)
+  subject.volume = subject.reserve
+  saveSubject(subject, event)
 
   let summary = loadSummary()
   summary.totalReserve = summary.totalReserve.minus(event.params.amount)
