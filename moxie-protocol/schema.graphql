@@ -270,6 +270,8 @@ type Portfolio @entity {
   balance: BigInt!
   "Moxie spent by user to buy the subject token"
   protocolTokenSpent: BigInt!
+  "total moxie invested by the user"
+  protocolTokenInvestment: BigDecimal!
   "Orders associated with the user's portfolio"
   orders: [Order!]! @derivedFrom(field: "portfolio")
 }
@@ -336,9 +338,16 @@ type Order @entity {
   blockInfo: BlockInfo!
   "user order index"
   userProtocolOrderIndex: BigInt!
-  "isCancelled flag if auction is cancelled"
-  isCancelled: Boolean!
+  "auction order status"
+  auctionOrderStatus: AuctionOrderStatus!
 }
+enum AuctionOrderStatus {
+  NA
+  PLACED
+  CLAIMED
+  CANCELLED
+}
+
 enum OrderType {
   SELL
   BUY

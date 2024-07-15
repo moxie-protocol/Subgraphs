@@ -37,6 +37,7 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.balance = BigInt.zero()
     log.info("Portfolio {} initialized {} balance: {}", [portfolioId, txHash.toHexString(), portfolio.balance.toString()])
     portfolio.protocolTokenSpent = BigInt.zero()
+    portfolio.protocolTokenInvestment = BigDecimal.fromString("0")
     portfolio.save()
   }
   return portfolio

@@ -4,7 +4,7 @@ import { Order, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectFeeTransfer,
 
 import { handleBondingCurveInitializedTx, handleSubjectSharePurchasedTx, handleSubjectShareSoldTx, handleUpdateBeneficiaryTx, handleUpdateFeesTx, handleUpdateFormulaTx } from "./moxie-bonding-curve-tx"
 import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, createUserProtocolOrder, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubject, getOrCreateUser, getTxEntityId, handleNewBeneficiary, loadProtocolOrder, loadSummary, saveSubject } from "./utils"
-import { SUMMARY_ID } from "./constants"
+import { AUCTION_ORDER_STATUS, AUCTION_ORDER_TYPE, SUMMARY_ID } from "./constants"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   handleBondingCurveInitializedTx(event)
 }
@@ -43,15 +43,16 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   order.subjectToken = subject.id
   order.subjectAmount = event.params._buyAmount
   order.subjectAmountLeft = event.params._buyAmount
-  order.orderType = "BUY"
+  order.orderType = AUCTION_ORDER_TYPE.BUY
   order.user = user.id
   order.price = price
-  order.isCancelled = false
+  order.auctionOrderStatus = AUCTION_ORDER_STATUS.NA
   order.blockInfo = blockInfo.id
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.transaction.hash)
   portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.plus(event.params._sellAmount)
+  portfolio.protocolTokenInvestment = portfolio.protocolTokenInvestment.plus(new BigDecimal(event.params._sellAmount))
   portfolio.save()
 
   order.portfolio = portfolio.id
@@ -60,9 +61,9 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 
   createUserProtocolOrder(user, order)
 
-  // increasing protocol token spent
+  // increasing user protocol token spent
   user.protocolTokenSpent = user.protocolTokenSpent.plus(event.params._sellAmount)
-  // increasing investment
+  // increasing user investment
   user.protocolTokenInvestment = user.protocolTokenInvestment.plus(new BigDecimal(event.params._sellAmount))
   user.save()
 
@@ -136,17 +137,16 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.subjectAmount = event.params._sellAmount
   order.subjectAmountLeft = BigInt.zero()
   order.protocolTokenInvestment = new BigDecimal(BigInt.zero())
-  order.orderType = "SELL"
+  order.orderType = AUCTION_ORDER_TYPE.SELL
   order.user = user.id
   order.price = price
   order.blockInfo = blockInfo.id
-  order.isCancelled = false
+  order.auctionOrderStatus = AUCTION_ORDER_STATUS.NA
   order.userProtocolOrderIndex = BigInt.fromI32(0)
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.transaction.hash)
   // portfolio.balance = portfolio.balance.minus(event.params._sellAmount)
-  portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(event.params._buyAmount)
   portfolio.save()
 
   order.portfolio = portfolio.id
@@ -164,20 +164,25 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   // decreasing protocol token spent
   user.protocolTokenSpent = user.protocolTokenSpent.minus(event.params._buyAmount)
-  let protocolOrders = user.protocolOrders
-  let subjectTokenSpentRemaining = event.params._sellAmount
+  let subjectTokenRemaining = event.params._sellAmount
+  log.debug("incoming sell order id: {} initial subjectTokenRemaining {}", [order.id, subjectTokenRemaining.toString()])
   for (let i = BigInt.fromI32(1); i.le(user.protocolOrdersCount); i = i.plus(BigInt.fromI32(1))) {
     let protocolOrder = loadProtocolOrder(user, i)
-    if (protocolOrder.subjectToken != subject.id || protocolOrder.isCancelled) {
+    if (protocolOrder.subjectToken != subject.id || protocolOrder.auctionOrderStatus == AUCTION_ORDER_STATUS.CANCELLED || protocolOrder.auctionOrderStatus == AUCTION_ORDER_STATUS.PLACED) {
+      log.debug("incoming sell order id: {},skipping protocolOrder id: {} protocolOrder.subjectToken {} order.subject {} protocolOrder.auctionOrderStatus {}", [order.id, protocolOrder.id, protocolOrder.subjectToken, subject.id, protocolOrder.auctionOrderStatus])
       // should reduce subjectAmountLeft only if subjectToken is matching
       // skipping cancelled orders
       continue
     }
-    if (subjectTokenSpentRemaining.gt(protocolOrder.subjectAmountLeft)) {
-      subjectTokenSpentRemaining = subjectTokenSpentRemaining.minus(protocolOrder.subjectAmountLeft)
+    if (subjectTokenRemaining.gt(protocolOrder.subjectAmountLeft)) {
+      log.debug("incoming sell order id: {} subjectTokenRemaining {} > protocolOrder.subjectAmountLeft {} protocolOrder {} ", [order.id, subjectTokenRemaining.toString(), protocolOrder.subjectAmountLeft.toString(), protocolOrder.id])
+      subjectTokenRemaining = subjectTokenRemaining.minus(protocolOrder.subjectAmountLeft)
+      log.debug("incoming sell order id: {} new subjectTokenRemaining {} protocolOrder {} ", [order.id, subjectTokenRemaining.toString(), protocolOrder.id])
       protocolOrder.subjectAmountLeft = BigInt.fromI32(0)
     } else {
-      protocolOrder.subjectAmountLeft = protocolOrder.subjectAmountLeft.minus(subjectTokenSpentRemaining)
+      log.debug("incoming sell order id: {} subjectTokenRemaining {} < protocolOrder.subjectAmountLeft {} protocolOrder {} ", [order.id, subjectTokenRemaining.toString(), protocolOrder.subjectAmountLeft.toString(), protocolOrder.id])
+      protocolOrder.subjectAmountLeft = protocolOrder.subjectAmountLeft.minus(subjectTokenRemaining)
+      log.debug("incoming sell order id: {} new protocolOrder.subjectAmountLeft {} protocolOrder {} ", [order.id, protocolOrder.subjectAmountLeft.toString(), protocolOrder.id])
     }
     if (protocolOrder.subjectAmount == BigInt.zero()) {
       protocolOrder.protocolTokenInvestment = new BigDecimal(BigInt.zero())
@@ -185,6 +190,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
       protocolOrder.protocolTokenInvestment = protocolOrder.subjectAmountLeft.times(protocolOrder.protocolTokenAmount).divDecimal(new BigDecimal(protocolOrder.subjectAmount))
     }
     protocolOrder.save()
+    portfolio.protocolTokenInvestment = portfolio.protocolTokenInvestment.minus(new BigDecimal(portfolio.protocolTokenSpent)).plus(protocolOrder.protocolTokenInvestment)
     user.protocolTokenInvestment = user.protocolTokenInvestment.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvestment)
   }
   user.save()

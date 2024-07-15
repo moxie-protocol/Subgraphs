@@ -2,6 +2,7 @@ import { Address, BigDecimal, BigInt, store } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/MoxieToken/MoxieToken"
 import { AuctionCancellationSellOrder, AuctionClaimedFromOrder, AuctionNewSellOrder, AuctionOrder, MoxieTransfer, Order } from "../generated/schema"
 import { createUserProtocolOrder, getOrCreateAuctionTransferId, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateUser, getTxEntityId } from "./utils"
+import { AUCTION_ORDER_STATUS, AUCTION_ORDER_TYPE } from "./constants"
 
 export function handleTransfer(event: Transfer): void {
   handleTransferTx(event)
@@ -26,12 +27,12 @@ export function handleTransferTx(event: Transfer): void {
     order.protocolToken = event.address
     order.protocolTokenAmount = event.params.value
     order.protocolTokenInvestment = new BigDecimal(event.params.value)
-    order.isCancelled = false
+    order.auctionOrderStatus = AUCTION_ORDER_STATUS.PLACED
     order.subjectToken = auctionNewSellOrder.subject
     // order is just created,will be filling this data later
     order.subjectAmount = BigInt.zero()
     order.subjectAmountLeft = BigInt.zero()
-    order.orderType = "AUCTION"
+    order.orderType = AUCTION_ORDER_TYPE.AUCTION
     let user = getOrCreateUser(event.params.from)
     order.user = user.id
     order.userProtocolOrderIndex = user.protocolOrdersCount
@@ -41,6 +42,7 @@ export function handleTransferTx(event: Transfer): void {
     // updating user's portfolio
     let portfolio = getOrCreatePortfolio(event.params.from, Address.fromString(auctionNewSellOrder.subject), event.transaction.hash)
     portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.plus(event.params.value)
+    portfolio.protocolTokenInvestment = portfolio.protocolTokenInvestment.plus(new BigDecimal(event.params.value))
     portfolio.save()
 
     order.portfolio = portfolio.id
@@ -72,16 +74,19 @@ export function handleTransferTx(event: Transfer): void {
     if (!order) {
       throw new Error("Order not found for auctionOrder during auctionCancellationSellOrder: " + auctionOrder.order)
     }
-    order.isCancelled = true
+    order.auctionOrderStatus = AUCTION_ORDER_STATUS.CANCELLED
     order.save()
 
     // remove order from user's orders
     let user = getOrCreateUser(event.params.to)
     user.protocolTokenSpent = user.protocolTokenSpent.minus(event.params.value)
+    // TODO: reduce protocolTokenInvestment
     user.save()
     // updating user's portfolio
     let portfolio = getOrCreatePortfolio(event.params.to, Address.fromString(auctionCancellationSellOrder.subject), event.transaction.hash)
     portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(event.params.value)
+    portfolio.protocolTokenInvestment = portfolio.protocolTokenInvestment.minus(new BigDecimal(event.params.value))
+
     portfolio.save()
   }
   let auctionClaimedFromOrder = AuctionClaimedFromOrder.load(entityId)
@@ -97,8 +102,10 @@ export function handleTransferTx(event: Transfer): void {
     if (!order) {
       throw new Error("Order not found for auctionOrder during auctionClaimedFromOrder: " + auctionOrder.order)
     }
+    order.auctionOrderStatus = AUCTION_ORDER_STATUS.CLAIMED
     // reducing refund from order's protocolTokenAmount
     order.protocolTokenAmount = order.protocolTokenAmount.minus(event.params.value)
+    // TODO: reducing refund from order's protocolTokenInvestment
     order.save()
     // reducing refund amount from user's protocolTokenSpent
     let user = getOrCreateUser(event.params.to)
@@ -107,6 +114,8 @@ export function handleTransferTx(event: Transfer): void {
     // reducing refund amount from user's portfolio
     let portfolio = getOrCreatePortfolio(event.params.to, Address.fromString(auctionClaimedFromOrder.subject), event.transaction.hash)
     portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(event.params.value)
+    portfolio.protocolTokenInvestment = portfolio.protocolTokenInvestment.minus(new BigDecimal(event.params.value))
+
     portfolio.save()
   }
 }
