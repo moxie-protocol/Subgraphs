@@ -13,6 +13,7 @@ export function getOrCreateSubject(tokenAddress: Address): Subject {
     subject.decimals = BigInt.fromI32(token.decimals())
     // setting default values for now
     subject.reserve = BigInt.zero()
+    subject.reserveRatio = BigInt.zero()
     subject.currentPrice = BigDecimal.fromString("0")
     subject.totalSupply = BigInt.zero()
     subject.uniqueHolders = BigInt.zero()

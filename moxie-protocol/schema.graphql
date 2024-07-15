@@ -233,6 +233,8 @@ type Subject @entity {
   beneficiary: User
   "reserve balance (moxie)/ total locked value"
   reserve: BigInt!
+  "constant used to calculate bonding curve"
+  reserveRatio: BigInt!
   "current price of the token"
   currentPrice: BigDecimal!
   "Total supply of the token"

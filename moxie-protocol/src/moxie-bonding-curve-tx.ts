@@ -2,13 +2,16 @@ import { BigInt } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 
 import { MoxieBondingCurveBondingCurveInitializedTx, MoxieBondingCurveSubjectSharePurchasedTx, MoxieBondingCurveUpdateBeneficiaryTx, MoxieBondingCurveUpdateFeesTx, MoxieBondingCurveSubjectShareSoldTx, MoxieBondingCurveUpdateFormulaTx } from "../generated/schema"
-import { getOrCreateBlockInfo, getTxEntityId } from "./utils"
+import { getOrCreateBlockInfo, getOrCreateSubject, getTxEntityId } from "./utils"
 
 export function handleBondingCurveInitializedTx(event: BondingCurveInitialized): void {
   let bondingCurve = new MoxieBondingCurveBondingCurveInitializedTx(getTxEntityId(event))
   bondingCurve.blockInfo = getOrCreateBlockInfo(event).id
   bondingCurve.txHash = event.transaction.hash
   bondingCurve.subject = event.params._subject
+  let subject = getOrCreateSubject(event.params._subject)
+  subject.reserveRatio = event.params._reserveRatio
+  subject.save()
   bondingCurve.subjectToken = event.params._subjectToken
   bondingCurve.initialSupply = event.params._initialSupply
   bondingCurve.reserve = event.params._reserve
