@@ -1,6 +1,6 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { AuctionTransfer, BlockInfo, Portfolio, ProtocolFeeBeneficiary, Subject, SubjectDailySnapshot, SubjectHourlySnapshot, Summary, User } from "../generated/schema"
+import { AuctionTransfer, BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, Subject, SubjectDailySnapshot, SubjectFeeTransfer, SubjectHourlySnapshot, Summary, User, UserProtocolOrder } from "../generated/schema"
 import { PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
 
 export function getOrCreateSubject(tokenAddress: Address): Subject {
@@ -12,13 +12,13 @@ export function getOrCreateSubject(tokenAddress: Address): Subject {
     subject.symbol = token.symbol()
     subject.decimals = BigInt.fromI32(token.decimals())
     // setting default values for now
-    subject.reserve = BigInt.fromI32(0)
+    subject.reserve = BigInt.zero()
     subject.currentPrice = BigDecimal.fromString("0")
-    subject.totalSupply = BigInt.fromI32(0)
-    subject.uniqueHolders = BigInt.fromI32(0)
-    subject.volume = BigInt.fromI32(0)
-    subject.beneficiaryFee = BigInt.fromI32(0)
-    subject.protcolFee = BigInt.fromI32(0)
+    subject.totalSupply = BigInt.zero()
+    subject.uniqueHolders = BigInt.zero()
+    subject.volume = BigInt.zero()
+    subject.beneficiaryFee = BigInt.zero()
+    subject.protcolFee = BigInt.zero()
     subject.holders = []
     subject.save()
   }
@@ -34,9 +34,9 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     let subject = getOrCreateSubject(subjectAddress)
     portfolio.user = user.id
     portfolio.subject = subject.id
-    portfolio.balance = BigInt.fromI32(0)
+    portfolio.balance = BigInt.zero()
     log.info("Portfolio {} initialized {} balance: {}", [portfolioId, txHash.toHexString(), portfolio.balance.toString()])
-    portfolio.protocolTokenSpent = BigInt.fromI32(0)
+    portfolio.protocolTokenSpent = BigInt.zero()
     portfolio.save()
   }
   return portfolio
@@ -46,12 +46,10 @@ export function getOrCreateUser(userAddress: Address): User {
   let user = User.load(userAddress.toHexString())
   if (!user) {
     user = new User(userAddress.toHexString())
-    user.buyOrders = []
-    user.sellOrders = []
-    user.auctionOrders = []
     user.subjectFeeTransfer = []
-    user.protocolOrders = []
-    user.protocolTokenSpent = BigInt.fromI32(0)
+    user.protocolTokenSpent = BigInt.zero()
+    user.protocolTokenInvestment = BigDecimal.fromString("0")
+    user.protocolOrdersCount = BigInt.zero()
     user.save()
   }
   return user
@@ -164,7 +162,7 @@ export function getTxEntityId(event: ethereum.Event): string {
 export function handleNewBeneficiary(beneficiary: Address): void {
   let protcolFeeBeneficiaryEntity = new ProtocolFeeBeneficiary(beneficiary.toHexString())
   protcolFeeBeneficiaryEntity.beneficiary = beneficiary
-  protcolFeeBeneficiaryEntity.totalFees = BigInt.fromI32(0)
+  protcolFeeBeneficiaryEntity.totalFees = BigInt.zero()
   protcolFeeBeneficiaryEntity.save()
 
   let summary = loadSummary()
@@ -201,4 +199,55 @@ export function getOrCreateAuctionTransferId(txHash: Bytes): string {
     auctionTransfer.save()
   }
   return auctionTransfer.id
+}
+
+export function createProtocolFeeTransfer(event: ethereum.Event, blockInfo: BlockInfo, order: Order, subject: Subject, beneficiary: ProtocolFeeBeneficiary, fee: BigInt): void {
+  let protocolFeeTransfer = new ProtocolFeeTransfer(getTxEntityId(event))
+  protocolFeeTransfer.txHash = event.transaction.hash
+  protocolFeeTransfer.blockInfo = blockInfo.id
+  protocolFeeTransfer.order = order.id
+  protocolFeeTransfer.subject = subject.id
+  protocolFeeTransfer.beneficiary = beneficiary.id
+  protocolFeeTransfer.amount = fee
+  protocolFeeTransfer.save()
+}
+
+export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: BlockInfo, order: Order, subject: Subject, beneficiary: string | null, fee: BigInt): void {
+  let subjectFeeTransfer = new SubjectFeeTransfer(getTxEntityId(event))
+  subjectFeeTransfer.txHash = event.transaction.hash
+  subjectFeeTransfer.blockInfo = blockInfo.id
+  subjectFeeTransfer.order = order.id
+  subjectFeeTransfer.subject = subject.id
+  subjectFeeTransfer.amount = fee
+  subjectFeeTransfer.beneficiary = beneficiary
+
+  subjectFeeTransfer.save()
+}
+
+export function createUserProtocolOrder(user: User, order: Order): void {
+  user.protocolOrdersCount = user.protocolOrdersCount.plus(BigInt.fromI32(1))
+  user.save()
+
+  order.userProtocolOrderIndex = user.protocolOrdersCount
+  order.save()
+
+  let entityId = user.id.concat("-").concat(user.protocolOrdersCount.toString())
+  let userProtocolOrder = new UserProtocolOrder(entityId)
+  userProtocolOrder.user = user.id
+  userProtocolOrder.order = order.id
+  userProtocolOrder.subjectToken = order.subjectToken
+  userProtocolOrder.save()
+}
+
+export function loadProtocolOrder(user: User, index: BigInt): Order {
+  let entityId = user.id.concat("-").concat(index.toString())
+  let userProtocolOrder = UserProtocolOrder.load(entityId)
+  if (!userProtocolOrder) {
+    throw new Error("UserProtocolOrder not found for entityId: " + entityId)
+  }
+  let order = Order.load(userProtocolOrder.order)
+  if (!order) {
+    throw new Error("Order not found for entityId: " + entityId)
+  }
+  return order
 }

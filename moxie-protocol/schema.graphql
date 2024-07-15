@@ -279,18 +279,30 @@ type User @entity {
   id: ID!
   "User's Portfolio for each subject token he/she holds"
   portfolio: [Portfolio!]! @derivedFrom(field: "user")
-  "buyOrders placed by the user"
-  buyOrders: [Order!]!
-  "sellOrders placed by the user"
-  sellOrders: [Order!]!
-  "auctionOrders placed by the user"
-  auctionOrders: [Order!]!
-  "orders including auction & buyOrders"
-  protocolOrders: [Order!]!
+  "orders placed by the user (auction, buy & sell)"
+  orders: [Order!]! @derivedFrom(field: "user")
+  "orders responsible for the user's portfolio"
+  protocolOrders: [UserProtocolOrder!]! @derivedFrom(field: "user")
   "beneficiary fee transfers"
   subjectFeeTransfer: [SubjectFeeTransfer!]!
   "total moxie spent by the user"
   protocolTokenSpent: BigInt!
+  "total moxie invested by the user"
+  protocolTokenInvestment: BigDecimal!
+  "total number of orders (auction & buyOrders)"
+  protocolOrdersCount: BigInt!
+}
+
+# these are orders used to calculate the user's portfolio
+type UserProtocolOrder @entity {
+  "User's address+-+userProtocolOrderIndex"
+  id: ID!
+  "User's address"
+  user: User!
+  "Order's id"
+  order: Order!
+  "subject token address"
+  subjectToken: Subject!
 }
 
 type Order @entity {
@@ -322,6 +334,10 @@ type Order @entity {
   protocolFeeTransfer: ProtocolFeeTransfer! @derivedFrom(field: "order")
   "block information"
   blockInfo: BlockInfo!
+  "user order index"
+  userProtocolOrderIndex: BigInt!
+  "isCancelled flag if auction is cancelled"
+  isCancelled: Boolean!
 }
 enum OrderType {
   SELL

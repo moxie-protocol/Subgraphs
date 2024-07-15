@@ -1,7 +1,7 @@
 import { Address, BigDecimal, BigInt, store } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/MoxieToken/MoxieToken"
 import { AuctionCancellationSellOrder, AuctionClaimedFromOrder, AuctionNewSellOrder, AuctionOrder, MoxieTransfer, Order } from "../generated/schema"
-import { getOrCreateAuctionTransferId, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateUser, getTxEntityId } from "./utils"
+import { createUserProtocolOrder, getOrCreateAuctionTransferId, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateUser, getTxEntityId } from "./utils"
 
 export function handleTransfer(event: Transfer): void {
   handleTransferTx(event)
@@ -26,7 +26,7 @@ export function handleTransferTx(event: Transfer): void {
     order.protocolToken = event.address
     order.protocolTokenAmount = event.params.value
     order.protocolTokenInvestment = new BigDecimal(event.params.value)
-
+    order.isCancelled = false
     order.subjectToken = auctionNewSellOrder.subject
     // order is just created,will be filling this data later
     order.subjectAmount = BigInt.zero()
@@ -34,6 +34,7 @@ export function handleTransferTx(event: Transfer): void {
     order.orderType = "AUCTION"
     let user = getOrCreateUser(event.params.from)
     order.user = user.id
+    order.userProtocolOrderIndex = user.protocolOrdersCount
     // order is just created,will be filling this data later
     order.price = new BigDecimal(BigInt.zero())
     order.blockInfo = blockInfo.id
@@ -44,17 +45,11 @@ export function handleTransferTx(event: Transfer): void {
 
     order.portfolio = portfolio.id
     order.save()
+    createUserProtocolOrder(user, order)
 
     user.protocolTokenSpent = user.protocolTokenSpent.plus(event.params.value)
-    // updating user's orders
-    let orders = user.auctionOrders
-    orders.push(order.id)
-    user.auctionOrders = orders
+    user.protocolTokenInvestment = user.protocolTokenInvestment.plus(new BigDecimal(event.params.value))
 
-    // updating user's protocolOrders
-    let protocolOrders = user.protocolOrders
-    protocolOrders.push(order.id)
-    user.protocolOrders = orders
     user.save()
 
     // creating AuctionOrder entity so that other auction events can refer this existing order
@@ -72,6 +67,14 @@ export function handleTransferTx(event: Transfer): void {
     }
     auctionOrder.auctionCancellationSellOrder = auctionCancellationSellOrder.id
     auctionOrder.save()
+
+    let order = Order.load(auctionOrder.order)
+    if (!order) {
+      throw new Error("Order not found for auctionOrder during auctionCancellationSellOrder: " + auctionOrder.order)
+    }
+    order.isCancelled = true
+    order.save()
+
     // remove order from user's orders
     let user = getOrCreateUser(event.params.to)
     user.protocolTokenSpent = user.protocolTokenSpent.minus(event.params.value)
@@ -80,16 +83,6 @@ export function handleTransferTx(event: Transfer): void {
     let portfolio = getOrCreatePortfolio(event.params.to, Address.fromString(auctionCancellationSellOrder.subject), event.transaction.hash)
     portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(event.params.value)
     portfolio.save()
-
-    let orders = user.auctionOrders
-    let index = orders.indexOf(auctionOrder.order)
-    if (index > -1) {
-      orders.splice(index, 1)
-    }
-    user.auctionOrders = orders
-    user.save()
-    // delete order
-    store.remove("Order", auctionOrder.order)
   }
   let auctionClaimedFromOrder = AuctionClaimedFromOrder.load(entityId)
   if (auctionClaimedFromOrder) {
