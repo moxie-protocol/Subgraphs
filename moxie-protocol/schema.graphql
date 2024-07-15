@@ -83,7 +83,7 @@ type TokenManagerTokenDeployedTx @entity {
 type SubjectTokenTransferTx @entity {
   "txHash+-+logIndex"
   id: ID!
-  txHash: Bytes!
+  txHash: AuctionTransfer!
   blockInfo: BlockInfo!
   contractAddress: Bytes!
   from: Bytes!
@@ -237,6 +237,8 @@ type Subject @entity {
   currentPriceinMoxie: BigDecimal!
   "current price of the token in Moxie in wei unit"
   currentPriceinWeiInMoxie: BigDecimal!
+  "constant used to calculate bonding curve"
+  reserveRatio: BigInt!
   "Total supply of the token"
   totalSupply: BigInt!
   "holders"
@@ -277,9 +279,10 @@ type Portfolio @entity {
   balance: BigInt!
   "Moxie spent by user to buy the subject token"
   protocolTokenSpent: BigInt!
+  "total moxie invested by the user"
+  protocolTokenInvestment: BigDecimal!
   "Orders associated with the user's portfolio"
   orders: [Order!]! @derivedFrom(field: "portfolio")
-
 }
 
 type User @entity {
@@ -287,14 +290,30 @@ type User @entity {
   id: ID!
   "User's Portfolio for each subject token he/she holds"
   portfolio: [Portfolio!]! @derivedFrom(field: "user")
-  "buyOrders placed by the user"
-  buyOrders: [Order!]!
-  "sellOrders placed by the user"
-  sellOrders: [Order!]!
+  "orders placed by the user (auction, buy & sell)"
+  orders: [Order!]! @derivedFrom(field: "user")
+  "orders responsible for the user's portfolio"
+  protocolOrders: [UserProtocolOrder!]! @derivedFrom(field: "user")
   "beneficiary fee transfers"
   subjectFeeTransfer: [SubjectFeeTransfer!]!
   "total moxie spent by the user"
   protocolTokenSpent: BigInt!
+  "total moxie invested by the user"
+  protocolTokenInvestment: BigDecimal!
+  "total number of orders (auction & buyOrders)"
+  protocolOrdersCount: BigInt!
+}
+
+# these are orders used to calculate the user's portfolio
+type UserProtocolOrder @entity {
+  "User's address+-+userProtocolOrderIndex"
+  id: ID!
+  "User's address"
+  user: User!
+  "Order's id"
+  order: Order!
+  "subject token address"
+  subjectToken: Subject!
 }
 
 type Order @entity {
@@ -308,6 +327,10 @@ type Order @entity {
   subjectToken: Subject!
   "Amount of subject token"
   subjectAmount: BigInt!
+  "Amount of subject token Left to be sold in the order"
+  subjectAmountLeft: BigInt!
+  "investment amount in moxie"
+  protocolTokenInvestment: BigDecimal!
   "Price of the subject token"
   price: BigDecimal!
   "BUY/SELL order type"
@@ -322,10 +345,22 @@ type Order @entity {
   protocolFeeTransfer: ProtocolFeeTransfer! @derivedFrom(field: "order")
   "block information"
   blockInfo: BlockInfo!
+  "user order index"
+  userProtocolOrderIndex: BigInt!
+  "auction order status"
+  auctionOrderStatus: AuctionOrderStatus!
 }
+enum AuctionOrderStatus {
+  NA
+  PLACED
+  CLAIMED
+  CANCELLED
+}
+
 enum OrderType {
   SELL
   BUY
+  AUCTION
 }
 
 type ProtocolFeeBeneficiary @entity {
@@ -383,4 +418,74 @@ type Summary @entity {
   protocolSellFeePct: BigInt!
   subjectBuyFeePct: BigInt!
   subjectSellFeePct: BigInt!
+}
+
+type MoxieTransfer @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: AuctionTransfer!
+  from: Bytes!
+  to: Bytes!
+  value: BigInt!
+  blockInfo: BlockInfo!
+}
+
+type AuctionNewSellOrder @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: AuctionTransfer!
+  "auctioning token Subject"
+  subject: Subject!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+}
+
+type AuctionClaimedFromOrder @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: AuctionTransfer!
+  "auctioning token Subject"
+  subject: Subject!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+}
+
+type AuctionCancellationSellOrder @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: AuctionTransfer!
+  "auctioning token Subject"
+  subject: Subject!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+}
+
+type AuctioningToken @entity {
+  "auctionId"
+  id: ID!
+  "auctioning token Subject"
+  subject: Subject!
+}
+
+type AuctionOrder @entity {
+  "subjectId+-+userId+-+buyAmount+-+sellAmount"
+  id: ID!
+  "associated protocol order"
+  order: Order!
+  auctionClaimedFromOrder: AuctionClaimedFromOrder
+  auctionCancellationSellOrder: AuctionCancellationSellOrder
+  auctionNewSellOrder: AuctionNewSellOrder
+}
+
+type AuctionTransfer @entity {
+  "txhash"
+  id: ID!
+  subjectTokenTransfer: [SubjectTokenTransferTx!]! @derivedFrom(field: "txHash")
+  moxieTransfer: [MoxieTransfer!]! @derivedFrom(field: "txHash")
+  auctionClaimedFromOrder: [AuctionClaimedFromOrder!]! @derivedFrom(field: "txHash")
+  auctionNewSellOrder: [AuctionNewSellOrder!]! @derivedFrom(field: "txHash")
+  auctionCancellationSellOrder: [AuctionCancellationSellOrder!]! @derivedFrom(field: "txHash")
 }

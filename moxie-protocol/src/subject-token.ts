@@ -1,8 +1,9 @@
-import { Address, BigInt, log } from "@graphprotocol/graph-ts"
+import { Address, BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/templates/SubjectTokenContract/ERC20"
 import { getOrCreatePortfolio, getOrCreateSubject, loadSummary, saveSubject } from "./utils"
 import { handleTransferTx } from "./subject-token-tx"
-import { User } from "../generated/schema"
+import { AuctionClaimedFromOrder, AuctionOrder, Order, User } from "../generated/schema"
+import { getAuctionOrderId } from "./protocol-token"
 
 export function handleTransfer(event: Transfer): void {
   handleTransferTx(event)
@@ -58,4 +59,35 @@ export function handleTransfer(event: Transfer): void {
     toAddressPortfolio.balance = toAddressPortfolio.balance.plus(value)
     toAddressPortfolio.save()
   }
+
+  // trying to load auction order
+  let auctionClaimedFromOrder = tryLoadAuctionClaimedFromOrder(event)
+  if (auctionClaimedFromOrder) {
+    let auctionOrder = AuctionOrder.load(getAuctionOrderId(auctionClaimedFromOrder.subject, auctionClaimedFromOrder.userId, auctionClaimedFromOrder.buyAmount, auctionClaimedFromOrder.sellAmount))
+    if (!auctionOrder) {
+      throw new Error("AuctionOrder not found for entityId during subject token transfer: " + event.transaction.hash.toHexString())
+    }
+    auctionOrder.auctionClaimedFromOrder = auctionClaimedFromOrder.id
+    auctionOrder.save()
+    let order = Order.load(auctionOrder.order)
+    if (!order) {
+      throw new Error("Order not found for entityId during subject token transfer: " + event.transaction.hash.toHexString())
+    }
+    order.subjectAmount = value
+    order.subjectAmountLeft = value
+    order.price = order.protocolTokenAmount.divDecimal(new BigDecimal(value))
+    order.save()
+  }
+}
+
+function tryLoadAuctionClaimedFromOrder(event: Transfer): AuctionClaimedFromOrder | null {
+  let noRefundLogIndex = event.logIndex.minus(BigInt.fromI32(1))
+  let entityId = event.transaction.hash.toHexString().concat("-").concat(noRefundLogIndex.toString())
+  let auctionClaimOrder = AuctionClaimedFromOrder.load(entityId)
+  if (!auctionClaimOrder) {
+    let withRefundLogIndex = event.logIndex.minus(BigInt.fromI32(2))
+    entityId = event.transaction.hash.toHexString().concat("-").concat(withRefundLogIndex.toString())
+    auctionClaimOrder = AuctionClaimedFromOrder.load(entityId)
+  }
+  return auctionClaimOrder
 }
