@@ -2,16 +2,13 @@ import { BigInt } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 
 import { MoxieBondingCurveBondingCurveInitializedTx, MoxieBondingCurveSubjectSharePurchasedTx, MoxieBondingCurveUpdateBeneficiaryTx, MoxieBondingCurveUpdateFeesTx, MoxieBondingCurveSubjectShareSoldTx, MoxieBondingCurveUpdateFormulaTx } from "../generated/schema"
-import { getOrCreateBlockInfo, getOrCreateSubject, getTxEntityId } from "./utils"
+import { getOrCreateBlockInfo, getTxEntityId } from "./utils"
 
 export function handleBondingCurveInitializedTx(event: BondingCurveInitialized): void {
   let bondingCurve = new MoxieBondingCurveBondingCurveInitializedTx(getTxEntityId(event))
-  bondingCurve.blockInfo = getOrCreateBlockInfo(event).id
+  bondingCurve.blockInfo = getOrCreateBlockInfo(event.block).id
   bondingCurve.txHash = event.transaction.hash
   bondingCurve.subject = event.params._subject
-  let subject = getOrCreateSubject(event.params._subject)
-  subject.reserveRatio = event.params._reserveRatio
-  subject.save()
   bondingCurve.subjectToken = event.params._subjectToken
   bondingCurve.initialSupply = event.params._initialSupply
   bondingCurve.reserve = event.params._reserve
@@ -21,7 +18,7 @@ export function handleBondingCurveInitializedTx(event: BondingCurveInitialized):
 
 export function handleSubjectSharePurchasedTx(event: SubjectSharePurchased): void {
   let subjectSharePurchased = new MoxieBondingCurveSubjectSharePurchasedTx(getTxEntityId(event))
-  subjectSharePurchased.blockInfo = getOrCreateBlockInfo(event).id
+  subjectSharePurchased.blockInfo = getOrCreateBlockInfo(event.block).id
   subjectSharePurchased.txHash = event.transaction.hash
   subjectSharePurchased.subject = event.params._subject
   subjectSharePurchased.sellToken = event.params._sellToken
@@ -34,7 +31,7 @@ export function handleSubjectSharePurchasedTx(event: SubjectSharePurchased): voi
 
 export function handleSubjectShareSoldTx(event: SubjectShareSold): void {
   let subjectShareSold = new MoxieBondingCurveSubjectShareSoldTx(getTxEntityId(event))
-  subjectShareSold.blockInfo = getOrCreateBlockInfo(event).id
+  subjectShareSold.blockInfo = getOrCreateBlockInfo(event.block).id
   subjectShareSold.txHash = event.transaction.hash
   subjectShareSold.subject = event.params._subject
   subjectShareSold.sellToken = event.params._sellToken
@@ -47,7 +44,7 @@ export function handleSubjectShareSoldTx(event: SubjectShareSold): void {
 
 export function handleUpdateBeneficiaryTx(event: UpdateBeneficiary): void {
   let updateBeneficiary = new MoxieBondingCurveUpdateBeneficiaryTx(getTxEntityId(event))
-  updateBeneficiary.blockInfo = getOrCreateBlockInfo(event).id
+  updateBeneficiary.blockInfo = getOrCreateBlockInfo(event.block).id
   updateBeneficiary.txHash = event.transaction.hash
   updateBeneficiary.beneficiary = event.params._beneficiary
   updateBeneficiary.save()
@@ -55,7 +52,7 @@ export function handleUpdateBeneficiaryTx(event: UpdateBeneficiary): void {
 
 export function handleUpdateFeesTx(event: UpdateFees): void {
   let updateFees = new MoxieBondingCurveUpdateFeesTx(getTxEntityId(event))
-  updateFees.blockInfo = getOrCreateBlockInfo(event).id
+  updateFees.blockInfo = getOrCreateBlockInfo(event.block).id
   updateFees.txHash = event.transaction.hash
   updateFees.protocolBuyFeePct = event.params._protocolBuyFeePct
   updateFees.protocolSellFeePct = event.params._protocolSellFeePct
@@ -66,7 +63,7 @@ export function handleUpdateFeesTx(event: UpdateFees): void {
 
 export function handleUpdateFormulaTx(event: UpdateFormula): void {
   let updateFormula = new MoxieBondingCurveUpdateFormulaTx(getTxEntityId(event))
-  updateFormula.blockInfo = getOrCreateBlockInfo(event).id
+  updateFormula.blockInfo = getOrCreateBlockInfo(event.block).id
   updateFormula.txHash = event.transaction.hash
   updateFormula.formula = event.params._formula
   updateFormula.save()

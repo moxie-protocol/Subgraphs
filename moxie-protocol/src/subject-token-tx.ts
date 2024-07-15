@@ -4,7 +4,7 @@ import { getOrCreateAuctionTransferId, getOrCreateBlockInfo, getTxEntityId } fro
 
 export function handleTransferTx(event: Transfer): void {
   let subjectTokenTransferTx = new SubjectTokenTransferTx(getTxEntityId(event))
-  subjectTokenTransferTx.blockInfo = getOrCreateBlockInfo(event).id
+  subjectTokenTransferTx.blockInfo = getOrCreateBlockInfo(event.block).id
   subjectTokenTransferTx.txHash = getOrCreateAuctionTransferId(event.transaction.hash)
   subjectTokenTransferTx.from = event.params.from
   subjectTokenTransferTx.to = event.params.to

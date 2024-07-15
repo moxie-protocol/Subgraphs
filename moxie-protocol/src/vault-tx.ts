@@ -4,7 +4,7 @@ import { getOrCreateBlockInfo, getOrCreateSubject, getTxEntityId, loadSummary, s
 
 export function handleVaultDepositTx(event: VaultDeposit): void {
   let vaultDeposit = new VaultDepositTx(getTxEntityId(event))
-  vaultDeposit.blockInfo = getOrCreateBlockInfo(event).id
+  vaultDeposit.blockInfo = getOrCreateBlockInfo(event.block).id
   vaultDeposit.txHash = event.transaction.hash
   vaultDeposit.subject = event.params.subject
   vaultDeposit.token = event.params.token
@@ -16,7 +16,7 @@ export function handleVaultDepositTx(event: VaultDeposit): void {
 
 export function handleVaultTransferTx(event: VaultTransfer): void {
   let vaultTransfer = new VaultTransferTx(getTxEntityId(event))
-  vaultTransfer.blockInfo = getOrCreateBlockInfo(event).id
+  vaultTransfer.blockInfo = getOrCreateBlockInfo(event.block).id
   vaultTransfer.txHash = event.transaction.hash
 
   vaultTransfer.subject = event.params.subject

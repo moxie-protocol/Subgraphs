@@ -39,7 +39,7 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
 
 export function handleNewAuction(event: NewAuction): void {
   let auctioningToken = new AuctioningToken(event.params.auctionId.toString())
-  auctioningToken.subject = getOrCreateSubject(event.params._auctioningToken).id
+  auctioningToken.subject = getOrCreateSubject(event.params._auctioningToken, event.block).id
   auctioningToken.save()
 }
 

@@ -3,7 +3,7 @@ import { ERC20 } from "../generated/TokenManager/ERC20"
 import { AuctionTransfer, BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, Subject, SubjectDailySnapshot, SubjectFeeTransfer, SubjectHourlySnapshot, Summary, User, UserProtocolOrder } from "../generated/schema"
 import { PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
 
-export function getOrCreateSubject(tokenAddress: Address): Subject {
+export function getOrCreateSubject(tokenAddress: Address, block: ethereum.Block): Subject {
   let subject = Subject.load(tokenAddress.toHexString())
   if (!subject) {
     subject = new Subject(tokenAddress.toHexString())
@@ -14,47 +14,62 @@ export function getOrCreateSubject(tokenAddress: Address): Subject {
     // setting default values for now
     subject.reserve = BigInt.zero()
     subject.reserveRatio = BigInt.zero()
-    subject.currentPrice = BigDecimal.fromString("0")
+    subject.currentPriceinMoxie = BigDecimal.fromString("0")
+    subject.currentPriceinWeiInMoxie = BigDecimal.fromString("0")
     subject.totalSupply = BigInt.zero()
     subject.uniqueHolders = BigInt.zero()
     subject.volume = BigInt.zero()
     subject.beneficiaryFee = BigInt.zero()
-    subject.protcolFee = BigInt.zero()
+    subject.protocolFee = BigInt.zero()
     subject.holders = []
-    subject.save()
+    subject.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    subject.protocolTokenSpent = BigInt.zero()
+    subject.protocolTokenInvested = BigDecimal.fromString("0")
+    saveSubject(subject, block)
   }
   return subject
 }
 
-export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Address, txHash: Bytes): Portfolio {
-  let user = getOrCreateUser(userAddress)
+export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Address, txHash: Bytes, block: ethereum.Block): Portfolio {
+  let user = getOrCreateUser(userAddress, block)
   let portfolioId = userAddress.toHexString() + "-" + subjectAddress.toHexString()
   let portfolio = Portfolio.load(portfolioId)
   if (!portfolio) {
     portfolio = new Portfolio(portfolioId)
-    let subject = getOrCreateSubject(subjectAddress)
+    let subject = getOrCreateSubject(subjectAddress, block)
     portfolio.user = user.id
     portfolio.subject = subject.id
     portfolio.balance = BigInt.zero()
     log.info("Portfolio {} initialized {} balance: {}", [portfolioId, txHash.toHexString(), portfolio.balance.toString()])
     portfolio.protocolTokenSpent = BigInt.zero()
-    portfolio.protocolTokenInvestment = BigDecimal.fromString("0")
-    portfolio.save()
+    portfolio.protocolTokenInvested = BigDecimal.fromString("0")
+    portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    savePortfolio(portfolio, block)
   }
   return portfolio
 }
 
-export function getOrCreateUser(userAddress: Address): User {
+export function savePortfolio(portfolio: Portfolio, block: ethereum.Block): void {
+  portfolio.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  portfolio.save()
+}
+
+export function getOrCreateUser(userAddress: Address, block: ethereum.Block): User {
   let user = User.load(userAddress.toHexString())
   if (!user) {
     user = new User(userAddress.toHexString())
     user.subjectFeeTransfer = []
     user.protocolTokenSpent = BigInt.zero()
-    user.protocolTokenInvestment = BigDecimal.fromString("0")
+    user.protocolTokenInvested = BigDecimal.fromString("0")
     user.protocolOrdersCount = BigInt.zero()
-    user.save()
+    user.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    saveUser(user, block)
   }
   return user
+}
+export function saveUser(user: User, block: ethereum.Block): void {
+  user.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  user.save()
 }
 
 function createSubjectHourlySnapshot(subject: Subject, timestamp: BigInt): void {
@@ -131,11 +146,11 @@ function createSubjectDailySnapshot(subject: Subject, timestamp: BigInt): void {
   snapshot.save()
 }
 
-export function saveSubject(subject: Subject, event: ethereum.Event): void {
-  subject.blockInfo = getOrCreateBlockInfo(event).id
+export function saveSubject(subject: Subject, block: ethereum.Block): void {
+  subject.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   subject.save()
-  createSubjectDailySnapshot(subject, event.block.timestamp)
-  createSubjectHourlySnapshot(subject, event.block.timestamp)
+  createSubjectDailySnapshot(subject, block.timestamp)
+  createSubjectHourlySnapshot(subject, block.timestamp)
 }
 
 export function loadSummary(): Summary {
@@ -146,13 +161,13 @@ export function loadSummary(): Summary {
   return summary
 }
 
-export function getOrCreateBlockInfo(event: ethereum.Event): BlockInfo {
-  let blockInfo = BlockInfo.load(event.block.number.toString())
+export function getOrCreateBlockInfo(block: ethereum.Block): BlockInfo {
+  let blockInfo = BlockInfo.load(block.number.toString())
   if (!blockInfo) {
-    blockInfo = new BlockInfo(event.block.number.toString())
-    blockInfo.timestamp = event.block.timestamp
-    blockInfo.blockNumber = event.block.number
-    blockInfo.hash = event.block.hash
+    blockInfo = new BlockInfo(block.number.toString())
+    blockInfo.timestamp = block.timestamp
+    blockInfo.blockNumber = block.number
+    blockInfo.hash = block.hash
     blockInfo.save()
   }
   return blockInfo
@@ -227,9 +242,9 @@ export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: Block
   subjectFeeTransfer.save()
 }
 
-export function createUserProtocolOrder(user: User, order: Order): void {
+export function createUserProtocolOrder(user: User, order: Order, block: ethereum.Block): void {
   user.protocolOrdersCount = user.protocolOrdersCount.plus(BigInt.fromI32(1))
-  user.save()
+  saveUser(user, block)
 
   order.userProtocolOrderIndex = user.protocolOrdersCount
   order.save()
@@ -239,6 +254,7 @@ export function createUserProtocolOrder(user: User, order: Order): void {
   userProtocolOrder.user = user.id
   userProtocolOrder.order = order.id
   userProtocolOrder.subjectToken = order.subjectToken
+  userProtocolOrder.userProtocolOrderIndex = user.protocolOrdersCount
   userProtocolOrder.save()
 }
 

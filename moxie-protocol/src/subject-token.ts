@@ -1,9 +1,10 @@
 import { Address, BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/templates/SubjectTokenContract/ERC20"
-import { getOrCreatePortfolio, getOrCreateSubject, loadSummary, saveSubject } from "./utils"
+import { getOrCreatePortfolio, getOrCreateSubject, loadSummary, savePortfolio, saveSubject } from "./utils"
 import { handleTransferTx } from "./subject-token-tx"
 import { AuctionClaimedFromOrder, AuctionOrder, Order, User } from "../generated/schema"
 import { getAuctionOrderId } from "./protocol-token"
+import { AUCTION_ORDER_CLAIMED as CLAIMED } from "./constants"
 
 export function handleTransfer(event: Transfer): void {
   handleTransferTx(event)
@@ -12,7 +13,7 @@ export function handleTransfer(event: Transfer): void {
   let to = event.params.to
   let value = event.params.value
 
-  let subjectToken = getOrCreateSubject(contractAddress)
+  let subjectToken = getOrCreateSubject(contractAddress, event.block)
   let totalSupply = subjectToken.totalSupply
   let summary = loadSummary()
   let mint = from == Address.zero()
@@ -47,17 +48,17 @@ export function handleTransfer(event: Transfer): void {
       subjectToken.uniqueHolders = uniqueHoldersCount
     }
   }
-  saveSubject(subjectToken, event)
+  saveSubject(subjectToken, event.block)
   // updating portfolios
   if (!mint) {
-    let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash)
+    let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
     fromAddressPortfolio.balance = fromAddressPortfolio.balance.minus(value)
-    fromAddressPortfolio.save()
+    savePortfolio(fromAddressPortfolio, event.block)
   }
   if (!burn) {
-    let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash)
+    let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
     toAddressPortfolio.balance = toAddressPortfolio.balance.plus(value)
-    toAddressPortfolio.save()
+    savePortfolio(toAddressPortfolio, event.block)
   }
 
   // trying to load auction order
@@ -76,6 +77,7 @@ export function handleTransfer(event: Transfer): void {
     order.subjectAmount = value
     order.subjectAmountLeft = value
     order.price = order.protocolTokenAmount.divDecimal(new BigDecimal(value))
+    order.auctionOrderStatus = CLAIMED
     order.save()
   }
 }

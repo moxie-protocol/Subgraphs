@@ -231,7 +231,7 @@ type Subject @entity {
   decimals: BigInt!
   "address of the beneficiary"
   beneficiary: User
-  "reserve balance (moxie)/ total locked value"
+  "reserve balance in vault"
   reserve: BigInt!
   "current price of the token in Moxie"
   currentPriceinMoxie: BigDecimal!
@@ -261,11 +261,17 @@ type Subject @entity {
   protocolFeeTransfers: [ProtocolFeeTransfer!]! @derivedFrom(field: "subject")
   "portfolios with this subject"
   portfolio: [Portfolio!]! @derivedFrom(field: "subject")
-  "block information"
-  blockInfo: BlockInfo!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
 
-
-  #TODO! Add field for timestamp of last update
+  "Moxie spent by all users buy this subject token"
+  protocolTokenSpent: BigInt!
+  "total moxie invested by the user, after reducing when user sells the token"
+  protocolTokenInvested: BigDecimal!
+  "orders associated with the subject"
+  orders: [Order!]! @derivedFrom(field: "subjectToken")
 }
 
 type Portfolio @entity {
@@ -280,9 +286,13 @@ type Portfolio @entity {
   "Moxie spent by user to buy the subject token"
   protocolTokenSpent: BigInt!
   "total moxie invested by the user"
-  protocolTokenInvestment: BigDecimal!
+  protocolTokenInvested: BigDecimal!
   "Orders associated with the user's portfolio"
   orders: [Order!]! @derivedFrom(field: "portfolio")
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
 }
 
 type User @entity {
@@ -292,22 +302,28 @@ type User @entity {
   portfolio: [Portfolio!]! @derivedFrom(field: "user")
   "orders placed by the user (auction, buy & sell)"
   orders: [Order!]! @derivedFrom(field: "user")
-  "orders responsible for the user's portfolio"
+  "orders responsible for the user's portfolio - auction & buy orders"
   protocolOrders: [UserProtocolOrder!]! @derivedFrom(field: "user")
   "beneficiary fee transfers"
   subjectFeeTransfer: [SubjectFeeTransfer!]!
   "total moxie spent by the user"
   protocolTokenSpent: BigInt!
   "total moxie invested by the user"
-  protocolTokenInvestment: BigDecimal!
+  protocolTokenInvested: BigDecimal!
   "total number of orders (auction & buyOrders)"
   protocolOrdersCount: BigInt!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
 }
 
 # these are orders used to calculate the user's portfolio
 type UserProtocolOrder @entity {
   "User's address+-+userProtocolOrderIndex"
   id: ID!
+  "index of the order"
+  userProtocolOrderIndex: BigInt!
   "User's address"
   user: User!
   "Order's id"
@@ -330,7 +346,7 @@ type Order @entity {
   "Amount of subject token Left to be sold in the order"
   subjectAmountLeft: BigInt!
   "investment amount in moxie"
-  protocolTokenInvestment: BigDecimal!
+  protocolTokenInvested: BigDecimal!
   "Price of the subject token"
   price: BigDecimal!
   "BUY/SELL order type"
