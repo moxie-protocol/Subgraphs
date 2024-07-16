@@ -6,7 +6,7 @@ dataSources:
     name: EasyAuction
     network: base-sepolia
     source:
-      address: "0x28E8A1817Af21d39d6820Fd930FDE618e03d4d8d"
+      address: "0x6DE3Ce213f27FAF4339383C8aEc7e255a1Eb2A24"
       abi: EasyAuction
       startBlock: 12228929
     mapping:
