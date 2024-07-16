@@ -128,7 +128,7 @@ type VaultTransferTx @entity {
 
 # actual entities
 
-type SubjectDailySnapshot @entity {
+type SubjectTokenDailySnapshot @entity {
   "subjectId+-+endTimestamp"
   id: ID!
   "end block timestamp"
@@ -177,9 +177,12 @@ type SubjectDailySnapshot @entity {
   endProtocolFee: BigInt!
   "daily protocol fee change"
   dailyProtocolFeeChange: BigInt!
+
+  createdAtBlockInfo: BlockInfo!
+  updatedAtBlockInfo: BlockInfo!
 }
 
-type SubjectHourlySnapshot @entity {
+type SubjectTokenHourlySnapshot @entity {
   "subjectId+-+endTimestamp"
   id: ID!
   "end block timestamp"
@@ -228,6 +231,8 @@ type SubjectHourlySnapshot @entity {
   endProtocolFee: BigInt!
   "hourly protocol fee change"
   hourlyProtocolFeeChange: BigInt!
+  createdAtBlockInfo: BlockInfo!
+  updatedAtBlockInfo: BlockInfo!
 }
 
 type SubjectToken @entity {
@@ -260,8 +265,8 @@ type SubjectToken @entity {
   "amount of moxie used to buy or sell this subject token"
   volume: BigInt!
   "snapshots"
-  hourlySnapshots: [SubjectHourlySnapshot!]! @derivedFrom(field: "subjectToken")
-  dailySnapshots: [SubjectDailySnapshot!]! @derivedFrom(field: "subjectToken")
+  hourlySnapshots: [SubjectTokenHourlySnapshot!]! @derivedFrom(field: "subjectToken")
+  dailySnapshots: [SubjectTokenDailySnapshot!]! @derivedFrom(field: "subjectToken")
 
   "total beneficiary fees collected"
   beneficiaryFee: BigInt!

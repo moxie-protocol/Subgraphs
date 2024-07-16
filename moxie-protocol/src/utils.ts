@@ -1,6 +1,6 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { Transaction, BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectDailySnapshot, SubjectFeeTransfer, SubjectHourlySnapshot, Summary, User, UserProtocolOrder } from "../generated/schema"
+import { Transaction, BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, UserProtocolOrder } from "../generated/schema"
 import { PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
 
 export function getOrCreateSubjectToken(tokenAddress: Address, block: ethereum.Block): SubjectToken {
@@ -75,15 +75,16 @@ export function saveUser(user: User, block: ethereum.Block): void {
 
 function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
   let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_HOUR)).plus(SECONDS_IN_HOUR)
-  let snapshotId = subjectToken.id.concat("-").concat(snapshotTimestamp.toString())
-  let snapshot = SubjectHourlySnapshot.load(snapshotId)
+  let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
+  let snapshot = SubjectTokenHourlySnapshot.load(snapshotId)
   if (!snapshot) {
-    snapshot = new SubjectHourlySnapshot(snapshotId)
+    snapshot = new SubjectTokenHourlySnapshot(snapshotId)
     snapshot.startPrice = subjectToken.currentPriceinMoxie
     snapshot.startUniqueHolders = subjectToken.uniqueHolders
     snapshot.startVolume = subjectToken.volume
     snapshot.startBeneficiaryFee = subjectToken.beneficiaryFee
     snapshot.startProtocolFee = subjectToken.protocolFee
+    snapshot.createdAtBlockInfo = subjectToken.createdAtBlockInfo
   }
   snapshot.endTimestamp = snapshotTimestamp
 
@@ -107,20 +108,52 @@ function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp:
 
   snapshot.endProtocolFee = subjectToken.protocolFee
   snapshot.hourlyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
+  snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
   snapshot.save()
+}
+
+function getSnapshotId(subjectToken: SubjectToken, timestamp: BigInt): string {
+  return subjectToken.id.concat("-").concat(timestamp.toString())
+}
+
+function loadSubjectTokenHourlySnapshotOneDayBack(subjectToken: SubjectToken, timestamp: BigInt, dailySnapshotId: string): SubjectTokenHourlySnapshot | null {
+  let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_DAY))
+  for (let i = 0; i < 24; i++) {
+    let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
+    log.debug("loading hourly snapshot (try {}) for creating daily snapshot {} hourlySnapshotId {}", [i.toString(), dailySnapshotId, snapshotId])
+    let snapshot = SubjectTokenHourlySnapshot.load(snapshotId)
+    if (snapshot) {
+      log.debug("loaded hourly snapshot for creating daily snapshot {} hourlySnapshot {}", [dailySnapshotId, snapshotId])
+      return snapshot
+    }
+    snapshotTimestamp = snapshotTimestamp.plus(SECONDS_IN_HOUR)
+  }
+  return null
 }
 
 function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
   let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_DAY)).plus(SECONDS_IN_DAY)
-  let snapshotId = subjectToken.id.concat("-").concat(snapshotTimestamp.toString())
-  let snapshot = SubjectDailySnapshot.load(snapshotId)
+  let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
+  let snapshot = SubjectTokenDailySnapshot.load(snapshotId)
   if (!snapshot) {
-    snapshot = new SubjectDailySnapshot(snapshotId)
-    snapshot.startPrice = subjectToken.currentPriceinMoxie
-    snapshot.startUniqueHolders = subjectToken.uniqueHolders
-    snapshot.startVolume = subjectToken.volume
-    snapshot.startBeneficiaryFee = subjectToken.beneficiaryFee
-    snapshot.startProtocolFee = subjectToken.protocolFee
+    snapshot = new SubjectTokenDailySnapshot(snapshotId)
+    let hourlySnapshot = loadSubjectTokenHourlySnapshotOneDayBack(subjectToken, timestamp, snapshotId)
+    if (hourlySnapshot) {
+      log.debug("loaded hourly snapshot for creating daily snapshot {} hourlySnapshot: {}", [snapshotId, hourlySnapshot.id])
+      snapshot.startPrice = hourlySnapshot.endPrice
+      snapshot.startUniqueHolders = hourlySnapshot.endUniqueHolders
+      snapshot.startVolume = hourlySnapshot.endVolume
+      snapshot.startBeneficiaryFee = hourlySnapshot.endBeneficiaryFee
+      snapshot.startProtocolFee = hourlySnapshot.endProtocolFee
+      snapshot.createdAtBlockInfo = hourlySnapshot.createdAtBlockInfo
+    } else {
+      snapshot.startPrice = subjectToken.currentPriceinMoxie
+      snapshot.startUniqueHolders = subjectToken.uniqueHolders
+      snapshot.startVolume = subjectToken.volume
+      snapshot.startBeneficiaryFee = subjectToken.beneficiaryFee
+      snapshot.startProtocolFee = subjectToken.protocolFee
+      snapshot.createdAtBlockInfo = subjectToken.createdAtBlockInfo
+    }
   }
   snapshot.endTimestamp = snapshotTimestamp
 
@@ -144,14 +177,15 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
 
   snapshot.endProtocolFee = subjectToken.protocolFee
   snapshot.dailyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
+  snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
   snapshot.save()
 }
 
 export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block): void {
   subject.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   subject.save()
-  createSubjectTokenDailySnapshot(subject, block.timestamp)
   createSubjectTokenHourlySnapshot(subject, block.timestamp)
+  createSubjectTokenDailySnapshot(subject, block.timestamp)
 }
 
 export function loadSummary(): Summary {

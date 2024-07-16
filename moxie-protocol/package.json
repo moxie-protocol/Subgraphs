@@ -7,8 +7,8 @@
     "codegen": "graph codegen",
     "build": "graph build",
     "cb": "graph codegen && graph build",
-    "cbd": "yarn prepare:base-sepolia && graph codegen && graph build && graph deploy --studio protocol",
-    "cbd-v4": "yarn prepare:base-sepolia-v4 && graph codegen && graph build && graph deploy --studio protocol",
+    "cbd": "yarn prepare:base-sepolia && graph codegen && graph build && graph deploy --studio protocol -l v4.2.0",
+    "cbd-v4": "yarn prepare:base-sepolia-v4 && graph codegen && graph build && graph deploy --studio protocol -l v5.0.7",
     "test": "graph test -d",
     "cbt": "graph codegen && graph build && graph test -d",
     "clean": "rm -rf generated/ build/"
