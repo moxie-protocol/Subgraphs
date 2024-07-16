@@ -11,7 +11,7 @@ import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, N
 import { Order } from "../generated/schema"
 import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "./transactions"
 
-import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId, getEncodedOrderId } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId, getEncodedOrderId, decodeOrderId } from "./utils"
 
 const ZERO = BigInt.zero()
 const ONE = BigInt.fromI32(1)
@@ -181,7 +181,14 @@ export function handleNewAuction(event: NewAuction): void {
   let biddingTokenDetails = getTokenDetails(addressBiddingToken)
 
   let auctionContract = EasyAuction.bind(event.address)
-  let isAtomicClosureAllowed = auctionContract.auctionData(auctionId).value11
+  let auctionData = auctionContract.auctionData(auctionId)
+  let isAtomicClosureAllowed = auctionData.value11
+  let orderString = auctionData.value4
+  let decodedOrder = decodeOrderId(orderString.toHexString())
+  let minBuyAmount = decodedOrder[1]
+  let initialSupply = decodedOrder[2]
+  
+
 
   let pricePoint = convertToPricePoint(sellAmount, buyAmount, biddingTokenDetails.decimals.toI32(), auctioningTokenDetails.decimals.toI32())
 
@@ -232,6 +239,8 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.claimedOrders = []
   auctionDetails.cancelledOrders = []
   auctionDetails.activeOrders = []
+  auctionDetails.minBuyAmount = minBuyAmount
+  auctionDetails.initialSupply = initialSupply
 
   auctionDetails.uniqueBidders = new BigInt(0)
   auctionDetails.isCleared = false

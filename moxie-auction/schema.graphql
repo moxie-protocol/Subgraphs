@@ -89,6 +89,8 @@ type AuctionDetail @entity {
   startingTimeStamp: BigInt!
   minimumBiddingAmountPerOrder: BigInt!
   minFundingThreshold: BigInt!
+  minBuyAmount: BigInt!
+  initialSupply: BigInt!
   allowListManager: Bytes!
   allowListSigner: Bytes!
   currentVolume: BigDecimal!
