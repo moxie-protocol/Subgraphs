@@ -104,7 +104,10 @@ dataSources:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-        - TODO
+        - AuctioningToken
+        - AuctionCancellationSellOrderTx
+        - AuctionClaimedFromOrderTx
+        - AuctionNewSellOrderTx
       abis:
         - name: EasyAuction
           file: ./abis/EasyAuction.json
@@ -130,7 +133,7 @@ dataSources:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-        - TODO
+        - MoxieTransferTx
       abis:
         - name: MoxieToken
           file: ./abis/ERC20.json
