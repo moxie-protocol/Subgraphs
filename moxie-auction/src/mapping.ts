@@ -235,7 +235,7 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.activeOrders = []
   auctionDetails.minBuyAmount = event.params._minBuyAmount
   auctionDetails.initialSupply = event.params._auctionedSellAmount
-  auctionDetails.minimumPrice = order.price
+  auctionDetails.minimumPriceInMoxie = order.price
 
   auctionDetails.uniqueBidders = new BigInt(0)
   auctionDetails.isCleared = false

@@ -113,8 +113,8 @@ type AuctionDetail @entity {
   "block information of auction creation"
   blockInfo: BlockInfo!
   clearingPriceOrder: ClearingPriceOrder
-  "minimum price to purchase one subject token"
-  minimumPrice: BigDecimal!
+  "minimum price in moxie to purchase one subject token"
+  minimumPriceInMoxie: BigDecimal!
 }
 
 type ClearingPriceOrder @entity {
