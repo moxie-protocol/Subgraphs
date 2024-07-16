@@ -1,5 +1,5 @@
 import { VaultDeposit, VaultTransfer } from "../generated/Vault/Vault"
-import { getOrCreateSubject, loadSummary, saveSubject } from "./utils"
+import { getOrCreateSubjectToken, loadSummary, saveSubjectToken } from "./utils"
 import { handleVaultDepositTx, handleVaultTransferTx } from "./vault-tx"
 
 export function handleVaultDeposit(event: VaultDeposit): void {
@@ -11,12 +11,11 @@ export function handleVaultDeposit(event: VaultDeposit): void {
   //      uint256 totalReserve : reserves[_subjectToken][_token]
   //  );
   handleVaultDepositTx(event)
-  let subjectToken = event.params.subject
-  let subject = getOrCreateSubject(subjectToken, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params.subject, event.block)
   // subject.reserve = subject.reserve.plus(event.params.amount)
-  subject.reserve = event.params.totalReserve
-  subject.volume = subject.reserve
-  saveSubject(subject, event.block)
+  subjectToken.reserve = event.params.totalReserve
+  subjectToken.volume = subjectToken.reserve
+  saveSubjectToken(subjectToken, event.block)
 
   let summary = loadSummary()
   summary.totalReserve = summary.totalReserve.plus(event.params.amount)
@@ -33,12 +32,12 @@ export function handleVaultTransfer(event: VaultTransfer): void {
   // );
   // Transfers tokens(MOXIE) of amount _value to _to
   handleVaultTransferTx(event)
-  let subjectToken = event.params.subject
-  let subject = getOrCreateSubject(subjectToken, event.block)
-  // subject.reserve = subject.reserve.minus(event.params.amount)
-  subject.reserve = event.params.totalReserve
-  subject.volume = subject.reserve
-  saveSubject(subject, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params.subject, event.block)
+
+  // subjectToken.reserve = subjectToken.reserve.minus(event.params.amount)
+  subjectToken.reserve = event.params.totalReserve
+  subjectToken.volume = subjectToken.reserve
+  saveSubjectToken(subjectToken, event.block)
 
   let summary = loadSummary()
   summary.totalReserve = summary.totalReserve.minus(event.params.amount)

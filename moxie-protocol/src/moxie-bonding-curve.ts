@@ -3,13 +3,13 @@ import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, Updat
 import { Order, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectFeeTransfer, Summary, User } from "../generated/schema"
 
 import { handleBondingCurveInitializedTx, handleSubjectSharePurchasedTx, handleSubjectShareSoldTx, handleUpdateBeneficiaryTx, handleUpdateFeesTx, handleUpdateFormulaTx } from "./moxie-bonding-curve-tx"
-import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, createUserProtocolOrder, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubject, getOrCreateUser, getTxEntityId, handleNewBeneficiary, loadProtocolOrder, loadSummary, savePortfolio, saveSubject, saveUser } from "./utils"
+import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, createUserProtocolOrder, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, loadProtocolOrder, loadSummary, savePortfolio, saveSubjectToken, saveUser } from "./utils"
 import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL, SUMMARY_ID } from "./constants"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   handleBondingCurveInitializedTx(event)
-  let subject = getOrCreateSubject(event.params._subjectToken, event.block)
+  let subject = getOrCreateSubjectToken(event.params._subjectToken, event.block)
   subject.reserveRatio = event.params._reserveRatio
-  saveSubject(subject, event.block)
+  saveSubjectToken(subject, event.block)
 }
 
 export function handleSubjectSharePurchased(event: SubjectSharePurchased): void {
@@ -35,18 +35,18 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   const blockInfo = getOrCreateBlockInfo(event.block)
   let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
   let user = getOrCreateUser(event.params._beneficiary, event.block)
-  let subject = getOrCreateSubject(event.params._buyToken, event.block)
-  subject.protocolTokenSpent = subject.protocolTokenSpent.plus(event.params._sellAmount)
-  subject.protocolTokenInvested = subject.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
-  subject.currentPriceinMoxie = price
-  subject.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
-  subject.volume = subject.volume.plus(event.params._sellAmount)
+  let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block)
+  subjectToken.protocolTokenSpent = subjectToken.protocolTokenSpent.plus(event.params._sellAmount)
+  subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+  subjectToken.currentPriceinMoxie = price
+  subjectToken.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
+  subjectToken.volume = subjectToken.volume.plus(event.params._sellAmount)
   // Saving order entity
   let order = new Order(getTxEntityId(event))
   order.protocolToken = event.params._sellToken
   order.protocolTokenAmount = event.params._sellAmount
   order.protocolTokenInvested = new BigDecimal(event.params._sellAmount)
-  order.subjectToken = subject.id
+  order.subjectToken = subjectToken.id
   order.subjectAmount = event.params._buyAmount
   order.subjectAmountLeft = event.params._buyAmount
   order.orderType = BUY
@@ -84,20 +84,20 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   const txHash = event.transaction.hash.toHexString()
   const fees = calculateBuySideFee(event.params._sellAmount)
 
-  createSubjectFeeTransfer(event, blockInfo, order, subject, subject.beneficiary, fees.subjectFee)
+  createSubjectFeeTransfer(event, blockInfo, order, subjectToken, subjectToken.beneficiary, fees.subjectFee)
 
-  createProtocolFeeTransfer(event, blockInfo, order, subject, activeFeeBeneficiary, fees.protocolFee)
+  createProtocolFeeTransfer(event, blockInfo, order, subjectToken, activeFeeBeneficiary, fees.protocolFee)
 
-  subject.beneficiaryFee = subject.beneficiaryFee.plus(fees.subjectFee)
-  subject.protocolFee = subject.protocolFee.plus(fees.protocolFee)
-  saveSubject(subject, event.block)
+  subjectToken.beneficiaryFee = subjectToken.beneficiaryFee.plus(fees.subjectFee)
+  subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
+  saveSubjectToken(subjectToken, event.block)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()
 
   log.warning("loading beneficiaryUser ", [])
 
-  let beneficiary = subject.beneficiary
+  let beneficiary = subjectToken.beneficiary
   if (beneficiary) {
     log.warning("beneficiaryUser {}", [beneficiary])
     let beneficiaryUser = User.load(beneficiary)
@@ -131,10 +131,10 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   handleSubjectShareSoldTx(event)
   const blockInfo = getOrCreateBlockInfo(event.block)
   let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
-  let subject = getOrCreateSubject(event.params._sellToken, event.block)
-  subject.currentPriceinMoxie = price
-  subject.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
-  subject.volume = subject.volume.plus(event.params._buyAmount)
+  let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
+  subjectToken.currentPriceinMoxie = price
+  subjectToken.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
+  subjectToken.volume = subjectToken.volume.plus(event.params._buyAmount)
 
   let user = getOrCreateUser(event.transaction.from, event.block)
 
@@ -142,7 +142,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   let order = new Order(getTxEntityId(event))
   order.protocolToken = event.params._buyToken
   order.protocolTokenAmount = event.params._buyAmount
-  order.subjectToken = subject.id
+  order.subjectToken = subjectToken.id
   order.subjectAmount = event.params._sellAmount
   order.subjectAmountLeft = BigInt.zero()
   order.protocolTokenInvested = new BigDecimal(BigInt.zero())
@@ -167,7 +167,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   let txHash = event.transaction.hash.toHexString()
   const fees = calculateSellSideFee(event.params._sellAmount)
 
-  createSubjectFeeTransfer(event, blockInfo, order, subject, subject.beneficiary, fees.subjectFee)
+  createSubjectFeeTransfer(event, blockInfo, order, subjectToken, subjectToken.beneficiary, fees.subjectFee)
 
   // decreasing protocol token spent
   user.protocolTokenSpent = user.protocolTokenSpent.minus(event.params._buyAmount)
@@ -175,8 +175,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   log.debug("incoming sell order id: {} initial subjectTokenRemaining {}", [order.id, subjectTokenRemaining.toString()])
   for (let i = BigInt.fromI32(1); i.le(user.protocolOrdersCount); i = i.plus(BigInt.fromI32(1))) {
     let protocolOrder = loadProtocolOrder(user, i)
-    if (protocolOrder.subjectToken != subject.id || protocolOrder.auctionOrderStatus == CANCELLED || protocolOrder.auctionOrderStatus == PLACED) {
-      log.debug("incoming sell order id: {},skipping protocolOrder id: {} protocolOrder.subjectToken {} order.subject {} protocolOrder.auctionOrderStatus {}", [order.id, protocolOrder.id, protocolOrder.subjectToken, subject.id, protocolOrder.auctionOrderStatus])
+    if (protocolOrder.subjectToken != subjectToken.id || protocolOrder.auctionOrderStatus == CANCELLED || protocolOrder.auctionOrderStatus == PLACED) {
+      log.debug("incoming sell order id: {},skipping protocolOrder id: {} protocolOrder.subjectToken {} order.subject {} protocolOrder.auctionOrderStatus {}", [order.id, protocolOrder.id, protocolOrder.subjectToken, subjectToken.id, protocolOrder.auctionOrderStatus])
       // should reduce subjectAmountLeft only if subjectToken is matching
       // skipping cancelled orders
       continue
@@ -200,24 +200,24 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
     protocolOrder.save()
     user.protocolTokenInvested = user.protocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
-    subject.protocolTokenInvested = subject.protocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
+    subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
     summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
   }
   summary.save()
   saveUser(user, event.block)
   savePortfolio(portfolio, event.block)
-  saveSubject(subject, event.block)
-  createProtocolFeeTransfer(event, blockInfo, order, subject, activeFeeBeneficiary, fees.protocolFee)
+  saveSubjectToken(subjectToken, event.block)
+  createProtocolFeeTransfer(event, blockInfo, order, subjectToken, activeFeeBeneficiary, fees.protocolFee)
 
-  subject.beneficiaryFee = subject.beneficiaryFee.plus(fees.subjectFee)
-  subject.protocolFee = subject.protocolFee.plus(fees.protocolFee)
-  saveSubject(subject, event.block)
+  subjectToken.beneficiaryFee = subjectToken.beneficiaryFee.plus(fees.subjectFee)
+  subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
+  saveSubjectToken(subjectToken, event.block)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()
   log.warning("loading beneficiaryUser ", [])
 
-  let beneficiary = subject.beneficiary
+  let beneficiary = subjectToken.beneficiary
   if (beneficiary) {
     log.warning("beneficiaryUser {}", [beneficiary])
     let beneficiaryUser = User.load(beneficiary)

@@ -15,6 +15,7 @@ type MoxieBondingCurveBondingCurveInitializedTx @entity {
   initialSupply: BigInt!
   reserve: BigInt!
   reserveRatio: BigInt!
+  txn: Transaction!
 }
 
 type MoxieBondingCurveSubjectSharePurchasedTx @entity {
@@ -28,6 +29,7 @@ type MoxieBondingCurveSubjectSharePurchasedTx @entity {
   buyToken: Bytes!
   buyAmount: BigInt!
   beneficiary: Bytes!
+  txn: Transaction!
 }
 
 type MoxieBondingCurveSubjectShareSoldTx @entity {
@@ -41,6 +43,7 @@ type MoxieBondingCurveSubjectShareSoldTx @entity {
   buyToken: Bytes!
   buyAmount: BigInt!
   beneficiary: Bytes!
+  txn: Transaction!
 }
 
 type MoxieBondingCurveUpdateBeneficiaryTx @entity {
@@ -49,6 +52,7 @@ type MoxieBondingCurveUpdateBeneficiaryTx @entity {
   txHash: Bytes!
   blockInfo: BlockInfo!
   beneficiary: Bytes!
+  txn: Transaction!
 }
 
 type MoxieBondingCurveUpdateFeesTx @entity {
@@ -60,6 +64,7 @@ type MoxieBondingCurveUpdateFeesTx @entity {
   protocolSellFeePct: BigInt!
   subjectBuyFeePct: BigInt!
   subjectSellFeePct: BigInt!
+  txn: Transaction!
 }
 
 type MoxieBondingCurveUpdateFormulaTx @entity {
@@ -68,6 +73,7 @@ type MoxieBondingCurveUpdateFormulaTx @entity {
   txHash: Bytes!
   blockInfo: BlockInfo!
   formula: Bytes!
+  txn: Transaction!
 }
 
 type TokenManagerTokenDeployedTx @entity {
@@ -78,17 +84,19 @@ type TokenManagerTokenDeployedTx @entity {
   beneficiary: Bytes!
   token: Bytes!
   initialSupply: BigInt!
+  txn: Transaction!
 }
 
 type SubjectTokenTransferTx @entity {
   "txHash+-+logIndex"
   id: ID!
-  txHash: AuctionTransfer!
+  txHash: Bytes!
   blockInfo: BlockInfo!
   contractAddress: Bytes!
   from: Bytes!
   to: Bytes!
   value: BigInt!
+  txn: Transaction!
 }
 type VaultDepositTx @entity {
   "txHash+-+logIndex"
@@ -101,6 +109,7 @@ type VaultDepositTx @entity {
   sender: Bytes!
   amount: BigInt!
   totalReserve: BigInt!
+  txn: Transaction!
 }
 
 type VaultTransferTx @entity {
@@ -114,6 +123,7 @@ type VaultTransferTx @entity {
   to: Bytes!
   amount: BigInt!
   totalReserve: BigInt!
+  txn: Transaction!
 }
 
 # actual entities
@@ -124,7 +134,7 @@ type SubjectDailySnapshot @entity {
   "end block timestamp"
   endTimestamp: BigInt!
   "subject token address"
-  subject: Subject!
+  subjectToken: SubjectToken!
 
   "address of the beneficiary"
   beneficiary: User
@@ -175,7 +185,7 @@ type SubjectHourlySnapshot @entity {
   "end block timestamp"
   endTimestamp: BigInt!
   "subject token address"
-  subject: Subject!
+  subjectToken: SubjectToken!
 
   "address of the beneficiary"
   beneficiary: User
@@ -220,7 +230,7 @@ type SubjectHourlySnapshot @entity {
   hourlyProtocolFeeChange: BigInt!
 }
 
-type Subject @entity {
+type SubjectToken @entity {
   "address of the subject token"
   id: ID!
   "name of the token"
@@ -248,19 +258,19 @@ type Subject @entity {
   "amount of moxie used to buy or sell this subject token"
   volume: BigInt!
   "snapshots"
-  hourlySnapshots: [SubjectHourlySnapshot!]! @derivedFrom(field: "subject")
-  dailySnapshots: [SubjectDailySnapshot!]! @derivedFrom(field: "subject")
+  hourlySnapshots: [SubjectHourlySnapshot!]! @derivedFrom(field: "subjectToken")
+  dailySnapshots: [SubjectDailySnapshot!]! @derivedFrom(field: "subjectToken")
 
   "total beneficiary fees collected"
   beneficiaryFee: BigInt!
   "total protocol fees collected"
   protocolFee: BigInt!
   "beneficiary fee transfer"
-  beneficiaryFeeTransfers: [SubjectFeeTransfer!]! @derivedFrom(field: "subject")
+  beneficiaryFeeTransfers: [SubjectFeeTransfer!]! @derivedFrom(field: "subjectToken")
   "protocol fee transfers"
-  protocolFeeTransfers: [ProtocolFeeTransfer!]! @derivedFrom(field: "subject")
+  protocolFeeTransfers: [ProtocolFeeTransfer!]! @derivedFrom(field: "subjectToken")
   "portfolios with this subject"
-  portfolio: [Portfolio!]! @derivedFrom(field: "subject")
+  portfolio: [Portfolio!]! @derivedFrom(field: "subjectToken")
   "created at block information"
   createdAtBlockInfo: BlockInfo!
   "updated at block information"
@@ -280,7 +290,7 @@ type Portfolio @entity {
   "User's address"
   user: User!
   "Subject's token address"
-  subject: Subject!
+  subjectToken: SubjectToken!
   "Net quantity of the subject token by the user"
   balance: BigInt!
   "Moxie spent by user to buy the subject token"
@@ -329,7 +339,7 @@ type UserProtocolOrder @entity {
   "Order's id"
   order: Order!
   "subject token address"
-  subjectToken: Subject!
+  subjectToken: SubjectToken!
 }
 
 type Order @entity {
@@ -340,7 +350,7 @@ type Order @entity {
   "Amount of moxie token"
   protocolTokenAmount: BigInt!
   "Subject Token address"
-  subjectToken: Subject!
+  subjectToken: SubjectToken!
   "Amount of subject token"
   subjectAmount: BigInt!
   "Amount of subject token Left to be sold in the order"
@@ -401,7 +411,7 @@ type ProtocolFeeTransfer @entity {
   "order"
   order: Order!
   "subject token address"
-  subject: Subject!
+  subjectToken: SubjectToken!
   "ProtocolFee Beneficiary"
   beneficiary: ProtocolFeeBeneficiary!
   "amount of moxie transferred"
@@ -418,7 +428,7 @@ type SubjectFeeTransfer @entity {
   "order"
   order: Order!
   "subject token address"
-  subject: Subject!
+  subjectToken: SubjectToken!
   "address of the beneficiary"
   beneficiary: User
   "amount of moxie transferred"
@@ -439,54 +449,57 @@ type Summary @entity {
   subjectSellFeePct: BigInt!
 }
 
-type MoxieTransfer @entity {
+type MoxieTransferTx @entity {
   "txHash+-+logIndex"
   id: ID!
-  txHash: AuctionTransfer!
+  txHash: Bytes!
   from: Bytes!
   to: Bytes!
   value: BigInt!
-  blockInfo: BlockInfo!
+  txn: Transaction!
 }
 
-type AuctionNewSellOrder @entity {
+type AuctionNewSellOrderTx @entity {
   "txHash+-+logIndex"
   id: ID!
-  txHash: AuctionTransfer!
-  "auctioning token Subject"
-  subject: Subject!
+  txHash: Bytes!
+  "auctioning token/subject token"
+  subjectToken: SubjectToken!
   userId: BigInt!
   buyAmount: BigInt!
   sellAmount: BigInt!
+  txn: Transaction!
 }
 
-type AuctionClaimedFromOrder @entity {
+type AuctionClaimedFromOrderTx @entity {
   "txHash+-+logIndex"
   id: ID!
-  txHash: AuctionTransfer!
-  "auctioning token Subject"
-  subject: Subject!
+  txHash: Bytes!
+  "auctioning token /subject token"
+  subjectToken: SubjectToken!
   userId: BigInt!
   buyAmount: BigInt!
   sellAmount: BigInt!
+  txn: Transaction!
 }
 
-type AuctionCancellationSellOrder @entity {
+type AuctionCancellationSellOrderTx @entity {
   "txHash+-+logIndex"
   id: ID!
-  txHash: AuctionTransfer!
-  "auctioning token Subject"
-  subject: Subject!
+  txHash: Bytes!
+  "auctioning token /subject token"
+  subjectToken: SubjectToken!
   userId: BigInt!
   buyAmount: BigInt!
   sellAmount: BigInt!
+  txn: Transaction!
 }
 
 type AuctioningToken @entity {
   "auctionId"
   id: ID!
-  "auctioning token Subject"
-  subject: Subject!
+  "auctioning token /subject token"
+  subjectToken: SubjectToken!
 }
 
 type AuctionOrder @entity {
@@ -494,17 +507,26 @@ type AuctionOrder @entity {
   id: ID!
   "associated protocol order"
   order: Order!
-  auctionClaimedFromOrder: AuctionClaimedFromOrder
-  auctionCancellationSellOrder: AuctionCancellationSellOrder
-  auctionNewSellOrder: AuctionNewSellOrder
+  auctionClaimedFromOrderTx: AuctionClaimedFromOrderTx
+  auctionCancellationSellOrderTx: AuctionCancellationSellOrderTx
+  auctionNewSellOrderTx: AuctionNewSellOrderTx
 }
 
-type AuctionTransfer @entity {
+type Transaction @entity {
   "txhash"
   id: ID!
-  subjectTokenTransfer: [SubjectTokenTransferTx!]! @derivedFrom(field: "txHash")
-  moxieTransfer: [MoxieTransfer!]! @derivedFrom(field: "txHash")
-  auctionClaimedFromOrder: [AuctionClaimedFromOrder!]! @derivedFrom(field: "txHash")
-  auctionNewSellOrder: [AuctionNewSellOrder!]! @derivedFrom(field: "txHash")
-  auctionCancellationSellOrder: [AuctionCancellationSellOrder!]! @derivedFrom(field: "txHash")
+  subjectTokenTransferTx: [SubjectTokenTransferTx!]! @derivedFrom(field: "txn")
+  moxieTransferTx: [MoxieTransferTx!]! @derivedFrom(field: "txn")
+  auctionClaimedFromOrderTx: [AuctionClaimedFromOrderTx!]! @derivedFrom(field: "txn")
+  auctionNewSellOrderTx: [AuctionNewSellOrderTx!]! @derivedFrom(field: "txn")
+  auctionCancellationSellOrderTx: [AuctionCancellationSellOrderTx!]! @derivedFrom(field: "txn")
+  moxieBondingCurveBondingCurveInitializedTx: [MoxieBondingCurveBondingCurveInitializedTx!]! @derivedFrom(field: "txn")
+  moxieBondingCurveSubjectSharePurchasedTx: [MoxieBondingCurveSubjectSharePurchasedTx!]! @derivedFrom(field: "txn")
+  moxieBondingCurveSubjectShareSoldTx: [MoxieBondingCurveSubjectShareSoldTx!]! @derivedFrom(field: "txn")
+  moxieBondingCurveUpdateBeneficiaryTx: [MoxieBondingCurveUpdateBeneficiaryTx!]! @derivedFrom(field: "txn")
+  moxieBondingCurveUpdateFeesTx: [MoxieBondingCurveUpdateFeesTx!]! @derivedFrom(field: "txn")
+  moxieBondingCurveUpdateFormulaTx: [MoxieBondingCurveUpdateFormulaTx!]! @derivedFrom(field: "txn")
+  tokenManagerTokenDeployedTx: [TokenManagerTokenDeployedTx!]! @derivedFrom(field: "txn")
+  vaultDepositTx: [VaultDepositTx!]! @derivedFrom(field: "txn")
+  vaultTransferTx: [VaultTransferTx!]! @derivedFrom(field: "txn")
 }

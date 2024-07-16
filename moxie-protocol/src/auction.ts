@@ -1,12 +1,13 @@
 import { NewAuction, NewSellOrder, ClaimedFromOrder, CancellationSellOrder } from "../generated/EasyAuction/EasyAuction"
-import { AuctionCancellationSellOrder, AuctionClaimedFromOrder, AuctioningToken, AuctionNewSellOrder } from "../generated/schema"
-import { getOrCreateAuctionTransferId, getOrCreateSubject, getTxEntityId } from "./utils"
+import { AuctionCancellationSellOrderTx, AuctionClaimedFromOrderTx, AuctioningToken, AuctionNewSellOrderTx } from "../generated/schema"
+import { getOrCreateTransactionId, getOrCreateSubjectToken, getTxEntityId } from "./utils"
 
 export function handleNewSellOrder(event: NewSellOrder): void {
   let auctioningToken = loadAuctioningToken(event.params.auctionId.toString())
-  let newSellOrder = new AuctionNewSellOrder(getTxEntityId(event))
-  newSellOrder.subject = auctioningToken.subject
-  newSellOrder.txHash = getOrCreateAuctionTransferId(event.transaction.hash)
+  let newSellOrder = new AuctionNewSellOrderTx(getTxEntityId(event))
+  newSellOrder.subjectToken = auctioningToken.subjectToken
+  newSellOrder.txHash = event.transaction.hash
+  newSellOrder.txn = getOrCreateTransactionId(event.transaction.hash)
   newSellOrder.userId = event.params.userId
   newSellOrder.buyAmount = event.params.buyAmount
   newSellOrder.sellAmount = event.params.sellAmount
@@ -15,9 +16,10 @@ export function handleNewSellOrder(event: NewSellOrder): void {
 
 export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   let auctioningToken = loadAuctioningToken(event.params.auctionId.toString())
-  let claimedFromOrder = new AuctionClaimedFromOrder(getTxEntityId(event))
-  claimedFromOrder.subject = auctioningToken.subject
-  claimedFromOrder.txHash = getOrCreateAuctionTransferId(event.transaction.hash)
+  let claimedFromOrder = new AuctionClaimedFromOrderTx(getTxEntityId(event))
+  claimedFromOrder.subjectToken = auctioningToken.subjectToken
+  claimedFromOrder.txn = getOrCreateTransactionId(event.transaction.hash)
+  claimedFromOrder.txHash = event.transaction.hash
 
   claimedFromOrder.userId = event.params.userId
   claimedFromOrder.buyAmount = event.params.buyAmount
@@ -27,10 +29,11 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
 
 export function handleCancellationSellOrder(event: CancellationSellOrder): void {
   let auctioningToken = loadAuctioningToken(event.params.auctionId.toString())
-  let cancellationSellOrder = new AuctionCancellationSellOrder(getTxEntityId(event))
-  cancellationSellOrder.txHash = getOrCreateAuctionTransferId(event.transaction.hash)
+  let cancellationSellOrder = new AuctionCancellationSellOrderTx(getTxEntityId(event))
+  cancellationSellOrder.txn = getOrCreateTransactionId(event.transaction.hash)
+  cancellationSellOrder.txHash = event.transaction.hash
 
-  cancellationSellOrder.subject = auctioningToken.subject
+  cancellationSellOrder.subjectToken = auctioningToken.subjectToken
   cancellationSellOrder.userId = event.params.userId
   cancellationSellOrder.buyAmount = event.params.buyAmount
   cancellationSellOrder.sellAmount = event.params.sellAmount
@@ -39,7 +42,7 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
 
 export function handleNewAuction(event: NewAuction): void {
   let auctioningToken = new AuctioningToken(event.params.auctionId.toString())
-  auctioningToken.subject = getOrCreateSubject(event.params._auctioningToken, event.block).id
+  auctioningToken.subjectToken = getOrCreateSubjectToken(event.params._auctioningToken, event.block).id
   auctioningToken.save()
 }
 

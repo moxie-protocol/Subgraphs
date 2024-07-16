@@ -1,34 +1,34 @@
 import { Address, BigDecimal, BigInt, store } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/MoxieToken/MoxieToken"
-import { AuctionCancellationSellOrder, AuctionClaimedFromOrder, AuctionNewSellOrder, AuctionOrder, MoxieTransfer, Order } from "../generated/schema"
-import { createUserProtocolOrder, getOrCreateAuctionTransferId, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubject, getOrCreateUser, getTxEntityId, loadSummary, savePortfolio, saveSubject, saveUser } from "./utils"
+import { AuctionCancellationSellOrderTx, AuctionClaimedFromOrderTx, AuctionNewSellOrderTx, AuctionOrder, MoxieTransferTx, Order } from "../generated/schema"
+import { createUserProtocolOrder, getOrCreateTransactionId, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, loadSummary, savePortfolio, saveSubjectToken, saveUser } from "./utils"
 import { ORDER_TYPE_AUCTION as AUCTION, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_CLAIMED as CLAIMED, AUCTION_ORDER_PLACED as PLACED } from "./constants"
 
-export function handleTransfer(event: Transfer): void {
-  handleTransferTx(event)
-}
-
 export function handleTransferTx(event: Transfer): void {
-  let blockInfo = getOrCreateBlockInfo(event.block)
-  let transfer = new MoxieTransfer(getTxEntityId(event))
+  let transfer = new MoxieTransferTx(getTxEntityId(event))
   transfer.from = event.params.from
   transfer.to = event.params.to
   transfer.value = event.params.value
-  transfer.blockInfo = blockInfo.id
-  transfer.txHash = getOrCreateAuctionTransferId(event.transaction.hash)
+  transfer.txHash = event.transaction.hash
+  transfer.txn = getOrCreateTransactionId(event.transaction.hash)
   transfer.save()
+}
+
+export function handleTransfer(event: Transfer): void {
+  handleTransferTx(event)
+  let blockInfo = getOrCreateBlockInfo(event.block)
   // prepare auction entityId
   let auctionLogIndex = event.logIndex.minus(BigInt.fromI32(1))
   let entityId = event.transaction.hash.toHexString().concat("-").concat(auctionLogIndex.toString())
-  let auctionNewSellOrder = AuctionNewSellOrder.load(entityId)
-  if (auctionNewSellOrder) {
+  let auctionNewSellOrderTx = AuctionNewSellOrderTx.load(entityId)
+  if (auctionNewSellOrderTx) {
     // creating new Order
     let order = new Order(entityId)
     order.protocolToken = event.address
     order.protocolTokenAmount = event.params.value
     order.protocolTokenInvested = new BigDecimal(event.params.value)
     order.auctionOrderStatus = PLACED
-    order.subjectToken = auctionNewSellOrder.subject
+    order.subjectToken = auctionNewSellOrderTx.subjectToken
     // order is just created,will be filling this data later
     order.subjectAmount = BigInt.zero()
     order.subjectAmountLeft = BigInt.zero()
@@ -40,7 +40,7 @@ export function handleTransferTx(event: Transfer): void {
     order.price = new BigDecimal(BigInt.zero())
     order.blockInfo = blockInfo.id
     // updating user's portfolio
-    let portfolio = getOrCreatePortfolio(event.params.from, Address.fromString(auctionNewSellOrder.subject), event.transaction.hash, event.block)
+    let portfolio = getOrCreatePortfolio(event.params.from, Address.fromString(auctionNewSellOrderTx.subjectToken), event.transaction.hash, event.block)
     portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.plus(event.params.value)
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params.value))
     savePortfolio(portfolio, event.block)
@@ -54,34 +54,34 @@ export function handleTransferTx(event: Transfer): void {
 
     saveUser(user, event.block)
 
-    let subject = getOrCreateSubject(Address.fromString(auctionNewSellOrder.subject), event.block)
-    subject.protocolTokenSpent = subject.protocolTokenSpent.plus(event.params.value)
-    subject.protocolTokenInvested = subject.protocolTokenInvested.plus(new BigDecimal(event.params.value))
-    saveSubject(subject, event.block)
+    let subjectToken = getOrCreateSubjectToken(Address.fromString(auctionNewSellOrderTx.subjectToken), event.block)
+    subjectToken.protocolTokenSpent = subjectToken.protocolTokenSpent.plus(event.params.value)
+    subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(event.params.value))
+    saveSubjectToken(subjectToken, event.block)
 
     let summary = loadSummary()
     summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.plus(new BigDecimal(event.params.value))
     summary.save()
 
     // creating AuctionOrder entity so that other auction events can refer this existing order
-    let auctionOrder = new AuctionOrder(getAuctionOrderId(auctionNewSellOrder.subject, auctionNewSellOrder.userId, auctionNewSellOrder.buyAmount, auctionNewSellOrder.sellAmount))
+    let auctionOrder = new AuctionOrder(getAuctionOrderId(auctionNewSellOrderTx.subjectToken, auctionNewSellOrderTx.userId, auctionNewSellOrderTx.buyAmount, auctionNewSellOrderTx.sellAmount))
     auctionOrder.order = order.id
-    auctionOrder.auctionNewSellOrder = auctionNewSellOrder.id
+    auctionOrder.auctionNewSellOrderTx = auctionNewSellOrderTx.id
     auctionOrder.save()
   }
-  let auctionCancellationSellOrder = AuctionCancellationSellOrder.load(entityId)
-  if (auctionCancellationSellOrder) {
+  let auctionCancellationSellOrderTx = AuctionCancellationSellOrderTx.load(entityId)
+  if (auctionCancellationSellOrderTx) {
     // load respective order
-    let auctionOrder = AuctionOrder.load(getAuctionOrderId(auctionCancellationSellOrder.subject, auctionCancellationSellOrder.userId, auctionCancellationSellOrder.buyAmount, auctionCancellationSellOrder.sellAmount))
+    let auctionOrder = AuctionOrder.load(getAuctionOrderId(auctionCancellationSellOrderTx.subjectToken, auctionCancellationSellOrderTx.userId, auctionCancellationSellOrderTx.buyAmount, auctionCancellationSellOrderTx.sellAmount))
     if (!auctionOrder) {
-      throw new Error("AuctionOrder not found for entityId during auctionCancellationSellOrder: " + entityId)
+      throw new Error("AuctionOrder not found for entityId during auctionCancellationSellOrderTx: " + entityId)
     }
-    auctionOrder.auctionCancellationSellOrder = auctionCancellationSellOrder.id
+    auctionOrder.auctionCancellationSellOrderTx = auctionCancellationSellOrderTx.id
     auctionOrder.save()
 
     let order = Order.load(auctionOrder.order)
     if (!order) {
-      throw new Error("Order not found for auctionOrder during auctionCancellationSellOrder: " + auctionOrder.order)
+      throw new Error("Order not found for auctionOrder during auctionCancellationSellOrderTx: " + auctionOrder.order)
     }
     order.auctionOrderStatus = CANCELLED
     order.save()
@@ -92,33 +92,33 @@ export function handleTransferTx(event: Transfer): void {
     user.protocolTokenInvested = user.protocolTokenInvested.minus(new BigDecimal(event.params.value))
     saveUser(user, event.block)
     // updating user's portfolio
-    let portfolio = getOrCreatePortfolio(event.params.to, Address.fromString(auctionCancellationSellOrder.subject), event.transaction.hash, event.block)
+    let portfolio = getOrCreatePortfolio(event.params.to, Address.fromString(auctionCancellationSellOrderTx.subjectToken), event.transaction.hash, event.block)
     portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(event.params.value)
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.minus(new BigDecimal(event.params.value))
 
     savePortfolio(portfolio, event.block)
 
-    let subject = getOrCreateSubject(Address.fromString(order.subjectToken), event.block)
-    subject.protocolTokenSpent = subject.protocolTokenSpent.minus(event.params.value)
-    subject.protocolTokenInvested = subject.protocolTokenInvested.minus(new BigDecimal(event.params.value))
-    saveSubject(subject, event.block)
+    let subjectToken = getOrCreateSubjectToken(Address.fromString(order.subjectToken), event.block)
+    subjectToken.protocolTokenSpent = subjectToken.protocolTokenSpent.minus(event.params.value)
+    subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.minus(new BigDecimal(event.params.value))
+    saveSubjectToken(subjectToken, event.block)
 
     let summary = loadSummary()
     summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.minus(new BigDecimal(event.params.value))
     summary.save()
   }
-  let auctionClaimedFromOrder = AuctionClaimedFromOrder.load(entityId)
-  if (auctionClaimedFromOrder) {
+  let auctionClaimedFromOrderTx = AuctionClaimedFromOrderTx.load(entityId)
+  if (auctionClaimedFromOrderTx) {
     // load respective order
-    let auctionOrder = AuctionOrder.load(getAuctionOrderId(auctionClaimedFromOrder.subject, auctionClaimedFromOrder.userId, auctionClaimedFromOrder.buyAmount, auctionClaimedFromOrder.sellAmount))
+    let auctionOrder = AuctionOrder.load(getAuctionOrderId(auctionClaimedFromOrderTx.subjectToken, auctionClaimedFromOrderTx.userId, auctionClaimedFromOrderTx.buyAmount, auctionClaimedFromOrderTx.sellAmount))
     if (!auctionOrder) {
-      throw new Error("AuctionOrder not found for entityId during auctionClaimedFromOrder: " + entityId)
+      throw new Error("AuctionOrder not found for entityId during auctionClaimedFromOrderTx: " + entityId)
     }
-    auctionOrder.auctionClaimedFromOrder = auctionClaimedFromOrder.id
+    auctionOrder.auctionClaimedFromOrderTx = auctionClaimedFromOrderTx.id
     auctionOrder.save()
     let order = Order.load(auctionOrder.order)
     if (!order) {
-      throw new Error("Order not found for auctionOrder during auctionClaimedFromOrder: " + auctionOrder.order)
+      throw new Error("Order not found for auctionOrder during auctionClaimedFromOrderTx: " + auctionOrder.order)
     }
     order.auctionOrderStatus = CLAIMED
     // reducing refund from order's protocolTokenAmount
@@ -130,16 +130,16 @@ export function handleTransferTx(event: Transfer): void {
     user.protocolTokenSpent = user.protocolTokenSpent.minus(event.params.value)
     saveUser(user, event.block)
     // reducing refund amount from user's portfolio
-    let portfolio = getOrCreatePortfolio(event.params.to, Address.fromString(auctionClaimedFromOrder.subject), event.transaction.hash, event.block)
+    let portfolio = getOrCreatePortfolio(event.params.to, Address.fromString(auctionClaimedFromOrderTx.subjectToken), event.transaction.hash, event.block)
     portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(event.params.value)
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.minus(new BigDecimal(event.params.value))
 
     savePortfolio(portfolio, event.block)
     // reducing refund from subject's protocolTokenSpent
-    let subject = getOrCreateSubject(Address.fromString(order.subjectToken), event.block)
-    subject.protocolTokenSpent = subject.protocolTokenSpent.minus(event.params.value)
-    subject.protocolTokenInvested = subject.protocolTokenInvested.minus(new BigDecimal(event.params.value))
-    saveSubject(subject, event.block)
+    let subjectToken = getOrCreateSubjectToken(Address.fromString(order.subjectToken), event.block)
+    subjectToken.protocolTokenSpent = subjectToken.protocolTokenSpent.minus(event.params.value)
+    subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.minus(new BigDecimal(event.params.value))
+    saveSubjectToken(subjectToken, event.block)
 
     let summary = loadSummary()
     summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.minus(new BigDecimal(event.params.value))

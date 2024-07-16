@@ -1,8 +1,8 @@
 import { Address, BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/templates/SubjectTokenContract/ERC20"
-import { getOrCreatePortfolio, getOrCreateSubject, loadSummary, savePortfolio, saveSubject } from "./utils"
+import { getOrCreatePortfolio, getOrCreateSubjectToken, loadSummary, savePortfolio, saveSubjectToken } from "./utils"
 import { handleTransferTx } from "./subject-token-tx"
-import { AuctionClaimedFromOrder, AuctionOrder, Order, User } from "../generated/schema"
+import { AuctionClaimedFromOrderTx, AuctionOrder, Order, User } from "../generated/schema"
 import { getAuctionOrderId } from "./protocol-token"
 import { AUCTION_ORDER_CLAIMED as CLAIMED } from "./constants"
 
@@ -13,7 +13,7 @@ export function handleTransfer(event: Transfer): void {
   let to = event.params.to
   let value = event.params.value
 
-  let subjectToken = getOrCreateSubject(contractAddress, event.block)
+  let subjectToken = getOrCreateSubjectToken(contractAddress, event.block)
   let totalSupply = subjectToken.totalSupply
   let summary = loadSummary()
   let mint = from == Address.zero()
@@ -48,7 +48,7 @@ export function handleTransfer(event: Transfer): void {
       subjectToken.uniqueHolders = uniqueHoldersCount
     }
   }
-  saveSubject(subjectToken, event.block)
+  saveSubjectToken(subjectToken, event.block)
   // updating portfolios
   if (!mint) {
     let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
@@ -64,11 +64,11 @@ export function handleTransfer(event: Transfer): void {
   // trying to load auction order
   let auctionClaimedFromOrder = tryLoadAuctionClaimedFromOrder(event)
   if (auctionClaimedFromOrder) {
-    let auctionOrder = AuctionOrder.load(getAuctionOrderId(auctionClaimedFromOrder.subject, auctionClaimedFromOrder.userId, auctionClaimedFromOrder.buyAmount, auctionClaimedFromOrder.sellAmount))
+    let auctionOrder = AuctionOrder.load(getAuctionOrderId(auctionClaimedFromOrder.subjectToken, auctionClaimedFromOrder.userId, auctionClaimedFromOrder.buyAmount, auctionClaimedFromOrder.sellAmount))
     if (!auctionOrder) {
       throw new Error("AuctionOrder not found for entityId during subject token transfer: " + event.transaction.hash.toHexString())
     }
-    auctionOrder.auctionClaimedFromOrder = auctionClaimedFromOrder.id
+    auctionOrder.auctionClaimedFromOrderTx = auctionClaimedFromOrder.id
     auctionOrder.save()
     let order = Order.load(auctionOrder.order)
     if (!order) {
@@ -82,14 +82,14 @@ export function handleTransfer(event: Transfer): void {
   }
 }
 
-function tryLoadAuctionClaimedFromOrder(event: Transfer): AuctionClaimedFromOrder | null {
+function tryLoadAuctionClaimedFromOrder(event: Transfer): AuctionClaimedFromOrderTx | null {
   let noRefundLogIndex = event.logIndex.minus(BigInt.fromI32(1))
   let entityId = event.transaction.hash.toHexString().concat("-").concat(noRefundLogIndex.toString())
-  let auctionClaimOrder = AuctionClaimedFromOrder.load(entityId)
+  let auctionClaimOrder = AuctionClaimedFromOrderTx.load(entityId)
   if (!auctionClaimOrder) {
     let withRefundLogIndex = event.logIndex.minus(BigInt.fromI32(2))
     entityId = event.transaction.hash.toHexString().concat("-").concat(withRefundLogIndex.toString())
-    auctionClaimOrder = AuctionClaimedFromOrder.load(entityId)
+    auctionClaimOrder = AuctionClaimedFromOrderTx.load(entityId)
   }
   return auctionClaimOrder
 }

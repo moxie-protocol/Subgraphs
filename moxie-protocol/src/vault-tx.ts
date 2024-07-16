@@ -1,6 +1,6 @@
 import { VaultDeposit, VaultTransfer } from "../generated/Vault/Vault"
 import { VaultDepositTx, VaultTransferTx } from "../generated/schema"
-import { getOrCreateBlockInfo, getOrCreateSubject, getTxEntityId, loadSummary, saveSubject } from "./utils"
+import { getOrCreateBlockInfo, getOrCreateTransactionId, getTxEntityId } from "./utils"
 
 export function handleVaultDepositTx(event: VaultDeposit): void {
   let vaultDeposit = new VaultDepositTx(getTxEntityId(event))
@@ -11,6 +11,7 @@ export function handleVaultDepositTx(event: VaultDeposit): void {
   vaultDeposit.sender = event.params.sender
   vaultDeposit.amount = event.params.amount
   vaultDeposit.totalReserve = event.params.totalReserve
+  vaultDeposit.txn = getOrCreateTransactionId(event.transaction.hash)
   vaultDeposit.save()
 }
 
@@ -24,5 +25,7 @@ export function handleVaultTransferTx(event: VaultTransfer): void {
   vaultTransfer.to = event.params.to
   vaultTransfer.amount = event.params.amount
   vaultTransfer.totalReserve = event.params.totalReserve
+  vaultTransfer.txn = getOrCreateTransactionId(event.transaction.hash)
+
   vaultTransfer.save()
 }

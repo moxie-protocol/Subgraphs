@@ -1,33 +1,33 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { AuctionTransfer, BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, Subject, SubjectDailySnapshot, SubjectFeeTransfer, SubjectHourlySnapshot, Summary, User, UserProtocolOrder } from "../generated/schema"
+import { Transaction, BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectDailySnapshot, SubjectFeeTransfer, SubjectHourlySnapshot, Summary, User, UserProtocolOrder } from "../generated/schema"
 import { PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
 
-export function getOrCreateSubject(tokenAddress: Address, block: ethereum.Block): Subject {
-  let subject = Subject.load(tokenAddress.toHexString())
-  if (!subject) {
-    subject = new Subject(tokenAddress.toHexString())
+export function getOrCreateSubjectToken(tokenAddress: Address, block: ethereum.Block): SubjectToken {
+  let subjectToken = SubjectToken.load(tokenAddress.toHexString())
+  if (!subjectToken) {
+    subjectToken = new SubjectToken(tokenAddress.toHexString())
     let token = ERC20.bind(tokenAddress)
-    subject.name = token.name()
-    subject.symbol = token.symbol()
-    subject.decimals = BigInt.fromI32(token.decimals())
+    subjectToken.name = token.name()
+    subjectToken.symbol = token.symbol()
+    subjectToken.decimals = BigInt.fromI32(token.decimals())
     // setting default values for now
-    subject.reserve = BigInt.zero()
-    subject.reserveRatio = BigInt.zero()
-    subject.currentPriceinMoxie = BigDecimal.fromString("0")
-    subject.currentPriceinWeiInMoxie = BigDecimal.fromString("0")
-    subject.totalSupply = BigInt.zero()
-    subject.uniqueHolders = BigInt.zero()
-    subject.volume = BigInt.zero()
-    subject.beneficiaryFee = BigInt.zero()
-    subject.protocolFee = BigInt.zero()
-    subject.holders = []
-    subject.createdAtBlockInfo = getOrCreateBlockInfo(block).id
-    subject.protocolTokenSpent = BigInt.zero()
-    subject.protocolTokenInvested = BigDecimal.fromString("0")
-    saveSubject(subject, block)
+    subjectToken.reserve = BigInt.zero()
+    subjectToken.reserveRatio = BigInt.zero()
+    subjectToken.currentPriceinMoxie = BigDecimal.fromString("0")
+    subjectToken.currentPriceinWeiInMoxie = BigDecimal.fromString("0")
+    subjectToken.totalSupply = BigInt.zero()
+    subjectToken.uniqueHolders = BigInt.zero()
+    subjectToken.volume = BigInt.zero()
+    subjectToken.beneficiaryFee = BigInt.zero()
+    subjectToken.protocolFee = BigInt.zero()
+    subjectToken.holders = []
+    subjectToken.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    subjectToken.protocolTokenSpent = BigInt.zero()
+    subjectToken.protocolTokenInvested = BigDecimal.fromString("0")
+    saveSubjectToken(subjectToken, block)
   }
-  return subject
+  return subjectToken
 }
 
 export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Address, txHash: Bytes, block: ethereum.Block): Portfolio {
@@ -36,9 +36,9 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
   let portfolio = Portfolio.load(portfolioId)
   if (!portfolio) {
     portfolio = new Portfolio(portfolioId)
-    let subject = getOrCreateSubject(subjectAddress, block)
+    let subjectToken = getOrCreateSubjectToken(subjectAddress, block)
     portfolio.user = user.id
-    portfolio.subject = subject.id
+    portfolio.subjectToken = subjectToken.id
     portfolio.balance = BigInt.zero()
     log.info("Portfolio {} initialized {} balance: {}", [portfolioId, txHash.toHexString(), portfolio.balance.toString()])
     portfolio.protocolTokenSpent = BigInt.zero()
@@ -72,85 +72,85 @@ export function saveUser(user: User, block: ethereum.Block): void {
   user.save()
 }
 
-function createSubjectHourlySnapshot(subject: Subject, timestamp: BigInt): void {
+function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
   let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_HOUR)).plus(SECONDS_IN_HOUR)
-  let snapshotId = subject.id.concat("-").concat(snapshotTimestamp.toString())
+  let snapshotId = subjectToken.id.concat("-").concat(snapshotTimestamp.toString())
   let snapshot = SubjectHourlySnapshot.load(snapshotId)
   if (!snapshot) {
     snapshot = new SubjectHourlySnapshot(snapshotId)
-    snapshot.startPrice = subject.currentPriceinMoxie
-    snapshot.startUniqueHolders = subject.uniqueHolders
-    snapshot.startVolume = subject.volume
-    snapshot.startBeneficiaryFee = subject.beneficiaryFee
-    snapshot.startProtocolFee = subject.protocolFee
+    snapshot.startPrice = subjectToken.currentPriceinMoxie
+    snapshot.startUniqueHolders = subjectToken.uniqueHolders
+    snapshot.startVolume = subjectToken.volume
+    snapshot.startBeneficiaryFee = subjectToken.beneficiaryFee
+    snapshot.startProtocolFee = subjectToken.protocolFee
   }
   snapshot.endTimestamp = snapshotTimestamp
 
-  snapshot.subject = subject.id
+  snapshot.subjectToken = subjectToken.id
 
-  snapshot.beneficiary = subject.beneficiary
-  snapshot.reserve = subject.reserve
-  snapshot.endPrice = subject.currentPriceinMoxie
+  snapshot.beneficiary = subjectToken.beneficiary
+  snapshot.reserve = subjectToken.reserve
+  snapshot.endPrice = subjectToken.currentPriceinMoxie
   snapshot.hourlyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
 
-  snapshot.totalSupply = subject.totalSupply
+  snapshot.totalSupply = subjectToken.totalSupply
 
-  snapshot.endUniqueHolders = subject.uniqueHolders
+  snapshot.endUniqueHolders = subjectToken.uniqueHolders
   snapshot.hourlyUniqueHoldersChange = snapshot.endUniqueHolders.minus(snapshot.startUniqueHolders) // TODO: confirm
 
-  snapshot.endVolume = subject.volume
+  snapshot.endVolume = subjectToken.volume
   snapshot.hourlyVolumeChange = snapshot.endVolume.minus(snapshot.startVolume) // TODO: confirm
 
-  snapshot.endBeneficiaryFee = subject.beneficiaryFee
+  snapshot.endBeneficiaryFee = subjectToken.beneficiaryFee
   snapshot.hourlyBeneficiaryFeeChange = snapshot.endBeneficiaryFee.minus(snapshot.startBeneficiaryFee) // TODO: confirm
 
-  snapshot.endProtocolFee = subject.protocolFee
+  snapshot.endProtocolFee = subjectToken.protocolFee
   snapshot.hourlyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
   snapshot.save()
 }
 
-function createSubjectDailySnapshot(subject: Subject, timestamp: BigInt): void {
+function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
   let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_DAY)).plus(SECONDS_IN_DAY)
-  let snapshotId = subject.id.concat("-").concat(snapshotTimestamp.toString())
+  let snapshotId = subjectToken.id.concat("-").concat(snapshotTimestamp.toString())
   let snapshot = SubjectDailySnapshot.load(snapshotId)
   if (!snapshot) {
     snapshot = new SubjectDailySnapshot(snapshotId)
-    snapshot.startPrice = subject.currentPriceinMoxie
-    snapshot.startUniqueHolders = subject.uniqueHolders
-    snapshot.startVolume = subject.volume
-    snapshot.startBeneficiaryFee = subject.beneficiaryFee
-    snapshot.startProtocolFee = subject.protocolFee
+    snapshot.startPrice = subjectToken.currentPriceinMoxie
+    snapshot.startUniqueHolders = subjectToken.uniqueHolders
+    snapshot.startVolume = subjectToken.volume
+    snapshot.startBeneficiaryFee = subjectToken.beneficiaryFee
+    snapshot.startProtocolFee = subjectToken.protocolFee
   }
   snapshot.endTimestamp = snapshotTimestamp
 
-  snapshot.subject = subject.id
+  snapshot.subjectToken = subjectToken.id
 
-  snapshot.beneficiary = subject.beneficiary
-  snapshot.reserve = subject.reserve
-  snapshot.endPrice = subject.currentPriceinMoxie
+  snapshot.beneficiary = subjectToken.beneficiary
+  snapshot.reserve = subjectToken.reserve
+  snapshot.endPrice = subjectToken.currentPriceinMoxie
   snapshot.dailyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
 
-  snapshot.totalSupply = subject.totalSupply
+  snapshot.totalSupply = subjectToken.totalSupply
 
-  snapshot.endUniqueHolders = subject.uniqueHolders
+  snapshot.endUniqueHolders = subjectToken.uniqueHolders
   snapshot.dailyUniqueHoldersChange = snapshot.endUniqueHolders.minus(snapshot.startUniqueHolders) // TODO: confirm
 
-  snapshot.endVolume = subject.volume
+  snapshot.endVolume = subjectToken.volume
   snapshot.dailyVolumeChange = snapshot.endVolume.minus(snapshot.startVolume) // TODO: confirm
 
-  snapshot.endBeneficiaryFee = subject.beneficiaryFee
+  snapshot.endBeneficiaryFee = subjectToken.beneficiaryFee
   snapshot.dailyBeneficiaryFeeChange = snapshot.endBeneficiaryFee.minus(snapshot.startBeneficiaryFee) // TODO: confirm
 
-  snapshot.endProtocolFee = subject.protocolFee
+  snapshot.endProtocolFee = subjectToken.protocolFee
   snapshot.dailyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
   snapshot.save()
 }
 
-export function saveSubject(subject: Subject, block: ethereum.Block): void {
+export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block): void {
   subject.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   subject.save()
-  createSubjectDailySnapshot(subject, block.timestamp)
-  createSubjectHourlySnapshot(subject, block.timestamp)
+  createSubjectTokenDailySnapshot(subject, block.timestamp)
+  createSubjectTokenHourlySnapshot(subject, block.timestamp)
 }
 
 export function loadSummary(): Summary {
@@ -210,32 +210,32 @@ export function calculateSellSideFee(_depositAmount: BigInt): Fees {
   return new Fees(protocolFee_, subjectFee_)
 }
 
-export function getOrCreateAuctionTransferId(txHash: Bytes): string {
-  let auctionTransfer = AuctionTransfer.load(txHash.toHexString())
-  if (!auctionTransfer) {
-    auctionTransfer = new AuctionTransfer(txHash.toHexString())
-    auctionTransfer.save()
+export function getOrCreateTransactionId(txHash: Bytes): string {
+  let transaction = Transaction.load(txHash.toHexString())
+  if (!transaction) {
+    transaction = new Transaction(txHash.toHexString())
+    transaction.save()
   }
-  return auctionTransfer.id
+  return transaction.id
 }
 
-export function createProtocolFeeTransfer(event: ethereum.Event, blockInfo: BlockInfo, order: Order, subject: Subject, beneficiary: ProtocolFeeBeneficiary, fee: BigInt): void {
+export function createProtocolFeeTransfer(event: ethereum.Event, blockInfo: BlockInfo, order: Order, subjectToken: SubjectToken, beneficiary: ProtocolFeeBeneficiary, fee: BigInt): void {
   let protocolFeeTransfer = new ProtocolFeeTransfer(getTxEntityId(event))
   protocolFeeTransfer.txHash = event.transaction.hash
   protocolFeeTransfer.blockInfo = blockInfo.id
   protocolFeeTransfer.order = order.id
-  protocolFeeTransfer.subject = subject.id
+  protocolFeeTransfer.subjectToken = subjectToken.id
   protocolFeeTransfer.beneficiary = beneficiary.id
   protocolFeeTransfer.amount = fee
   protocolFeeTransfer.save()
 }
 
-export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: BlockInfo, order: Order, subject: Subject, beneficiary: string | null, fee: BigInt): void {
+export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: BlockInfo, order: Order, subjectToken: SubjectToken, beneficiary: string | null, fee: BigInt): void {
   let subjectFeeTransfer = new SubjectFeeTransfer(getTxEntityId(event))
   subjectFeeTransfer.txHash = event.transaction.hash
   subjectFeeTransfer.blockInfo = blockInfo.id
   subjectFeeTransfer.order = order.id
-  subjectFeeTransfer.subject = subject.id
+  subjectFeeTransfer.subjectToken = subjectToken.id
   subjectFeeTransfer.amount = fee
   subjectFeeTransfer.beneficiary = beneficiary
 

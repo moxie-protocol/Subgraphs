@@ -6,9 +6,9 @@ dataSources:
     name: TokenManager
     network: base-sepolia
     source:
-      address: "0xE665ceBF6111B6bCd8B84538D31F4048666B489a"
+      address: "0x990591A096934FEF9d0eb6E2b9669f20ee0E424B"
       abi: TokenManager
-      startBlock: 12228958
+      startBlock: 12648943
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -31,9 +31,9 @@ dataSources:
     name: Vault
     network: base-sepolia
     source:
-      address: "0x2E412b90838dcD9dD336196558798D8ac3aF48dB"
+      address: "0x56ebfCCef61065C0b18C43f97e693b102E86570A"
       abi: Vault
-      startBlock: 12228960
+      startBlock: 12648946
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -54,9 +54,9 @@ dataSources:
     name: MoxieBondingCurve
     network: base-sepolia
     source:
-      address: "0x0f0EcB17575c232077075EF9d78fC9afad808B4D"
+      address: "0xAE03AC8F00cD242f69f996BD06DE5Ab9363c20Ac"
       abi: MoxieBondingCurve
-      startBlock: 12228966
+      startBlock: 12648953
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -96,9 +96,9 @@ dataSources:
     name: EasyAuction
     network: base-sepolia
     source:
-      address: "0x28E8A1817Af21d39d6820Fd930FDE618e03d4d8d"
+      address: "0x6DE3Ce213f27FAF4339383C8aEc7e255a1Eb2A24"
       abi: EasyAuction
-      startBlock: 12228929
+      startBlock: 12648913
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -122,9 +122,9 @@ dataSources:
     name: MoxieToken
     network: base-sepolia
     source:
-      address: "0xf80945fc1436b0ae8b86c8835f09870deeaf03d5"
+      address: "0xf86136AfB0fb72cdbd27d7Aea9e283725d6815a1"
       abi: MoxieToken
-      startBlock: 12228785
+      startBlock: 12648770
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6

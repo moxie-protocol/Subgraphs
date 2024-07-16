@@ -2,7 +2,7 @@ import { BigInt } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 
 import { MoxieBondingCurveBondingCurveInitializedTx, MoxieBondingCurveSubjectSharePurchasedTx, MoxieBondingCurveUpdateBeneficiaryTx, MoxieBondingCurveUpdateFeesTx, MoxieBondingCurveSubjectShareSoldTx, MoxieBondingCurveUpdateFormulaTx } from "../generated/schema"
-import { getOrCreateBlockInfo, getTxEntityId } from "./utils"
+import { getOrCreateBlockInfo, getOrCreateTransactionId, getTxEntityId } from "./utils"
 
 export function handleBondingCurveInitializedTx(event: BondingCurveInitialized): void {
   let bondingCurve = new MoxieBondingCurveBondingCurveInitializedTx(getTxEntityId(event))
@@ -13,6 +13,7 @@ export function handleBondingCurveInitializedTx(event: BondingCurveInitialized):
   bondingCurve.initialSupply = event.params._initialSupply
   bondingCurve.reserve = event.params._reserve
   bondingCurve.reserveRatio = event.params._reserveRatio
+  bondingCurve.txn = getOrCreateTransactionId(event.transaction.hash)
   bondingCurve.save()
 }
 
@@ -26,6 +27,8 @@ export function handleSubjectSharePurchasedTx(event: SubjectSharePurchased): voi
   subjectSharePurchased.buyToken = event.params._buyToken
   subjectSharePurchased.buyAmount = event.params._buyAmount
   subjectSharePurchased.beneficiary = event.params._beneficiary
+  subjectSharePurchased.txn = getOrCreateTransactionId(event.transaction.hash)
+
   subjectSharePurchased.save()
 }
 
@@ -39,6 +42,8 @@ export function handleSubjectShareSoldTx(event: SubjectShareSold): void {
   subjectShareSold.buyToken = event.params._buyToken
   subjectShareSold.buyAmount = event.params._buyAmount
   subjectShareSold.beneficiary = event.params._beneficiary
+  subjectShareSold.txn = getOrCreateTransactionId(event.transaction.hash)
+
   subjectShareSold.save()
 }
 
@@ -47,6 +52,8 @@ export function handleUpdateBeneficiaryTx(event: UpdateBeneficiary): void {
   updateBeneficiary.blockInfo = getOrCreateBlockInfo(event.block).id
   updateBeneficiary.txHash = event.transaction.hash
   updateBeneficiary.beneficiary = event.params._beneficiary
+  updateBeneficiary.txn = getOrCreateTransactionId(event.transaction.hash)
+
   updateBeneficiary.save()
 }
 
@@ -58,6 +65,8 @@ export function handleUpdateFeesTx(event: UpdateFees): void {
   updateFees.protocolSellFeePct = event.params._protocolSellFeePct
   updateFees.subjectBuyFeePct = event.params._subjectBuyFeePct
   updateFees.subjectSellFeePct = event.params._subjectSellFeePct
+  updateFees.txn = getOrCreateTransactionId(event.transaction.hash)
+
   updateFees.save()
 }
 
@@ -66,5 +75,7 @@ export function handleUpdateFormulaTx(event: UpdateFormula): void {
   updateFormula.blockInfo = getOrCreateBlockInfo(event.block).id
   updateFormula.txHash = event.transaction.hash
   updateFormula.formula = event.params._formula
+  updateFormula.txn = getOrCreateTransactionId(event.transaction.hash)
+
   updateFormula.save()
 }
