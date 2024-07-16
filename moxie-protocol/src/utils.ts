@@ -17,6 +17,7 @@ export function getOrCreateSubjectToken(tokenAddress: Address, block: ethereum.B
     subjectToken.currentPriceinMoxie = BigDecimal.fromString("0")
     subjectToken.currentPriceinWeiInMoxie = BigDecimal.fromString("0")
     subjectToken.totalSupply = BigInt.zero()
+    subjectToken.initialSupply = BigInt.zero()
     subjectToken.uniqueHolders = BigInt.zero()
     subjectToken.volume = BigInt.zero()
     subjectToken.beneficiaryFee = BigInt.zero()

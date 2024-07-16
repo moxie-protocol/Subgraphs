@@ -251,6 +251,8 @@ type SubjectToken @entity {
   reserveRatio: BigInt!
   "Total supply of the token"
   totalSupply: BigInt!
+  "initial supply when bonding curve is initialized"
+  initialSupply: BigInt!
   "holders"
   holders: [User!]!
   "total number of unique holders"

@@ -7,9 +7,10 @@ import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, c
 import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL, SUMMARY_ID } from "./constants"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   handleBondingCurveInitializedTx(event)
-  let subject = getOrCreateSubjectToken(event.params._subjectToken, event.block)
-  subject.reserveRatio = event.params._reserveRatio
-  saveSubjectToken(subject, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
+  subjectToken.reserveRatio = event.params._reserveRatio
+  subjectToken.initialSupply = event.params._initialSupply
+  saveSubjectToken(subjectToken, event.block)
 }
 
 export function handleSubjectSharePurchased(event: SubjectSharePurchased): void {
