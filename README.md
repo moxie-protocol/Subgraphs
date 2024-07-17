@@ -8,8 +8,13 @@
 This repository contains the official source code for the Moxie subgraphs. Currently, there are 3 subgraphs:
 
 - Protocol
+  - Studio:  https://api.studio.thegraph.com/query/27864/protocol/v4.2.6/graphql
 - Auction
+  - Studio: https://api.studio.thegraph.com/proxy/82737/auction/v.4.0.6
 - Vesting
+  - Stuido: https://api.studio.thegraph.com/query/82737/vesting/v.4.2
+
+Keep in mind that the Graph Studio APIs are rate-limited, thus if you need higher limit, it's best that you [deploy](#deployment) to your own Graph Indexer Node.
 
 ## Table Of Contents
 
@@ -21,7 +26,6 @@ This repository contains the official source code for the Moxie subgraphs. Curre
 ## Pre-requisites
 
 - [The Graph CLI](https://www.npmjs.com/package/@graphprotocol/graph-cli)
-- [Create Subgraph on Subgraph Studio](https://www.youtube.com/embed/nGIFuC69bSA?start=15&end=130)
 
 ## Local Setup
 
@@ -45,10 +49,10 @@ First, enter the folder of subgraph you would like to deploy:
 cd <SUBGRAPH_FOLDER>
 ```
 
-Then, make sure that your Graph CLI is authenticated:
+Then, create a subgraph on your Graph Indexer Node:
 
 ```sh
-graph auth
+graph create --node <GRAPH_NODE_URL>
 ```
 
 Once authenticated, generate an AssemblyScript types for the smart contract ABIs and the subgraph schema and compiles the subgraph to WebAssembly:
@@ -57,10 +61,10 @@ Once authenticated, generate an AssemblyScript types for the smart contract ABIs
 graph codegen && graph build
 ```
 
-Once the process is executed successfully, simply run the following command to deploy to the Subgraph Studio:
+Once the process is executed successfully, simply run the following command to deploy to your Graph Indexer Node:
 
 ```sh
-graph deploy --studio <SUBGRAPH_SLUG>
+graph deploy --node <GRAPH_NODE_URL>
 ```
 
 ## Contributing
