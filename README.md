@@ -8,7 +8,7 @@
 This repository contains the official source code for the Moxie subgraphs. Currently, there are 3 subgraphs:
 
 - Protocol
-  - Studio:  https://api.studio.thegraph.com/query/27864/protocol/v4.2.6/graphql
+  - Studio: https://api.studio.thegraph.com/query/27864/protocol/v5.1.6/graphql
 - Auction
   - Studio: https://api.studio.thegraph.com/proxy/82737/auction/v.4.0.6
 - Vesting
