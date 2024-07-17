@@ -52,10 +52,10 @@ cd <SUBGRAPH_FOLDER>
 Then, create a subgraph on your Graph Indexer Node:
 
 ```sh
-graph create --node <GRAPH_NODE_URL>
+graph create --node <GRAPH_NODE_URL> <SUBGRAPH_NAME>
 ```
 
-Once authenticated, generate an AssemblyScript types for the smart contract ABIs and the subgraph schema and compiles the subgraph to WebAssembly:
+Once the subgraph is created, generate an AssemblyScript types for the smart contract ABIs and the subgraph schema and compiles the subgraph to WebAssembly:
 
 ```sh
 graph codegen && graph build
@@ -64,7 +64,7 @@ graph codegen && graph build
 Once the process is executed successfully, simply run the following command to deploy to your Graph Indexer Node:
 
 ```sh
-graph deploy --node <GRAPH_NODE_URL>
+graph deploy --node <GRAPH_NODE_URL> <SUBGRAPH_NAME>
 ```
 
 ## Contributing
