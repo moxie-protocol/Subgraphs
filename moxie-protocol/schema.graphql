@@ -128,9 +128,11 @@ type VaultTransferTx @entity {
 
 # actual entities
 
-type SubjectTokenDailySnapshot @entity {
+type SubjectTokenRollingDailySnapshot @entity {
   "subjectId+-+endTimestamp"
   id: ID!
+  "start block timestamp"
+  startTimestamp: BigInt!
   "end block timestamp"
   endTimestamp: BigInt!
   "subject token address"
@@ -180,11 +182,71 @@ type SubjectTokenDailySnapshot @entity {
 
   createdAtBlockInfo: BlockInfo!
   updatedAtBlockInfo: BlockInfo!
+  initialHourlySnapshot: SubjectTokenHourlySnapshot
+}
+
+type SubjectTokenDailySnapshot @entity {
+  "subjectId+-+endTimestamp"
+  id: ID!
+  "start block timestamp"
+  startTimestamp: BigInt!
+  "end block timestamp"
+  endTimestamp: BigInt!
+  "subject token address"
+  subjectToken: SubjectToken!
+
+  "address of the beneficiary"
+  beneficiary: User
+  "reserve balance (moxie)/ total locked value"
+  reserve: BigInt!
+
+  "price of the token at the start of the snapshot"
+  startPrice: BigDecimal!
+  "price of the token at the end of the snapshot"
+  endPrice: BigDecimal!
+  "daily price change"
+  dailyPriceChange: BigDecimal!
+
+  "Total supply of the token"
+  totalSupply: BigInt!
+
+  "total number of unique holders at start of the snapshot"
+  startUniqueHolders: BigInt!
+  "total number of unique holders at end of the snapshot"
+  endUniqueHolders: BigInt!
+  "daily unique holders change"
+  dailyUniqueHoldersChange: BigInt!
+
+  "amount of moxie used to buy or sell this subject token at start of the snapshot"
+  startVolume: BigInt!
+  "amount of moxie used to buy or sell this subject token at end of the snapshot"
+  endVolume: BigInt!
+  "daily volume change"
+  dailyVolumeChange: BigInt!
+
+  "total beneficiary fee at start of the snapshot"
+  startBeneficiaryFee: BigInt!
+  "total beneficiary fee at end of the snapshot"
+  endBeneficiaryFee: BigInt!
+  "daily beneficiary fee change"
+  dailyBeneficiaryFeeChange: BigInt!
+  "total protocol fee at start of the snapshot"
+  startProtocolFee: BigInt!
+  "total protocol fee at end of the snapshot"
+  endProtocolFee: BigInt!
+  "daily protocol fee change"
+  dailyProtocolFeeChange: BigInt!
+
+  createdAtBlockInfo: BlockInfo!
+  updatedAtBlockInfo: BlockInfo!
+  initialHourlySnapshot: SubjectTokenHourlySnapshot
 }
 
 type SubjectTokenHourlySnapshot @entity {
   "subjectId+-+endTimestamp"
   id: ID!
+  "start block timestamp"
+  startTimestamp: BigInt!
   "end block timestamp"
   endTimestamp: BigInt!
   "subject token address"
@@ -267,7 +329,7 @@ type SubjectToken @entity {
   "snapshots"
   hourlySnapshots: [SubjectTokenHourlySnapshot!]! @derivedFrom(field: "subjectToken")
   dailySnapshots: [SubjectTokenDailySnapshot!]! @derivedFrom(field: "subjectToken")
-
+  latestDailySnapshot: [SubjectTokenRollingDailySnapshot!]! @derivedFrom(field: "subjectToken")
   "total beneficiary fees collected"
   beneficiaryFee: BigInt!
   "total protocol fees collected"
