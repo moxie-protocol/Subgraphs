@@ -12,7 +12,7 @@ This repository contains the official source code for the Moxie subgraphs. Curre
 - Auction
   - Studio: https://api.studio.thegraph.com/proxy/82737/auction/v.4.0.6
 - Vesting
-  - Stuido: https://api.studio.thegraph.com/query/82737/vesting/v.4.2
+  - Stuido: https://api.studio.thegraph.com/query/82737/vesting/v4.2
 
 Keep in mind that the Graph Studio APIs are rate-limited, thus if you need higher limit, it's best that you [deploy](#deployment) to your own Graph Indexer Node.
 
