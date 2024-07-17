@@ -1,6 +1,11 @@
-# Moxie Protocol Subgraphs
+<div align="center">
+  <a align="center" href="https://moxie.xyz" target="_blank">
+    <img src="./assets/logo.avif" alt="code snippets" height=50/>
+  </a>
+  <h1 align="center">Subgraphs</h1>
+</div>
 
-This repository contains the source code for 3 official Moxie subgraphs:
+This repository contains the official source code for the Moxie subgraphs. Currently, there are 3 subgraphs:
 
 - Protocol
 - Auction
@@ -57,6 +62,10 @@ Once the process is executed successfully, simply run the following command to d
 ```sh
 graph deploy --studio <SUBGRAPH_SLUG>
 ```
+
+## Contributing
+
+If you'd like to contribute to the Moxie subgraph repository or fix a bug please make sure to take a look at [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
