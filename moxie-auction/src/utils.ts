@@ -52,8 +52,8 @@ export function updateAuctionStats(auctionId: BigInt): void {
   let orders = sortOrders(auctionDetails.activeOrders!)
   if (orders.length > 0) {
     auctionDetails.uniqueBidders = getUniqueBiddersCount(orders)
-    auctionDetails.lowestPriceBidOrder = orders[0]
-    auctionDetails.higestPriceBidOrder = orders[orders.length - 1]
+    auctionDetails.highestPriceBidOrder = orders[0]
+    auctionDetails.lowestPriceBidOrder = orders[orders.length - 1]
     auctionDetails.save()
   }
   const initialOrderDetailsList = auctionDetails.exactOrder.split("-")

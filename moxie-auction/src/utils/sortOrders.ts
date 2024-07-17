@@ -15,22 +15,22 @@ export function sortOrders(orders: Array<string>): Array<string> {
     let orderBPrice = orderBBiddingTokenAmount.div(orderBAuctioningTokenAmount)
     // Check if price of order A is greater than order B
     if (orderAPrice.gt(orderBPrice)) {
-      return 1
+      return -1
     }
     if (orderAPrice.lt(orderBPrice)) {
-      return -1
+      return 1
     }
     if (orderABiddingTokenAmount.gt(orderBBiddingTokenAmount)) {
-      return 1
-    }
-    if (orderABiddingTokenAmount.lt(orderBBiddingTokenAmount)) {
       return -1
     }
-    if (orderAUserId.gt(orderBUserId)) {
+    if (orderABiddingTokenAmount.lt(orderBBiddingTokenAmount)) {
       return 1
     }
+    if (orderAUserId.gt(orderBUserId)) {
+      return -1
+    }
 
-    return -1
+    return 1
   })
   return orders
 }

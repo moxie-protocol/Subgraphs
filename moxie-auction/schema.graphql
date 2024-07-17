@@ -71,7 +71,7 @@ type AuctionDetail @entity {
 
   exactOrder: Order!
   "order with highest price"
-  higestPriceBidOrder: Order
+  highestPriceBidOrder: Order
   "order with lowest price"
   lowestPriceBidOrder: Order
   "all orders in the auction(contains placed, claimed, cancelled orders)"
