@@ -41,7 +41,7 @@ dataSources:
 templates:
   - kind: ethereum/contract
     name: MoxieTokenLockWallet
-    network: base-sepolia
+    network: {{network}}
     source:
       abi: MoxieTokenLockWallet
     mapping:
