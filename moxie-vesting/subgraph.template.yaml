@@ -1,0 +1,75 @@
+specVersion: 0.0.4
+description: The Moxie Token Distribution
+repository: https://github.com/graphprotocol/token-distribution
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: MoxieTokenLockManager
+    network: {{network}}
+    source:
+      address: "{{tokenLockManager}}"
+      abi: MoxieTokenLockManager
+      startBlock: {{blockNumber}} 
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/manager.ts
+      entities:
+        - TokenLockManager
+        - TokenLockWallet
+        - AuthorizedFunction
+      abis:
+        - name: MoxieTokenLockManager
+          file: ./abis/MoxieTokenLockManager.json
+      eventHandlers:
+        - event: MasterCopyUpdated(indexed address)
+          handler: handleMasterCopyUpdated
+        - event: TokenLockCreated(indexed address,indexed bytes32,indexed address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint8)
+          handler: handleTokenLockCreated
+        - event: TokensDeposited(indexed address,uint256)
+          handler: handleTokensDeposited
+        - event: TokensWithdrawn(indexed address,uint256)
+          handler: handleTokensWithdrawn
+        - event: FunctionCallAuth(indexed address,indexed bytes4,indexed address,string)
+          handler: handleFunctionCallAuth
+        - event: TokenDestinationAllowed(indexed address,bool)
+          handler: handleTokenDestinationAllowed
+        - event: MoxiePassTokenUpdated(indexed address)
+          handler: handleMoxiePassTokenUpdated
+templates:
+  - kind: ethereum/contract
+    name: MoxieTokenLockWallet
+    network: {{network}}
+    source:
+      abi: MoxieTokenLockWallet
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/tokenLockWallet.ts
+      entities:
+        - TokenLockWallet
+      abis:
+        - name: MoxieTokenLockWallet
+          file: ./abis/MoxieTokenLockWallet.json
+      eventHandlers:
+        - event: TokensReleased(indexed address,uint256)
+          handler: handleTokensReleased
+        - event: TokensWithdrawn(indexed address,uint256)
+          handler: handleTokensWithdrawn
+        - event: TokensRevoked(indexed address,uint256)
+          handler: handleTokensRevoked
+        - event: ManagerUpdated(indexed address,indexed address)
+          handler: handleManagerUpdated
+        - event: TokenDestinationsApproved()
+          handler: handleTokenDestinationsApproved
+        - event: TokenDestinationsRevoked()
+          handler: handleTokenDestinationsRevoked
+        - event: BeneficiaryChanged(address)
+          handler: handleBeneficiaryChanged
+        - event: LockAccepted()
+          handler: handleLockAccepted
+        - event: LockCanceled()
+          handler: handleLockCanceled

@@ -1,0 +1,24 @@
+{
+  "name": "moxie-vesting",
+  "license": "UNLICENSED",
+  "scripts": {
+    "prepare:base-sepolia": "mustache config/base-sepolia.json subgraph.template.yaml > subgraph.yaml",
+    "prepare:base": "mustache config/base.json subgraph.template.yaml > subgraph.yaml",
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --studio vesting",
+    "cb": "graph codegen && graph build",
+    "cbd:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build && graph deploy --studio vesting",
+    "create":"",
+    "cbd:base": "yarn prepare:base && graph codegen && graph build && graph deploy --node http://graph-indexer-prod.airstack.xyz/ moxie_vesting_subgraph",
+    "test": "graph test -d"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.73.0",
+    "@graphprotocol/graph-ts": "0.35.1",
+    "mustache": "^4.2.0"
+  },
+  "devDependencies": {
+    "matchstick-as": "0.6.0"
+  }
+}
