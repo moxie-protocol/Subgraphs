@@ -1,6 +1,7 @@
+import { BigInt } from "@graphprotocol/graph-ts"
 import { NewAuction, NewSellOrder, ClaimedFromOrder, CancellationSellOrder } from "../generated/EasyAuction/EasyAuction"
 import { AuctionCancellationSellOrderTx, AuctionClaimedFromOrderTx, AuctioningToken, AuctionNewSellOrderTx } from "../generated/schema"
-import { getOrCreateTransactionId, getOrCreateSubjectToken, getTxEntityId } from "./utils"
+import { getOrCreateTransactionId, getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary } from "./utils"
 
 export function handleNewSellOrder(event: NewSellOrder): void {
   let auctioningToken = loadAuctioningToken(event.params.auctionId.toString())
@@ -12,6 +13,10 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   newSellOrder.buyAmount = event.params.buyAmount
   newSellOrder.sellAmount = event.params.sellAmount
   newSellOrder.save()
+
+  let summary = getOrCreateSummary()
+  summary.numberOfAuctionOrders = summary.numberOfAuctionOrders.plus(BigInt.fromI32(1))
+  summary.save()
 }
 
 export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
@@ -38,11 +43,15 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
   cancellationSellOrder.buyAmount = event.params.buyAmount
   cancellationSellOrder.sellAmount = event.params.sellAmount
   cancellationSellOrder.save()
+
+  let summary = getOrCreateSummary()
+  summary.numberOfAuctionOrders = summary.numberOfAuctionOrders.minus(BigInt.fromI32(1))
+  summary.save()
 }
 
 export function handleNewAuction(event: NewAuction): void {
   let auctioningToken = new AuctioningToken(event.params.auctionId.toString())
-  auctioningToken.subjectToken = getOrCreateSubjectToken(event.params._auctioningToken, event.block).id
+  auctioningToken.subjectToken = getOrCreateSubjectToken(event.params._auctioningToken, null, event.block).id
   auctioningToken.save()
 }
 

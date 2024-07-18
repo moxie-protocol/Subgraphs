@@ -26,6 +26,28 @@ dataSources:
         - event: TokenDeployed(address,address,uint256)
           handler: handleTokenDeployed
       file: ./src/token-manager.ts
+  - kind: ethereum
+    name: SubjectFactory
+    network: {{network}}
+    source:
+      address: "{{SubjectFactory}}"
+      abi: SubjectFactory
+      startBlock: {{SubjectFactoryStartBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - TODO
+      abis:
+        - name: SubjectFactory
+          file: ./abis/SubjectFactory.json
+      eventHandlers:
+        - event: SubjectOnboardingInitiated(address,address,uint256,address,uint256,uint256)
+          handler: handleSubjectOnboardingInitiated
+        - event: SubjectOnboardingFinished(address,address,uint256,uint256,uint256,uint256,uint256)
+          handler: handleSubjectOnboardingFinished
+      file: ./src/subject-factory.ts
 
   - kind: ethereum
     name: Vault

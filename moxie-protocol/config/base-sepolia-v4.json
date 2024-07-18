@@ -9,5 +9,7 @@
   "MoxieBondingCurve": "0xAE03AC8F00cD242f69f996BD06DE5Ab9363c20Ac",
   "MoxieBondingCurveStartBlock": "12648953",
   "MoxieToken": "0xf86136AfB0fb72cdbd27d7Aea9e283725d6815a1",
-  "MoxieTokenStartBlock": "12648770"
+  "MoxieTokenStartBlock": "12648770",
+  "SubjectFactory": "0x0b34EB0DE7977b1d3e7facD449b92a0Fe5772A40",
+  "SubjectFactoryStartBlock": "12648935"
 }

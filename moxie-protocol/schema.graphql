@@ -5,6 +5,37 @@ type BlockInfo @entity {
   timestamp: BigInt!
 }
 
+type SubjectFactorySubjectOnboardingFinishedTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+
+  subject: Bytes!
+  subjectToken: Bytes!
+  auctionId: BigInt!
+  bondingSupply: BigInt!
+  bondingAmount: BigInt!
+  protocolFee: BigInt!
+  subjectFee: BigInt!
+  txn: Transaction!
+}
+
+type SubjectFactorySubjectOnboardingInitiatedTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+
+  subject: Bytes!
+  subjectToken: Bytes!
+  auctionAmount: BigInt!
+  biddingToken: Bytes!
+  auctionEndDate: BigInt!
+  auctionId: BigInt!
+  txn: Transaction!
+}
+
 type MoxieBondingCurveBondingCurveInitializedTx @entity {
   "txHash+-+logIndex"
   id: ID!
@@ -351,6 +382,30 @@ type SubjectToken @entity {
   protocolTokenInvested: BigDecimal!
   "orders associated with the subject"
   orders: [Order!]! @derivedFrom(field: "subjectToken")
+
+  auction: Auction!
+  status: OnboardingStatus!
+}
+enum OnboardingStatus {
+  OnboardingInitialized
+  OnboardingFinished
+}
+
+"data from subjectOnboardingFinished event"
+type Auction @entity {
+  id: ID!
+
+  subjectToken: SubjectToken
+  "_bondingAmount + _protocolFee + _subjectFee -> from auction , should be added in summary buyVolume "
+  amountRaised: BigInt!
+
+  subjectFee: BigInt!
+  protocolFee: BigInt!
+
+  startTxHash: Bytes!
+  endTxHash: Bytes
+  startBlockInfo: BlockInfo!
+  endBlockInfo: BlockInfo
 }
 
 type Portfolio @entity {
@@ -511,11 +566,26 @@ type Summary @entity {
   totalReserve: BigInt!
   "total protocol token spent by all users - after reducing when user sells the token"
   totalProtocolTokenInvested: BigDecimal!
-  activeProtocolFeeBeneficiary: ProtocolFeeBeneficiary!
+  activeProtocolFeeBeneficiary: ProtocolFeeBeneficiary
   protocolBuyFeePct: BigInt!
   protocolSellFeePct: BigInt!
   subjectBuyFeePct: BigInt!
   subjectSellFeePct: BigInt!
+
+  numberOfBuyOrders: BigInt!
+  numberOfSellOrders: BigInt!
+  numberOfAuctionOrders: BigInt!
+  numberOfUsers: BigInt!
+
+  "total moxie spent in buy orders + initialization"
+  totalBuyVolume: BigInt!
+  totalSellVolume: BigInt!
+
+  totalProtocolFee: BigInt!
+  totalProtocolFeeFromAuction: BigInt!
+
+  totalSubjectFee: BigInt!
+  totalSubjectFeeFromAuction: BigInt!
 }
 
 type MoxieTransferTx @entity {

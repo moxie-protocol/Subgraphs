@@ -8,7 +8,7 @@ import { getOrCreateSubjectToken, getOrCreateUser, saveSubjectToken } from "./ut
 export function handleTokenDeployed(event: TokenDeployed): void {
   handleTokenDeployedTx(event)
   let token = event.params._token
-  let subjectToken = getOrCreateSubjectToken(token, event.block)
+  let subjectToken = getOrCreateSubjectToken(token, null, event.block)
   subjectToken.beneficiary = getOrCreateUser(event.params._beneficiary, event.block).id
   saveSubjectToken(subjectToken, event.block)
   SubjectTokenContract.create(token)

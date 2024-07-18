@@ -1,6 +1,6 @@
 import { Address, BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/templates/SubjectTokenContract/ERC20"
-import { getOrCreatePortfolio, getOrCreateSubjectToken, loadSummary, savePortfolio, saveSubjectToken } from "./utils"
+import { getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, savePortfolio, saveSubjectToken } from "./utils"
 import { handleTransferTx } from "./subject-token-tx"
 import { AuctionClaimedFromOrderTx, AuctionOrder, Order, User } from "../generated/schema"
 import { getAuctionOrderId } from "./protocol-token"
@@ -13,9 +13,9 @@ export function handleTransfer(event: Transfer): void {
   let to = event.params.to
   let value = event.params.value
 
-  let subjectToken = getOrCreateSubjectToken(contractAddress, event.block)
+  let subjectToken = getOrCreateSubjectToken(contractAddress, null, event.block)
   let totalSupply = subjectToken.totalSupply
-  let summary = loadSummary()
+  let summary = getOrCreateSummary()
   let mint = from == Address.zero()
   if (mint) {
     // minting
