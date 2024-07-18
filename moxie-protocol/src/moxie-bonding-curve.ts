@@ -32,6 +32,18 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   //     address _beneficiary : _onBehalfOf
   // );
 
+  //  if msg.sender == _beneficiary
+  //  user will be msg.sender
+  //  user.portfolio.balance += _buyAmount
+  //  user.portfolio.protocolTokenInvested += _sellAmount
+
+  // if msg.sender != _beneficiary
+  // msg.sender .portfolio.protocolTokenInvested += _sellAmount
+  // msg.sender .portfolio.balance += 0
+
+  // _beneficiary.portfolio.balance += _buyAmount
+  // _beneficiary.portfolio.protocolTokenInvested += 0
+
   handleSubjectSharePurchasedTx(event)
   const blockInfo = getOrCreateBlockInfo(event.block)
   let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
@@ -129,6 +141,17 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   //     uint256 _buyAmount,:returnedAmount_,
   //     address _beneficiary:_onBehalfOf
   // );
+
+  //  if msg.sender == _beneficiary
+  //  msg.sender.portfolio.balance -= _sellAmount
+  //  msg.sender.protocolTokenInvested -= _buyAmount (by ratio we are reducing)
+
+  // if msg.sender != _beneficiary
+  // msg.sender .portfolio.balance -= _sellAmount
+  // msg.sender .portfolio.protocolTokenInvested -= _buyAmount (by ratio we are reducing)
+
+  // _beneficiary.portfolio.balance -= 0
+  // _beneficiary.portfolio.protocolTokenInvested += 0
   handleSubjectShareSoldTx(event)
   const blockInfo = getOrCreateBlockInfo(event.block)
   let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
@@ -136,8 +159,11 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   subjectToken.currentPriceinMoxie = price
   subjectToken.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subjectToken.volume = subjectToken.volume.plus(event.params._buyAmount)
-
-  let user = getOrCreateUser(event.transaction.from, event.block)
+  if (event.transaction.from != event.params._beneficiary) {
+    log.warning("event.transaction.from {}, event.params._beneficiary {} ", [event.transaction.from.toHexString(), event.params._beneficiary.toHexString()])
+    throw new Error("beneficiary should be the same as the transaction sender")
+  }
+  let user = getOrCreateUser(event.params._beneficiary, event.block)
 
   // Saving order entity
   let order = new Order(getTxEntityId(event))
