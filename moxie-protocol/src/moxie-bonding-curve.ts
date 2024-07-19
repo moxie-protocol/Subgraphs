@@ -188,7 +188,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.transaction.hash, event.block)
-
+  portfolio.protocolTokenEarned = portfolio.protocolTokenEarned.plus(event.params._buyAmount)
   order.portfolio = portfolio.id
   order.save()
 
@@ -205,8 +205,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   createSubjectFeeTransfer(event, blockInfo, order, subjectToken, subjectToken.beneficiary, fees.subjectFee)
 
-  // decreasing protocol token spent
-  user.protocolTokenSpent = user.protocolTokenSpent.minus(event.params._buyAmount)
+  // increasing user protocol token earned
+  user.protocolTokenEarned = user.protocolTokenEarned.plus(event.params._buyAmount)
   let subjectTokenRemaining = event.params._sellAmount
   log.debug("incoming sell order id: {} initial subjectTokenRemaining {}", [order.id, subjectTokenRemaining.toString()])
   for (let i = BigInt.fromI32(1); i.le(user.protocolOrdersCount); i = i.plus(BigInt.fromI32(1))) {
@@ -246,11 +246,11 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   summary.save()
   saveUser(user, event.block)
   savePortfolio(portfolio, event.block)
-  saveSubjectToken(subjectToken, event.block)
   createProtocolFeeTransfer(event, blockInfo, order, subjectToken, activeFeeBeneficiary, fees.protocolFee)
 
   subjectToken.beneficiaryFee = subjectToken.beneficiaryFee.plus(fees.subjectFee)
   subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
+  subjectToken.protocolTokenEarned = subjectToken.protocolTokenEarned.plus(event.params._buyAmount)
   saveSubjectToken(subjectToken, event.block)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
@@ -304,15 +304,12 @@ export function handleInitialized(event: Initialized): void {
   beneficiary.totalFees = BigInt.fromI32(0)
   beneficiary.save()
 
-  let summary = new Summary(SUMMARY_ID)
+  let summary = getOrCreateSummary()
   summary.activeProtocolFeeBeneficiary = beneficiary.id
   summary.protocolBuyFeePct = protocolBuyFeePct
   summary.protocolSellFeePct = protocolSellFeePct
   summary.subjectBuyFeePct = subjectBuyFeePct
   summary.subjectSellFeePct = subjectSellFeePct
 
-  summary.totalReserve = BigInt.fromI32(0)
-  summary.totalTokensIssued = BigInt.fromI32(0)
-  summary.totalProtocolTokenInvested = new BigDecimal(BigInt.fromI32(0))
   summary.save()
 }

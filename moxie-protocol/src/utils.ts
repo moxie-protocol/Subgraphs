@@ -25,12 +25,12 @@ export function getOrCreateSubjectToken(tokenAddress: Address, auction: Auction 
     subjectToken.holders = []
     subjectToken.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     subjectToken.protocolTokenSpent = BigInt.zero()
+    subjectToken.protocolTokenEarned = BigInt.zero()
     subjectToken.protocolTokenInvested = BigDecimal.fromString("0")
     subjectToken.status = ONBOARDING_STATUS_ONBOARDING_INITIALIZED
-    if (!auction) {
-      throw new Error("Auction not found!")
+    if (auction) {
+      subjectToken.auction = auction.id
     }
-    subjectToken.auction = auction.id
     saveSubjectToken(subjectToken, block)
   }
   return subjectToken
@@ -48,6 +48,7 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.balance = BigInt.zero()
     log.info("Portfolio {} initialized {} balance: {}", [portfolioId, txHash.toHexString(), portfolio.balance.toString()])
     portfolio.protocolTokenSpent = BigInt.zero()
+    portfolio.protocolTokenEarned = BigInt.zero()
     portfolio.protocolTokenInvested = BigDecimal.fromString("0")
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     savePortfolio(portfolio, block)
@@ -66,6 +67,7 @@ export function getOrCreateUser(userAddress: Address, block: ethereum.Block): Us
     user = new User(userAddress.toHexString())
     user.subjectFeeTransfer = []
     user.protocolTokenSpent = BigInt.zero()
+    user.protocolTokenEarned = BigInt.zero()
     user.protocolTokenInvested = BigDecimal.fromString("0")
     user.protocolOrdersCount = BigInt.zero()
     user.createdAtBlockInfo = getOrCreateBlockInfo(block).id

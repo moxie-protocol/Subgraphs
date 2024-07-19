@@ -378,12 +378,14 @@ type SubjectToken @entity {
 
   "Moxie spent by all users buy this subject token"
   protocolTokenSpent: BigInt!
+  "Moxie earned by all user to sell the subject token"
+  protocolTokenEarned: BigInt!
   "total moxie invested by the user, after reducing when user sells the token"
   protocolTokenInvested: BigDecimal!
   "orders associated with the subject"
   orders: [Order!]! @derivedFrom(field: "subjectToken")
 
-  auction: Auction!
+  auction: Auction
   status: OnboardingStatus!
 }
 enum OnboardingStatus {
@@ -417,8 +419,10 @@ type Portfolio @entity {
   subjectToken: SubjectToken!
   "Net quantity of the subject token by the user"
   balance: BigInt!
-  "Moxie spent by user to buy the subject token"
+  "Moxie spent by user to buy the subject token(buyShare + auctionOrders)"
   protocolTokenSpent: BigInt!
+  "Moxie earned by user to sell the subject token"
+  protocolTokenEarned: BigInt!
   "total moxie invested by the user"
   protocolTokenInvested: BigDecimal!
   "Orders associated with the user's portfolio"
@@ -442,6 +446,8 @@ type User @entity {
   subjectFeeTransfer: [SubjectFeeTransfer!]!
   "total moxie spent by the user"
   protocolTokenSpent: BigInt!
+  "Moxie earned by user to sell the subject token"
+  protocolTokenEarned: BigInt!
   "total moxie invested by the user"
   protocolTokenInvested: BigDecimal!
   "total number of orders (auction & buyOrders)"
