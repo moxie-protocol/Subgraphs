@@ -320,8 +320,7 @@ type SubjectToken @entity {
   totalSupply: BigInt!
   "initial supply when bonding curve is initialized"
   initialSupply: BigInt!
-  "holders"
-  holders: [User!]!
+
   "total number of unique holders"
   uniqueHolders: BigInt!
   "amount of moxie used to buy or sell this subject token"
@@ -329,7 +328,7 @@ type SubjectToken @entity {
   "snapshots"
   hourlySnapshots: [SubjectTokenHourlySnapshot!]! @derivedFrom(field: "subjectToken")
   dailySnapshots: [SubjectTokenDailySnapshot!]! @derivedFrom(field: "subjectToken")
-  latestDailySnapshot: [SubjectTokenRollingDailySnapshot!]! @derivedFrom(field: "subjectToken")
+  latestRollingDailySnapshot: SubjectTokenRollingDailySnapshot
   "total beneficiary fees collected"
   beneficiaryFee: BigInt!
   "total protocol fees collected"
