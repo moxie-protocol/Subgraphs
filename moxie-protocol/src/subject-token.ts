@@ -30,36 +30,22 @@ export function handleTransfer(event: Transfer): void {
   }
   summary.save()
   subjectToken.totalSupply = totalSupply
-  // updating holders
-  let toAddressString = to.toHexString()
-  if (!burn) {
-    let uniqueHoldersCount = BigInt.fromI32(0)
-    let holders = subjectToken.holders
-    // checking if to address is already in holders list
-    if (!holders.includes(toAddressString)) {
-      holders.push(toAddressString)
-      for (let i = 0; i < holders.length; i++) {
-        let user = User.load(holders[i])
-        if (user) {
-          uniqueHoldersCount = uniqueHoldersCount.plus(BigInt.fromI32(1))
-        }
-      }
-      subjectToken.holders = holders
-      subjectToken.uniqueHolders = uniqueHoldersCount
-    }
-  }
-  saveSubjectToken(subjectToken, event.block)
+
   // updating portfolios
   if (!mint) {
     let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
     fromAddressPortfolio.balance = fromAddressPortfolio.balance.minus(value)
     savePortfolio(fromAddressPortfolio, event.block)
+    if (fromAddressPortfolio.balance.equals(BigInt.fromI32(0))) {
+      subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(BigInt.fromI32(1))
+    }
   }
   if (!burn) {
     let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
     toAddressPortfolio.balance = toAddressPortfolio.balance.plus(value)
     savePortfolio(toAddressPortfolio, event.block)
   }
+  saveSubjectToken(subjectToken, event.block)
 
   // trying to load auction order
   let auctionClaimedFromOrder = tryLoadAuctionClaimedFromOrder(event)
