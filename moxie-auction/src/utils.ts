@@ -1,5 +1,5 @@
 import { Address, BigInt, BigDecimal, log, ethereum } from "@graphprotocol/graph-ts"
-import { Order, AuctionDetail, Token, User, Summary, BlockInfo } from "../generated/schema"
+import { Order, AuctionDetail, Token, User, Summary, BlockInfo, OrderTxn } from "../generated/schema"
 import { ERC20Contract } from "../generated/EasyAuction/ERC20Contract"
 
 import sortOrders from "./utils/sortOrders"
@@ -246,4 +246,14 @@ export function getOrCreateBlockInfo(event: ethereum.Event): BlockInfo {
 
 export function getEncodedOrderId(userId: BigInt, buyAmount: BigInt, sellAmount: BigInt): string {
   return "0x" + userId.toHexString().slice(2).padStart(16, "0") + buyAmount.toHexString().slice(2).padStart(24, "0") + sellAmount.toHexString().slice(2).padStart(24, "0")
+}
+
+// creates a new order transaction
+export function createOrderTxn(event: ethereum.Event, orderId: string, status: string): void {
+  let orderTxn = new OrderTxn(getTxEntityId(event))
+  orderTxn.order = orderId
+  orderTxn.txHash = event.transaction.hash
+  orderTxn.blockInfo = getOrCreateBlockInfo(event).id
+  orderTxn.newStatus = status
+  orderTxn.save()
 }

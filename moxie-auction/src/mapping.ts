@@ -5,13 +5,14 @@
 // While initiating an auction, the exactOrder/initialOrder sellAmount corresponds to AUT and buyAmount corresponds to BDT
 // While placing an order, the sellAmount corresponds to BDT and buyAmount corresponds to AUT
 
-import { Address, BigInt, BigDecimal, log, Bytes } from "@graphprotocol/graph-ts"
+import { Address, BigInt, BigDecimal, log, Bytes, ethereum } from "@graphprotocol/graph-ts"
 import { AuctionDetail, ClearingPriceOrder, OrderTxn, Token, User } from "../generated/schema"
 import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, NewAuction, NewSellOrder, NewUser, OwnershipTransferred, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Order } from "../generated/schema"
 import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "./transactions"
 
-import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId, getEncodedOrderId } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId, getEncodedOrderId, createOrderTxn } from "./utils"
+import { ORDER_STATUS_CANCELLED, ORDER_STATUS_CLAIMED, ORDER_STATUS_PLACED } from "./constants"
 
 const ZERO = BigInt.zero()
 const ONE = BigInt.fromI32(1)
@@ -74,7 +75,7 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
   let orderId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
   let order = loadOrder(orderId)
   if (order) {
-    order.status = "Cancelled"
+    order.status = ORDER_STATUS_CANCELLED
     order.save()
   }
 
@@ -102,13 +103,7 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
 
   updateAuctionStats(auctionDetails.auctionId)
 
-  // adding order transaction
-  let orderTxn = new OrderTxn(getTxEntityId(event))
-  orderTxn.order = orderId
-  orderTxn.txHash = event.transaction.hash
-  orderTxn.blockInfo = getOrCreateBlockInfo(event).id
-  orderTxn.newStatus = "Cancelled"
-  orderTxn.save()
+  createOrderTxn(event, orderId, ORDER_STATUS_CANCELLED)
 }
 
 // Remove claimed orders
@@ -129,7 +124,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
     return
   }
   if (order) {
-    order.status = "Claimed"
+    order.status = ORDER_STATUS_CLAIMED
     order.save()
   }
 
@@ -153,13 +148,9 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   }
   auctionDetails.activeOrders = activeOrders
   auctionDetails.save()
+
   // adding order transaction
-  let orderTxn = new OrderTxn(getTxEntityId(event))
-  orderTxn.order = orderId
-  orderTxn.txHash = event.transaction.hash
-  orderTxn.blockInfo = getOrCreateBlockInfo(event).id
-  orderTxn.newStatus = "Claimed"
-  orderTxn.save()
+  createOrderTxn(event, orderId, ORDER_STATUS_CLAIMED)
 }
 
 export function handleNewAuction(event: NewAuction): void {
@@ -174,21 +165,20 @@ export function handleNewAuction(event: NewAuction): void {
   let allowListSigner = event.params.allowListData
   let allowListContract = event.params.allowListContract
 
-  let entityId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
+  let orderId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
   let user = loadUser(userId.toString())
 
   let auctioningTokenDetails = getTokenDetails(addressAuctioningToken)
   let biddingTokenDetails = getTokenDetails(addressBiddingToken)
 
   let auctionContract = EasyAuction.bind(event.address)
-  let isAtomicClosureAllowed = auctionContract.auctionData(auctionId).value11  
-
+  let isAtomicClosureAllowed = auctionContract.auctionData(auctionId).value11
 
   let pricePoint = convertToPricePoint(sellAmount, buyAmount, biddingTokenDetails.decimals.toI32(), auctioningTokenDetails.decimals.toI32())
 
   let isPrivateAuction = !allowListContract.equals(Address.zero())
 
-  let order = new Order(entityId)
+  let order = new Order(orderId)
 
   order.auction = auctionId.toString()
   order.buyAmount = buyAmount
@@ -283,15 +273,12 @@ export function handleNewSellOrder(event: NewSellOrder): void {
 
   let auctionDetails = loadAuctionDetail(auctionId.toString())
   let auctioningToken = loadToken(auctionDetails.auctioningToken)
-  if (!auctioningToken) {
-    throw new Error("Auctioning token not found , address: ")
-  }
   let biddingToken = loadToken(auctionDetails.biddingToken)
 
-  let entityId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
+  let orderId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
   let pricePoint = convertToPricePoint(sellAmount, buyAmount, auctioningToken.decimals.toI32(), biddingToken.decimals.toI32())
 
-  let order = new Order(entityId)
+  let order = new Order(orderId)
 
   order.buyAmount = buyAmount
   order.sellAmount = sellAmount
@@ -302,7 +289,7 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   order.auction = auctionDetails.id
   order.user = user.id
   order.userWalletAddress = user.address
-  order.status = "Placed"
+  order.status = ORDER_STATUS_PLACED
   order.txHash = event.transaction.hash
   order.blockInfo = getOrCreateBlockInfo(event).id
   order.isExactOrder = false
@@ -336,12 +323,7 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   updateAuctionStats(auctionDetails.auctionId)
 
   // adding order transaction
-  let orderTxn = new OrderTxn(getTxEntityId(event))
-  orderTxn.order = order.id
-  orderTxn.txHash = event.transaction.hash
-  orderTxn.blockInfo = getOrCreateBlockInfo(event).id
-  orderTxn.newStatus = "Placed"
-  orderTxn.save()
+  createOrderTxn(event, orderId, ORDER_STATUS_PLACED)
 }
 
 export function handleNewUser(event: NewUser): void {
