@@ -11,10 +11,11 @@ import {
   BeneficiaryChanged,
   LockAccepted,
   LockCanceled,
+  SubjectTokenDestinationsApproved,
+  SubjectTokenDestinationsRevoked,
 } from "../../generated/templates/MoxieTokenLockWallet/MoxieTokenLockWallet"
 
-import { TokenLockWallet, TokenLockManager } from "../../generated/schema"
-
+import { TokenLockWallet, TokenLockManager, SubjectToken } from "../../generated/schema"
 export function handleTokensReleased(event: TokensReleased): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
   tokenLockWallet.tokensReleased = tokenLockWallet.tokensReleased.plus(
@@ -102,4 +103,37 @@ export function handleLockCanceled(event: LockCanceled): void {
   manager.tokens = manager.tokens.plus(tokenLockWallet.balance)
   tokenLockWallet.balance = BigInt.fromI32(0)
   tokenLockWallet.save()
+}
+
+export function handleSubjectTokenDestinationsApproved(event: SubjectTokenDestinationsApproved): void {
+  let subjectId = getSubjectTokenId(event.address.toHexString(), event.params._subjectToken.toHexString())
+  let subjectToken = SubjectToken.load(subjectId)
+  if(subjectToken == null) {
+    subjectToken = new SubjectToken(subjectId)
+  }
+  subjectToken.vestingContractAddress = event.address.toHexString()
+  subjectToken.subjectToken = event.params._subjectToken
+  subjectToken.tokenDestinationsApproved = true
+  subjectToken.blockNumberUpdated = event.block.number
+  subjectToken.save()
+}
+
+export function handleSubjectTokenDestinationsRevoked(event: SubjectTokenDestinationsRevoked): void {
+  let subjectId = getSubjectTokenId(event.address.toHexString(), event.params._subjectToken.toHexString())
+  let subjectToken = SubjectToken.load(subjectId)
+  if(subjectToken == null) {
+    subjectToken = new SubjectToken(event.params._subjectToken.toHexString())
+  }
+  subjectToken.tokenDestinationsApproved = false
+  subjectToken.vestingContractAddress = event.address.toHexString().toLowerCase()
+  subjectToken.subjectToken = event.params._subjectToken
+  subjectToken.blockNumberUpdated = event.block.number
+  subjectToken.save()
+}
+
+export function getSubjectTokenId(
+  tokenLockWalletId: string,
+  subject: string
+): string {
+  return tokenLockWalletId + "-" + subject
 }
