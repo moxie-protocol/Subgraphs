@@ -51,7 +51,10 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   if (calculatedCurrentClearingPrice != clearingPriceFromContract) {
     log.error("Mismatch in clearing price. Calculated: {}, from contract: {} getTxEntityId(event) {}", [calculatedCurrentClearingPrice.toString(), clearingPriceFromContract.toString(), getTxEntityId(event)])
   }
-  auctionDetails.currentClearingPrice = calculatedCurrentClearingPrice
+  //If there is no active order don't update the price
+  if (auctionDetails.totalOrders != ZERO) {
+    auctionDetails.currentClearingPrice = calculatedCurrentClearingPrice
+  }
   clearingPriceOrder.userId = BigDecimal.fromString(parseInt(userId).toString())
   clearingPriceOrder.buyAmount = BigDecimal.fromString(parseInt(buyAmount).toString())
   clearingPriceOrder.sellAmount = BigDecimal.fromString(parseInt(sellAmount).toString())
