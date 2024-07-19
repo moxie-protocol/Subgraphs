@@ -1,4 +1,4 @@
-import { Address, BigDecimal, BigInt, Bytes, ethereum, log } from "@graphprotocol/graph-ts"
+import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { Transaction, BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, UserProtocolOrder, SubjectTokenRollingDailySnapshot, Auction } from "../generated/schema"
 import { ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
@@ -22,7 +22,6 @@ export function getOrCreateSubjectToken(tokenAddress: Address, auction: Auction 
     subjectToken.volume = BigInt.zero()
     subjectToken.beneficiaryFee = BigInt.zero()
     subjectToken.protocolFee = BigInt.zero()
-    subjectToken.holders = []
     subjectToken.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     subjectToken.protocolTokenSpent = BigInt.zero()
     subjectToken.protocolTokenEarned = BigInt.zero()
@@ -52,6 +51,7 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.protocolTokenInvested = BigDecimal.fromString("0")
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     savePortfolio(portfolio, block)
+
   }
   return portfolio
 }
@@ -238,6 +238,15 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
   snapshot.dailyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
   snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
   snapshot.save()
+
+  // deleting existing rolling daily snapshot for subject token
+  let oldRollingDailySnapshot = subjectToken.latestRollingDailySnapshot
+  if (oldRollingDailySnapshot) {
+    log.warning("Deleting old rolling daily snapshot {}", [oldRollingDailySnapshot])
+    store.remove("SubjectTokenRollingDailySnapshot", oldRollingDailySnapshot)
+  }
+  subjectToken.latestRollingDailySnapshot = snapshotId
+  subjectToken.save()
 }
 
 export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block): void {
