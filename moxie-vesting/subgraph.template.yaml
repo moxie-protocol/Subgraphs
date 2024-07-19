@@ -73,3 +73,7 @@ templates:
           handler: handleLockAccepted
         - event: LockCanceled()
           handler: handleLockCanceled
+        - event: SubjectTokenDestinationsApproved(indexed address,indexed address)
+          handler: handleSubjectTokenDestinationsApproved
+        - event: SubjectTokenDestinationsRevoked(indexed address,indexed address)
+          handler: handleSubjectTokenDestinationsRevoked

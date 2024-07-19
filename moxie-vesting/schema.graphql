@@ -81,6 +81,20 @@ type TokenLockWallet @entity {
   txHash: Bytes!
   "lock"
   lockAccepted: Boolean!
+  subjectTokens: [SubjectToken!]! @derivedFrom(field: "vestingContractAddress")
+}
+
+type SubjectToken @entity {
+  "Vesting contractAddress - The address of the token"
+  id: ID!
+  "Is this subject token approved"
+  tokenDestinationsApproved: Boolean!
+  "The Lock Wallet address"
+  vestingContractAddress: TokenLockWallet!
+  "subject token address"
+  subjectToken: Bytes!
+  "last updated block number"
+  blockNumberUpdated: BigInt!
 }
 
 """
