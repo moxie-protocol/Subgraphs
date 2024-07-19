@@ -46,6 +46,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 
   handleSubjectSharePurchasedTx(event)
   const blockInfo = getOrCreateBlockInfo(event.block)
+  // calculating price here the sell amount will be in protocol token and buy amount is protocol token since it's a buy
   let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
   let user = getOrCreateUser(event.params._beneficiary, event.block)
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block)
@@ -154,15 +155,16 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // _beneficiary.portfolio.protocolTokenInvested += 0
   handleSubjectShareSoldTx(event)
   const blockInfo = getOrCreateBlockInfo(event.block)
-  let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
+  // calculating price here the sell amount will be subject token and buy amount is protocol token since it's a sell
+  let price = event.params._buyAmount.divDecimal(new BigDecimal(event.params._sellAmount))
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
   subjectToken.currentPriceinMoxie = price
   subjectToken.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subjectToken.volume = subjectToken.volume.plus(event.params._buyAmount)
-  if (event.transaction.from != event.params._beneficiary) {
-    log.warning("event.transaction.from {}, event.params._beneficiary {} ", [event.transaction.from.toHexString(), event.params._beneficiary.toHexString()])
-    throw new Error("beneficiary should be the same as the transaction sender")
-  }
+  // if (event.transaction.from != event.params._beneficiary) {
+  //   log.warning("event.transaction.from {}, event.params._beneficiary {} ", [event.transaction.from.toHexString(), event.params._beneficiary.toHexString()])
+  //   throw new Error("beneficiary should be the same as the transaction sender")
+  // }
   let user = getOrCreateUser(event.params._beneficiary, event.block)
 
   // Saving order entity
