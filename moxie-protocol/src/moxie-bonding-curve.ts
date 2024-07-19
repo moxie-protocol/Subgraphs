@@ -161,10 +161,10 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   subjectToken.currentPriceinMoxie = price
   subjectToken.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subjectToken.volume = subjectToken.volume.plus(event.params._buyAmount)
-  if (event.transaction.from != event.params._beneficiary) {
-    log.warning("event.transaction.from {}, event.params._beneficiary {} ", [event.transaction.from.toHexString(), event.params._beneficiary.toHexString()])
-    throw new Error("beneficiary should be the same as the transaction sender")
-  }
+  // if (event.transaction.from != event.params._beneficiary) {
+  //   log.warning("event.transaction.from {}, event.params._beneficiary {} ", [event.transaction.from.toHexString(), event.params._beneficiary.toHexString()])
+  //   throw new Error("beneficiary should be the same as the transaction sender")
+  // }
   let user = getOrCreateUser(event.params._beneficiary, event.block)
 
   // Saving order entity
