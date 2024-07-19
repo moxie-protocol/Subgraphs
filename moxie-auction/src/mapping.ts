@@ -99,6 +99,7 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
   auctionDetails.activeOrders = activeOrders
 
   auctionDetails.totalOrders = auctionDetails.totalOrders.minus(ONE)
+  auctionDetails.currentSubjectTokenBidAmount = auctionDetails.currentSubjectTokenBidAmount.minus(order.buyAmount)
   auctionDetails.save()
 
   updateAuctionStats(auctionDetails.auctionId)
@@ -230,6 +231,7 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.uniqueBidders = new BigInt(0)
   auctionDetails.isCleared = false
   auctionDetails.totalOrders = new BigInt(0)
+  auctionDetails.currentSubjectTokenBidAmount = new BigInt(0)
   auctionDetails.txHash = event.transaction.hash
   auctionDetails.blockInfo = getOrCreateBlockInfo(event).id
   auctionDetails.save()
@@ -317,6 +319,7 @@ export function handleNewSellOrder(event: NewSellOrder): void {
     user.participatedAuctions = participatedAuctions
   }
   user.save()
+  auctionDetails.currentSubjectTokenBidAmount = auctionDetails.currentSubjectTokenBidAmount.plus(order.buyAmount)
   auctionDetails.totalOrders = auctionDetails.totalOrders.plus(ONE)
   auctionDetails.save()
 

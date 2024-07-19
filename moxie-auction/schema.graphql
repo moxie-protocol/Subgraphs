@@ -99,6 +99,8 @@ type AuctionDetail @entity {
   currentClearingPrice: BigDecimal!
   "Total sell amount of all orders in the auction"
   currentBiddingAmount: BigInt!
+  "Total subjectTokens bid for in the auction by active orders"
+  currentSubjectTokenBidAmount: BigInt!
   isAtomicClosureAllowed: Boolean!
   isPrivateAuction: Boolean!
   interestScore: BigDecimal! # need to understand
