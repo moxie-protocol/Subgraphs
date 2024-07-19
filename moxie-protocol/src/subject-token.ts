@@ -42,6 +42,10 @@ export function handleTransfer(event: Transfer): void {
   }
   if (!burn) {
     let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
+    // adding unique holders when a new portfolio is created
+    if (toAddressPortfolio.balance.equals(BigInt.fromI32(0))) {
+      subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(BigInt.fromI32(1))
+    }
     toAddressPortfolio.balance = toAddressPortfolio.balance.plus(value)
     savePortfolio(toAddressPortfolio, event.block)
   }

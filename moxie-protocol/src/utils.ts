@@ -45,9 +45,7 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.protocolTokenInvested = BigDecimal.fromString("0")
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     savePortfolio(portfolio, block)
-    // adding unique holders when a new portfolio is created
-    subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(BigInt.fromI32(1))
-    saveSubjectToken(subjectToken, block)
+
   }
   return portfolio
 }
