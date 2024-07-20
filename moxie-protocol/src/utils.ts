@@ -197,6 +197,13 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
   snapshot.save()
 }
 
+/**
+ * This function creates a rolling daily snapshot for the subject token
+ * It takes a timestamp and finds the closest hourly snapshot 24 hour before as a startpoint
+ * function also deletes the existing rolling daily snapshot for the subject token
+ * @param subjectToken 
+ * @param timestamp 
+ */
 function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
   let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_HOUR)).plus(SECONDS_IN_HOUR)
   let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
