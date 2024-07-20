@@ -14,3 +14,6 @@ export const AUCTION_ORDER_CANCELLED = "CANCELLED"
 export const ORDER_TYPE_SELL = "SELL"
 export const ORDER_TYPE_BUY = "BUY"
 export const ORDER_TYPE_AUCTION = "AUCTION"
+
+export const ONBOARDING_STATUS_ONBOARDING_INITIALIZED = "OnboardingInitialized"
+export const ONBOARDING_STATUS_ONBOARDING_FINISHED = "OnboardingFinished"

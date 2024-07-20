@@ -1,7 +1,7 @@
 import { Address, BigDecimal, BigInt, store } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/MoxieToken/MoxieToken"
 import { AuctionCancellationSellOrderTx, AuctionClaimedFromOrderTx, AuctionNewSellOrderTx, AuctionOrder, MoxieTransferTx, Order } from "../generated/schema"
-import { createUserProtocolOrder, getOrCreateTransactionId, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, loadSummary, savePortfolio, saveSubjectToken, saveUser } from "./utils"
+import { createUserProtocolOrder, getOrCreateTransactionId, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser } from "./utils"
 import { ORDER_TYPE_AUCTION as AUCTION, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_CLAIMED as CLAIMED, AUCTION_ORDER_PLACED as PLACED } from "./constants"
 
 export function handleTransferTx(event: Transfer): void {
@@ -54,12 +54,12 @@ export function handleTransfer(event: Transfer): void {
 
     saveUser(user, event.block)
 
-    let subjectToken = getOrCreateSubjectToken(Address.fromString(auctionNewSellOrderTx.subjectToken), event.block)
+    let subjectToken = getOrCreateSubjectToken(Address.fromString(auctionNewSellOrderTx.subjectToken), null, event.block)
     subjectToken.protocolTokenSpent = subjectToken.protocolTokenSpent.plus(event.params.value)
     subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(event.params.value))
     saveSubjectToken(subjectToken, event.block)
 
-    let summary = loadSummary()
+    let summary = getOrCreateSummary()
     summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.plus(new BigDecimal(event.params.value))
     summary.save()
 
@@ -98,12 +98,12 @@ export function handleTransfer(event: Transfer): void {
 
     savePortfolio(portfolio, event.block)
 
-    let subjectToken = getOrCreateSubjectToken(Address.fromString(order.subjectToken), event.block)
+    let subjectToken = getOrCreateSubjectToken(Address.fromString(order.subjectToken), null, event.block)
     subjectToken.protocolTokenSpent = subjectToken.protocolTokenSpent.minus(event.params.value)
     subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.minus(new BigDecimal(event.params.value))
     saveSubjectToken(subjectToken, event.block)
 
-    let summary = loadSummary()
+    let summary = getOrCreateSummary()
     summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.minus(new BigDecimal(event.params.value))
     summary.save()
   }
@@ -136,12 +136,12 @@ export function handleTransfer(event: Transfer): void {
 
     savePortfolio(portfolio, event.block)
     // reducing refund from subject's protocolTokenSpent
-    let subjectToken = getOrCreateSubjectToken(Address.fromString(order.subjectToken), event.block)
+    let subjectToken = getOrCreateSubjectToken(Address.fromString(order.subjectToken), null, event.block)
     subjectToken.protocolTokenSpent = subjectToken.protocolTokenSpent.minus(event.params.value)
     subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.minus(new BigDecimal(event.params.value))
     saveSubjectToken(subjectToken, event.block)
 
-    let summary = loadSummary()
+    let summary = getOrCreateSummary()
     summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.minus(new BigDecimal(event.params.value))
     summary.save()
   }

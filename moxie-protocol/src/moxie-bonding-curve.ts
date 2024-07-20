@@ -3,11 +3,11 @@ import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, Updat
 import { Order, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectFeeTransfer, Summary, User } from "../generated/schema"
 
 import { handleBondingCurveInitializedTx, handleSubjectSharePurchasedTx, handleSubjectShareSoldTx, handleUpdateBeneficiaryTx, handleUpdateFeesTx, handleUpdateFormulaTx } from "./moxie-bonding-curve-tx"
-import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, createUserProtocolOrder, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, loadProtocolOrder, loadSummary, savePortfolio, saveSubjectToken, saveUser } from "./utils"
+import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, createUserProtocolOrder, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, loadProtocolOrder, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser } from "./utils"
 import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL, SUMMARY_ID } from "./constants"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   handleBondingCurveInitializedTx(event)
-  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, null, event.block)
   subjectToken.reserveRatio = event.params._reserveRatio
   subjectToken.initialSupply = event.params._initialSupply
   saveSubjectToken(subjectToken, event.block)
@@ -49,7 +49,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   // calculating price here the sell amount will be in protocol token and buy amount is protocol token since it's a buy
   let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
   let user = getOrCreateUser(event.params._beneficiary, event.block)
-  let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params._buyToken, null, event.block)
   subjectToken.protocolTokenSpent = subjectToken.protocolTokenSpent.plus(event.params._sellAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   subjectToken.currentPriceinMoxie = price
@@ -87,16 +87,22 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   saveUser(user, event.block)
 
-  const summary = loadSummary()
+  const summary = getOrCreateSummary()
   summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
-  summary.save()
-
-  let activeFeeBeneficiary = ProtocolFeeBeneficiary.load(summary.activeProtocolFeeBeneficiary)
+  summary.numberOfBuyOrders = summary.numberOfBuyOrders.plus(BigInt.fromI32(1))
+  summary.totalBuyVolume = summary.totalBuyVolume.plus(event.params._sellAmount)
+  if (!summary.activeProtocolFeeBeneficiary) {
+    throw new Error("activeProtocolFeeBeneficiary not found")
+  }
+  let activeFeeBeneficiary = ProtocolFeeBeneficiary.load(summary.activeProtocolFeeBeneficiary!)
   if (!activeFeeBeneficiary) {
     throw new Error("protocol beneficiary not found")
   }
   const txHash = event.transaction.hash.toHexString()
   const fees = calculateBuySideFee(event.params._sellAmount)
+  summary.totalProtocolFee = summary.totalProtocolFee.plus(fees.protocolFee)
+  summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
+  summary.save()
 
   createSubjectFeeTransfer(event, blockInfo, order, subjectToken, subjectToken.beneficiary, fees.subjectFee)
 
@@ -184,12 +190,15 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.transaction.hash, event.block)
-
+  portfolio.protocolTokenEarned = portfolio.protocolTokenEarned.plus(event.params._buyAmount)
   order.portfolio = portfolio.id
   order.save()
 
-  const summary = loadSummary()
-  let activeFeeBeneficiary = ProtocolFeeBeneficiary.load(summary.activeProtocolFeeBeneficiary)
+  const summary = getOrCreateSummary()
+  if (!summary.activeProtocolFeeBeneficiary) {
+    throw new Error("activeProtocolFeeBeneficiary not found")
+  }
+  let activeFeeBeneficiary = ProtocolFeeBeneficiary.load(summary.activeProtocolFeeBeneficiary!)
   if (!activeFeeBeneficiary) {
     throw new Error("protocol beneficiary not found")
   }
@@ -198,8 +207,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   createSubjectFeeTransfer(event, blockInfo, order, subjectToken, subjectToken.beneficiary, fees.subjectFee)
 
-  // decreasing protocol token spent
-  user.protocolTokenSpent = user.protocolTokenSpent.minus(event.params._buyAmount)
+  // increasing user protocol token earned
+  user.protocolTokenEarned = user.protocolTokenEarned.plus(event.params._buyAmount)
   let subjectTokenRemaining = event.params._sellAmount
   log.debug("incoming sell order id: {} initial subjectTokenRemaining {}", [order.id, subjectTokenRemaining.toString()])
   for (let i = BigInt.fromI32(1); i.le(user.protocolOrdersCount); i = i.plus(BigInt.fromI32(1))) {
@@ -232,14 +241,18 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
     subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
     summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
   }
+  summary.numberOfSellOrders = summary.numberOfSellOrders.plus(BigInt.fromI32(1))
+  summary.totalSellVolume = summary.totalSellVolume.plus(event.params._buyAmount)
+  summary.totalProtocolFee = summary.totalProtocolFee.plus(fees.protocolFee)
+  summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
   saveUser(user, event.block)
   savePortfolio(portfolio, event.block)
-  saveSubjectToken(subjectToken, event.block)
   createProtocolFeeTransfer(event, blockInfo, order, subjectToken, activeFeeBeneficiary, fees.protocolFee)
 
   subjectToken.beneficiaryFee = subjectToken.beneficiaryFee.plus(fees.subjectFee)
   subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
+  subjectToken.protocolTokenEarned = subjectToken.protocolTokenEarned.plus(event.params._buyAmount)
   saveSubjectToken(subjectToken, event.block)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
@@ -268,11 +281,12 @@ export function handleUpdateBeneficiary(event: UpdateBeneficiary): void {
 
 export function handleUpdateFees(event: UpdateFees): void {
   handleUpdateFeesTx(event)
-  let summary = loadSummary()
+  let summary = getOrCreateSummary()
   summary.protocolBuyFeePct = event.params._protocolBuyFeePct
   summary.protocolSellFeePct = event.params._protocolSellFeePct
   summary.subjectBuyFeePct = event.params._subjectBuyFeePct
   summary.subjectSellFeePct = event.params._subjectSellFeePct
+  summary.save()
 }
 
 export function handleUpdateFormula(event: UpdateFormula): void {
@@ -292,15 +306,12 @@ export function handleInitialized(event: Initialized): void {
   beneficiary.totalFees = BigInt.fromI32(0)
   beneficiary.save()
 
-  let summary = new Summary(SUMMARY_ID)
+  let summary = getOrCreateSummary()
   summary.activeProtocolFeeBeneficiary = beneficiary.id
   summary.protocolBuyFeePct = protocolBuyFeePct
   summary.protocolSellFeePct = protocolSellFeePct
   summary.subjectBuyFeePct = subjectBuyFeePct
   summary.subjectSellFeePct = subjectSellFeePct
 
-  summary.totalReserve = BigInt.fromI32(0)
-  summary.totalTokensIssued = BigInt.fromI32(0)
-  summary.totalProtocolTokenInvested = new BigDecimal(BigInt.fromI32(0))
   summary.save()
 }

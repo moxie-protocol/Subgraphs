@@ -1,9 +1,9 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { Transaction, BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, UserProtocolOrder, SubjectTokenRollingDailySnapshot } from "../generated/schema"
-import { PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
+import { Transaction, BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, UserProtocolOrder, SubjectTokenRollingDailySnapshot, Auction } from "../generated/schema"
+import { ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
 
-export function getOrCreateSubjectToken(tokenAddress: Address, block: ethereum.Block): SubjectToken {
+export function getOrCreateSubjectToken(tokenAddress: Address, auction: Auction | null, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(tokenAddress.toHexString())
   if (!subjectToken) {
     subjectToken = new SubjectToken(tokenAddress.toHexString())
@@ -24,7 +24,12 @@ export function getOrCreateSubjectToken(tokenAddress: Address, block: ethereum.B
     subjectToken.protocolFee = BigInt.zero()
     subjectToken.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     subjectToken.protocolTokenSpent = BigInt.zero()
+    subjectToken.protocolTokenEarned = BigInt.zero()
     subjectToken.protocolTokenInvested = BigDecimal.fromString("0")
+    subjectToken.status = ONBOARDING_STATUS_ONBOARDING_INITIALIZED
+    if (auction) {
+      subjectToken.auction = auction.id
+    }
     saveSubjectToken(subjectToken, block)
   }
   return subjectToken
@@ -36,12 +41,13 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
   let portfolio = Portfolio.load(portfolioId)
   if (!portfolio) {
     portfolio = new Portfolio(portfolioId)
-    let subjectToken = getOrCreateSubjectToken(subjectAddress, block)
+    let subjectToken = getOrCreateSubjectToken(subjectAddress, null, block)
     portfolio.user = user.id
     portfolio.subjectToken = subjectToken.id
     portfolio.balance = BigInt.zero()
     log.info("Portfolio {} initialized {} balance: {}", [portfolioId, txHash.toHexString(), portfolio.balance.toString()])
     portfolio.protocolTokenSpent = BigInt.zero()
+    portfolio.protocolTokenEarned = BigInt.zero()
     portfolio.protocolTokenInvested = BigDecimal.fromString("0")
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     savePortfolio(portfolio, block)
@@ -61,10 +67,14 @@ export function getOrCreateUser(userAddress: Address, block: ethereum.Block): Us
     user = new User(userAddress.toHexString())
     user.subjectFeeTransfer = []
     user.protocolTokenSpent = BigInt.zero()
+    user.protocolTokenEarned = BigInt.zero()
     user.protocolTokenInvested = BigDecimal.fromString("0")
     user.protocolOrdersCount = BigInt.zero()
     user.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     saveUser(user, block)
+    let summary = getOrCreateSummary()
+    summary.numberOfUsers = summary.numberOfUsers.plus(BigInt.fromI32(1))
+    summary.save()
   }
   return user
 }
@@ -247,10 +257,30 @@ export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block): 
   createSubjectTokenRollingDailySnapshot(subject, block.timestamp)
 }
 
-export function loadSummary(): Summary {
+export function getOrCreateSummary(): Summary {
   let summary = Summary.load(SUMMARY_ID)
   if (!summary) {
-    throw new Error("Summary not found!")
+    summary = new Summary(SUMMARY_ID)
+    summary.totalTokensIssued = BigInt.zero()
+    summary.totalReserve = BigInt.zero()
+    summary.totalProtocolTokenInvested = new BigDecimal(BigInt.zero())
+
+    summary.protocolBuyFeePct = BigInt.zero()
+    summary.protocolSellFeePct = BigInt.zero()
+    summary.subjectBuyFeePct = BigInt.zero()
+    summary.subjectSellFeePct = BigInt.zero()
+
+    summary.numberOfBuyOrders = BigInt.zero()
+    summary.numberOfSellOrders = BigInt.zero()
+    summary.numberOfAuctionOrders = BigInt.zero()
+    summary.numberOfUsers = BigInt.zero()
+    summary.totalBuyVolume = BigInt.zero()
+    summary.totalSellVolume = BigInt.zero()
+    summary.totalProtocolFee = BigInt.zero()
+    summary.totalProtocolFeeFromAuction = BigInt.zero()
+    summary.totalSubjectFee = BigInt.zero()
+    summary.totalSubjectFeeFromAuction = BigInt.zero()
+    summary.save()
   }
   return summary
 }
@@ -277,7 +307,7 @@ export function handleNewBeneficiary(beneficiary: Address): void {
   protocolFeeBeneficiaryEntity.totalFees = BigInt.fromI32(0)
   protocolFeeBeneficiaryEntity.save()
 
-  let summary = loadSummary()
+  let summary = getOrCreateSummary()
   summary.activeProtocolFeeBeneficiary = beneficiary.toHexString()
   summary.save()
 }
@@ -291,14 +321,14 @@ export class Fees {
   }
 }
 export function calculateBuySideFee(_depositAmount: BigInt): Fees {
-  let summary = loadSummary()
+  let summary = getOrCreateSummary()
   let protocolFee_ = _depositAmount.times(summary.protocolBuyFeePct).div(PCT_BASE)
   let subjectFee_ = _depositAmount.times(summary.subjectBuyFeePct).div(PCT_BASE)
   return new Fees(protocolFee_, subjectFee_)
 }
 
 export function calculateSellSideFee(_depositAmount: BigInt): Fees {
-  let summary = loadSummary()
+  let summary = getOrCreateSummary()
   let protocolFee_ = _depositAmount.times(summary.protocolSellFeePct).div(PCT_BASE)
   let subjectFee_ = _depositAmount.times(summary.subjectSellFeePct).div(PCT_BASE)
   return new Fees(protocolFee_, subjectFee_)
