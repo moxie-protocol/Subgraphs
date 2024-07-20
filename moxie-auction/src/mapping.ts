@@ -334,13 +334,6 @@ export function handleNewSellOrder(event: NewSellOrder): void {
 
 export function handleNewUser(event: NewUser): void {
   handleNewUserTx(event)
-  let userId = event.params.userId
-  let userAddress = event.params.userAddress
-  let user = new User(userId.toString())
-  user.address = userAddress
-  user.createdAuctions = new Array()
-  user.participatedAuctions = new Array()
-  user.save()
 }
 
 export function handleOwnershipTransferred(event: OwnershipTransferred): void {
@@ -349,4 +342,11 @@ export function handleOwnershipTransferred(event: OwnershipTransferred): void {
 
 export function handleUserRegistration(event: UserRegistration): void {
   handleUserRegistrationTx(event)
+  let userId = event.params.userId
+  let userAddress = event.params.user
+  let user = new User(userId.toString())
+  user.address = userAddress
+  user.createdAuctions = new Array()
+  user.participatedAuctions = new Array()
+  user.save()
 }
