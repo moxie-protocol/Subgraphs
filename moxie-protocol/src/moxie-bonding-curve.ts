@@ -158,13 +158,13 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   handleSubjectShareSoldTx(event)
   const blockInfo = getOrCreateBlockInfo(event.block)
   // calculating price here the sell amount will be subject token and buy amount is protocol token since it's a sell
+  log.warning("txhash {} sellAmount {} buyAmount {} ", [event.transaction.hash.toHexString(), event.params._sellAmount.toString(), event.params._buyAmount.toString()])
   let price = event.params._buyAmount.divDecimal(new BigDecimal(event.params._sellAmount))
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, null, event.block)
   subjectToken.currentPriceinMoxie = price
   subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._buyAmount)
   if (event.transaction.from != event.params._beneficiary) {
-    log.warning("event.transaction.from {}, event.params._beneficiary {} ", [event.transaction.from.toHexString(), event.params._beneficiary.toHexString()])
     // throw new Error("beneficiary should be the same as the transaction sender")
   }
   let user = getOrCreateUser(event.params._beneficiary, event.block)
@@ -190,8 +190,9 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // this balance is only for temporary use, actual balance will be updated during Transfer event in subject token
   let updatedBalance = portfolio.balance.minus(event.params._sellAmount)
   // buyVolume / subjectTokenBuyVolume = protocolTokenInvested / balance
-  portfolio.protocolTokenInvested = new BigDecimal(portfolio.buyVolume).times(new BigDecimal(updatedBalance)).div(new BigDecimal(portfolio.subjectTokenBuyVolume))
-  log.warning("portfolio.protocolTokenInvested {} portfolio.buyVolume {} portfolio.balance {} event.params._sellAmount {} portfolio.subjectTokenBuyVolume {} txHash {}", [portfolio.protocolTokenInvested.toString(), portfolio.buyVolume.toString(), portfolio.balance.toString(), event.params._sellAmount.toString(), portfolio.subjectTokenBuyVolume.toString(), event.transaction.hash.toHexString()])
+  if (portfolio.subjectTokenBuyVolume.gt(BigInt.zero())) {
+    portfolio.protocolTokenInvested = new BigDecimal(portfolio.buyVolume).times(new BigDecimal(updatedBalance)).div(new BigDecimal(portfolio.subjectTokenBuyVolume))
+  }
   order.portfolio = portfolio.id
   order.save()
 
