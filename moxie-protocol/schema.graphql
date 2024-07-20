@@ -5,160 +5,6 @@ type BlockInfo @entity {
   timestamp: BigInt!
 }
 
-type SubjectFactorySubjectOnboardingFinishedTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-
-  subject: Bytes!
-  subjectToken: Bytes!
-  auctionId: BigInt!
-  bondingSupply: BigInt!
-  bondingAmount: BigInt!
-  protocolFee: BigInt!
-  subjectFee: BigInt!
-  txn: Transaction!
-}
-
-type SubjectFactorySubjectOnboardingInitiatedTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-
-  subject: Bytes!
-  subjectToken: Bytes!
-  auctionAmount: BigInt!
-  biddingToken: Bytes!
-  auctionEndDate: BigInt!
-  auctionId: BigInt!
-  txn: Transaction!
-}
-
-type MoxieBondingCurveBondingCurveInitializedTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-  subject: Bytes!
-  subjectToken: Bytes!
-  initialSupply: BigInt!
-  reserve: BigInt!
-  reserveRatio: BigInt!
-  txn: Transaction!
-}
-
-type MoxieBondingCurveSubjectSharePurchasedTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-  subject: Bytes!
-  sellToken: Bytes!
-  sellAmount: BigInt!
-  buyToken: Bytes!
-  buyAmount: BigInt!
-  beneficiary: Bytes!
-  txn: Transaction!
-}
-
-type MoxieBondingCurveSubjectShareSoldTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-  subject: Bytes!
-  sellToken: Bytes!
-  sellAmount: BigInt!
-  buyToken: Bytes!
-  buyAmount: BigInt!
-  beneficiary: Bytes!
-  txn: Transaction!
-}
-
-type MoxieBondingCurveUpdateBeneficiaryTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-  beneficiary: Bytes!
-  txn: Transaction!
-}
-
-type MoxieBondingCurveUpdateFeesTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-  protocolBuyFeePct: BigInt!
-  protocolSellFeePct: BigInt!
-  subjectBuyFeePct: BigInt!
-  subjectSellFeePct: BigInt!
-  txn: Transaction!
-}
-
-type MoxieBondingCurveUpdateFormulaTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-  formula: Bytes!
-  txn: Transaction!
-}
-
-type TokenManagerTokenDeployedTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-  beneficiary: Bytes!
-  token: Bytes!
-  initialSupply: BigInt!
-  txn: Transaction!
-}
-
-type SubjectTokenTransferTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-  contractAddress: Bytes!
-  from: Bytes!
-  to: Bytes!
-  value: BigInt!
-  txn: Transaction!
-}
-type VaultDepositTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-
-  subject: Bytes!
-  token: Bytes!
-  sender: Bytes!
-  amount: BigInt!
-  totalReserve: BigInt!
-  txn: Transaction!
-}
-
-type VaultTransferTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-
-  subject: Bytes!
-  token: Bytes!
-  to: Bytes!
-  amount: BigInt!
-  totalReserve: BigInt!
-  txn: Transaction!
-}
-
-# actual entities
-
 type SubjectTokenRollingDailySnapshot @entity {
   "subjectId+-+endTimestamp"
   id: ID!
@@ -376,9 +222,9 @@ type SubjectToken @entity {
   updatedAtBlockInfo: BlockInfo!
 
   "Moxie spent by all users buy this subject token"
-  protocolTokenSpent: BigInt!
+  buyVolume: BigInt!
   "Moxie earned by all user to sell the subject token"
-  protocolTokenEarned: BigInt!
+  sellVolume: BigInt!
   "total moxie invested by the user, after reducing when user sells the token"
   protocolTokenInvested: BigDecimal!
   "orders associated with the subject"
@@ -419,9 +265,11 @@ type Portfolio @entity {
   "Net quantity of the subject token by the user"
   balance: BigInt!
   "Moxie spent by user to buy the subject token(buyShare + auctionOrders)"
-  protocolTokenSpent: BigInt!
-  "Moxie earned by user to sell the subject token"
-  protocolTokenEarned: BigInt!
+  buyVolume: BigInt!
+  "total subject token bought by user"
+  subjectTokenBuyVolume: BigInt!
+  "amount of moxie earned by user by selling the subject token"
+  sellVolume: BigInt!
   "total moxie invested by the user"
   protocolTokenInvested: BigDecimal!
   "Orders associated with the user's portfolio"
@@ -444,9 +292,9 @@ type User @entity {
   "beneficiary fee transfers"
   subjectFeeTransfer: [SubjectFeeTransfer!]!
   "total moxie spent by the user"
-  protocolTokenSpent: BigInt!
+  buyVolume: BigInt!
   "Moxie earned by user to sell the subject token"
-  protocolTokenEarned: BigInt!
+  sellVolume: BigInt!
   "total moxie invested by the user"
   protocolTokenInvested: BigDecimal!
   "total number of orders (auction & buyOrders)"
@@ -482,8 +330,6 @@ type Order @entity {
   subjectToken: SubjectToken!
   "Amount of subject token"
   subjectAmount: BigInt!
-  "Amount of subject token Left to be sold in the order"
-  subjectAmountLeft: BigInt!
   "investment amount in moxie"
   protocolTokenInvested: BigDecimal!
   "Price of the subject token"
@@ -673,4 +519,156 @@ type Transaction @entity {
   tokenManagerTokenDeployedTx: [TokenManagerTokenDeployedTx!]! @derivedFrom(field: "txn")
   vaultDepositTx: [VaultDepositTx!]! @derivedFrom(field: "txn")
   vaultTransferTx: [VaultTransferTx!]! @derivedFrom(field: "txn")
+}
+
+type SubjectFactorySubjectOnboardingFinishedTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+
+  subject: Bytes!
+  subjectToken: Bytes!
+  auctionId: BigInt!
+  bondingSupply: BigInt!
+  bondingAmount: BigInt!
+  protocolFee: BigInt!
+  subjectFee: BigInt!
+  txn: Transaction!
+}
+
+type SubjectFactorySubjectOnboardingInitiatedTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+
+  subject: Bytes!
+  subjectToken: Bytes!
+  auctionAmount: BigInt!
+  biddingToken: Bytes!
+  auctionEndDate: BigInt!
+  auctionId: BigInt!
+  txn: Transaction!
+}
+
+type MoxieBondingCurveBondingCurveInitializedTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+  subject: Bytes!
+  subjectToken: Bytes!
+  initialSupply: BigInt!
+  reserve: BigInt!
+  reserveRatio: BigInt!
+  txn: Transaction!
+}
+
+type MoxieBondingCurveSubjectSharePurchasedTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+  subject: Bytes!
+  sellToken: Bytes!
+  sellAmount: BigInt!
+  buyToken: Bytes!
+  buyAmount: BigInt!
+  beneficiary: Bytes!
+  txn: Transaction!
+}
+
+type MoxieBondingCurveSubjectShareSoldTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+  subject: Bytes!
+  sellToken: Bytes!
+  sellAmount: BigInt!
+  buyToken: Bytes!
+  buyAmount: BigInt!
+  beneficiary: Bytes!
+  txn: Transaction!
+}
+
+type MoxieBondingCurveUpdateBeneficiaryTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+  beneficiary: Bytes!
+  txn: Transaction!
+}
+
+type MoxieBondingCurveUpdateFeesTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+  protocolBuyFeePct: BigInt!
+  protocolSellFeePct: BigInt!
+  subjectBuyFeePct: BigInt!
+  subjectSellFeePct: BigInt!
+  txn: Transaction!
+}
+
+type MoxieBondingCurveUpdateFormulaTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+  formula: Bytes!
+  txn: Transaction!
+}
+
+type TokenManagerTokenDeployedTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+  beneficiary: Bytes!
+  token: Bytes!
+  initialSupply: BigInt!
+  txn: Transaction!
+}
+
+type SubjectTokenTransferTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+  contractAddress: Bytes!
+  from: Bytes!
+  to: Bytes!
+  value: BigInt!
+  txn: Transaction!
+}
+type VaultDepositTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+
+  subject: Bytes!
+  token: Bytes!
+  sender: Bytes!
+  amount: BigInt!
+  totalReserve: BigInt!
+  txn: Transaction!
+}
+
+type VaultTransferTx @entity {
+  "txHash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+
+  subject: Bytes!
+  token: Bytes!
+  to: Bytes!
+  amount: BigInt!
+  totalReserve: BigInt!
+  txn: Transaction!
 }

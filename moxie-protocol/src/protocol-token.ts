@@ -31,7 +31,6 @@ export function handleTransfer(event: Transfer): void {
     order.subjectToken = auctionNewSellOrderTx.subjectToken
     // order is just created,will be filling this data later
     order.subjectAmount = BigInt.zero()
-    order.subjectAmountLeft = BigInt.zero()
     order.orderType = AUCTION
     let user = getOrCreateUser(event.params.from, event.block)
     order.user = user.id
@@ -41,21 +40,23 @@ export function handleTransfer(event: Transfer): void {
     order.blockInfo = blockInfo.id
     // updating user's portfolio
     let portfolio = getOrCreatePortfolio(event.params.from, Address.fromString(auctionNewSellOrderTx.subjectToken), event.transaction.hash, event.block)
-    portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.plus(event.params.value)
+    portfolio.buyVolume = portfolio.buyVolume.plus(event.params.value)
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params.value))
+
+
     savePortfolio(portfolio, event.block)
 
     order.portfolio = portfolio.id
     order.save()
     createUserProtocolOrder(user, order, event.block)
 
-    user.protocolTokenSpent = user.protocolTokenSpent.plus(event.params.value)
+    user.buyVolume = user.buyVolume.plus(event.params.value)
     user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params.value))
 
     saveUser(user, event.block)
 
     let subjectToken = getOrCreateSubjectToken(Address.fromString(auctionNewSellOrderTx.subjectToken), null, event.block)
-    subjectToken.protocolTokenSpent = subjectToken.protocolTokenSpent.plus(event.params.value)
+    subjectToken.buyVolume = subjectToken.buyVolume.plus(event.params.value)
     subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(event.params.value))
     saveSubjectToken(subjectToken, event.block)
 
@@ -88,18 +89,18 @@ export function handleTransfer(event: Transfer): void {
 
     // remove order from user's orders
     let user = getOrCreateUser(event.params.to, event.block)
-    user.protocolTokenSpent = user.protocolTokenSpent.minus(event.params.value)
+    user.buyVolume = user.buyVolume.minus(event.params.value)
     user.protocolTokenInvested = user.protocolTokenInvested.minus(new BigDecimal(event.params.value))
     saveUser(user, event.block)
     // updating user's portfolio
     let portfolio = getOrCreatePortfolio(event.params.to, Address.fromString(auctionCancellationSellOrderTx.subjectToken), event.transaction.hash, event.block)
-    portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(event.params.value)
+    portfolio.buyVolume = portfolio.buyVolume.minus(event.params.value)
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.minus(new BigDecimal(event.params.value))
 
     savePortfolio(portfolio, event.block)
 
     let subjectToken = getOrCreateSubjectToken(Address.fromString(order.subjectToken), null, event.block)
-    subjectToken.protocolTokenSpent = subjectToken.protocolTokenSpent.minus(event.params.value)
+    subjectToken.buyVolume = subjectToken.buyVolume.minus(event.params.value)
     subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.minus(new BigDecimal(event.params.value))
     saveSubjectToken(subjectToken, event.block)
 
@@ -125,19 +126,19 @@ export function handleTransfer(event: Transfer): void {
     order.protocolTokenAmount = order.protocolTokenAmount.minus(event.params.value)
     order.protocolTokenInvested = order.protocolTokenInvested.minus(new BigDecimal(event.params.value))
     order.save()
-    // reducing refund amount from user's protocolTokenSpent
+    // reducing refund amount from user's buyVolume
     let user = getOrCreateUser(event.params.to, event.block)
-    user.protocolTokenSpent = user.protocolTokenSpent.minus(event.params.value)
+    user.buyVolume = user.buyVolume.minus(event.params.value)
     saveUser(user, event.block)
     // reducing refund amount from user's portfolio
     let portfolio = getOrCreatePortfolio(event.params.to, Address.fromString(auctionClaimedFromOrderTx.subjectToken), event.transaction.hash, event.block)
-    portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.minus(event.params.value)
+    portfolio.buyVolume = portfolio.buyVolume.minus(event.params.value)
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.minus(new BigDecimal(event.params.value))
 
     savePortfolio(portfolio, event.block)
-    // reducing refund from subject's protocolTokenSpent
+    // reducing refund from subject's buyVolume
     let subjectToken = getOrCreateSubjectToken(Address.fromString(order.subjectToken), null, event.block)
-    subjectToken.protocolTokenSpent = subjectToken.protocolTokenSpent.minus(event.params.value)
+    subjectToken.buyVolume = subjectToken.buyVolume.minus(event.params.value)
     subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.minus(new BigDecimal(event.params.value))
     saveSubjectToken(subjectToken, event.block)
 

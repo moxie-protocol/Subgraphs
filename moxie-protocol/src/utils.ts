@@ -23,8 +23,9 @@ export function getOrCreateSubjectToken(tokenAddress: Address, auction: Auction 
     subjectToken.beneficiaryFee = BigInt.zero()
     subjectToken.protocolFee = BigInt.zero()
     subjectToken.createdAtBlockInfo = getOrCreateBlockInfo(block).id
-    subjectToken.protocolTokenSpent = BigInt.zero()
-    subjectToken.protocolTokenEarned = BigInt.zero()
+    subjectToken.buyVolume = BigInt.zero()
+    subjectToken.sellVolume = BigInt.zero()
+
     subjectToken.protocolTokenInvested = BigDecimal.fromString("0")
     subjectToken.status = ONBOARDING_STATUS_ONBOARDING_INITIALIZED
     if (auction) {
@@ -46,12 +47,12 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.subjectToken = subjectToken.id
     portfolio.balance = BigInt.zero()
     log.info("Portfolio {} initialized {} balance: {}", [portfolioId, txHash.toHexString(), portfolio.balance.toString()])
-    portfolio.protocolTokenSpent = BigInt.zero()
-    portfolio.protocolTokenEarned = BigInt.zero()
+    portfolio.buyVolume = BigInt.zero()
+    portfolio.sellVolume = BigInt.zero()
     portfolio.protocolTokenInvested = BigDecimal.fromString("0")
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    portfolio.subjectTokenBuyVolume = BigInt.zero()
     savePortfolio(portfolio, block)
-
   }
   return portfolio
 }
@@ -66,8 +67,8 @@ export function getOrCreateUser(userAddress: Address, block: ethereum.Block): Us
   if (!user) {
     user = new User(userAddress.toHexString())
     user.subjectFeeTransfer = []
-    user.protocolTokenSpent = BigInt.zero()
-    user.protocolTokenEarned = BigInt.zero()
+    user.buyVolume = BigInt.zero()
+    user.sellVolume = BigInt.zero()
     user.protocolTokenInvested = BigDecimal.fromString("0")
     user.protocolOrdersCount = BigInt.zero()
     user.createdAtBlockInfo = getOrCreateBlockInfo(block).id
@@ -242,7 +243,6 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
   // deleting existing rolling daily snapshot for subject token
   let oldRollingDailySnapshot = subjectToken.latestRollingDailySnapshot
   if (oldRollingDailySnapshot) {
-    log.warning("Deleting old rolling daily snapshot {}", [oldRollingDailySnapshot])
     store.remove("SubjectTokenRollingDailySnapshot", oldRollingDailySnapshot)
   }
   subjectToken.latestRollingDailySnapshot = snapshotId

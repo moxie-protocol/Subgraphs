@@ -65,10 +65,13 @@ export function handleTransfer(event: Transfer): void {
       throw new Error("Order not found for entityId during subject token transfer: " + event.transaction.hash.toHexString())
     }
     order.subjectAmount = value
-    order.subjectAmountLeft = value
     order.price = order.protocolTokenAmount.divDecimal(new BigDecimal(value))
     order.auctionOrderStatus = CLAIMED
     order.save()
+
+    let portfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
+    portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(value)
+    savePortfolio(portfolio, event.block)
   }
 }
 

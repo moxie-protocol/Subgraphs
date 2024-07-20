@@ -50,7 +50,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
   let user = getOrCreateUser(event.params._beneficiary, event.block)
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, null, event.block)
-  subjectToken.protocolTokenSpent = subjectToken.protocolTokenSpent.plus(event.params._sellAmount)
+  subjectToken.buyVolume = subjectToken.buyVolume.plus(event.params._sellAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   subjectToken.currentPriceinMoxie = price
   subjectToken.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
@@ -62,7 +62,6 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   order.protocolTokenInvested = new BigDecimal(event.params._sellAmount)
   order.subjectToken = subjectToken.id
   order.subjectAmount = event.params._buyAmount
-  order.subjectAmountLeft = event.params._buyAmount
   order.orderType = BUY
   order.user = user.id
   order.price = price
@@ -71,8 +70,10 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.transaction.hash, event.block)
-  portfolio.protocolTokenSpent = portfolio.protocolTokenSpent.plus(event.params._sellAmount)
+  portfolio.buyVolume = portfolio.buyVolume.plus(event.params._sellAmount)
   portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+  portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(event.params._buyAmount)
+
   savePortfolio(portfolio, event.block)
 
   order.portfolio = portfolio.id
@@ -82,7 +83,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   createUserProtocolOrder(user, order, event.block)
 
   // increasing user protocol token spent
-  user.protocolTokenSpent = user.protocolTokenSpent.plus(event.params._sellAmount)
+  user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
   // increasing user investment
   user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   saveUser(user, event.block)
@@ -115,17 +116,12 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()
 
-  log.warning("loading beneficiaryUser ", [])
-
   let beneficiary = subjectToken.beneficiary
   if (beneficiary) {
-    log.warning("beneficiaryUser {}", [beneficiary])
     let beneficiaryUser = User.load(beneficiary)
     if (beneficiaryUser) {
-      log.warning("beneficiaryUser loaded {}", [beneficiaryUser.id])
       let subjectFeeTransfer = beneficiaryUser.subjectFeeTransfer
       let pushResponse = subjectFeeTransfer.push(txHash)
-      log.warning("beneficiaryUser pushResponse {}", [pushResponse.toString()])
       beneficiaryUser.subjectFeeTransfer = subjectFeeTransfer
       saveUser(beneficiaryUser, event.block)
     }
@@ -163,7 +159,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   const blockInfo = getOrCreateBlockInfo(event.block)
   // calculating price here the sell amount will be subject token and buy amount is protocol token since it's a sell
   let price = event.params._buyAmount.divDecimal(new BigDecimal(event.params._sellAmount))
-  let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params._sellToken, null, event.block)
   subjectToken.currentPriceinMoxie = price
   subjectToken.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subjectToken.volume = subjectToken.volume.plus(event.params._buyAmount)
@@ -179,7 +175,6 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.protocolTokenAmount = event.params._buyAmount
   order.subjectToken = subjectToken.id
   order.subjectAmount = event.params._sellAmount
-  order.subjectAmountLeft = BigInt.zero()
   order.protocolTokenInvested = new BigDecimal(BigInt.zero())
   order.orderType = SELL
   order.user = user.id
@@ -190,7 +185,13 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.transaction.hash, event.block)
-  portfolio.protocolTokenEarned = portfolio.protocolTokenEarned.plus(event.params._buyAmount)
+  portfolio.sellVolume = portfolio.sellVolume.plus(event.params._buyAmount)
+
+  // this balance is only for temporary use, actual balance will be updated during Transfer event in subject token
+  let updatedBalance = portfolio.balance.minus(event.params._sellAmount)
+  // buyVolume / subjectTokenBuyVolume = protocolTokenInvested / balance
+  portfolio.protocolTokenInvested = new BigDecimal(portfolio.buyVolume).times(new BigDecimal(updatedBalance)).div(new BigDecimal(portfolio.subjectTokenBuyVolume))
+  log.warning("portfolio.protocolTokenInvested {} portfolio.buyVolume {} portfolio.balance {} event.params._sellAmount {} portfolio.subjectTokenBuyVolume {} txHash {}", [portfolio.protocolTokenInvested.toString(), portfolio.buyVolume.toString(), portfolio.balance.toString(), event.params._sellAmount.toString(), portfolio.subjectTokenBuyVolume.toString(), event.transaction.hash.toHexString()])
   order.portfolio = portfolio.id
   order.save()
 
@@ -208,39 +209,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   createSubjectFeeTransfer(event, blockInfo, order, subjectToken, subjectToken.beneficiary, fees.subjectFee)
 
   // increasing user protocol token earned
-  user.protocolTokenEarned = user.protocolTokenEarned.plus(event.params._buyAmount)
-  let subjectTokenRemaining = event.params._sellAmount
-  log.debug("incoming sell order id: {} initial subjectTokenRemaining {}", [order.id, subjectTokenRemaining.toString()])
-  for (let i = BigInt.fromI32(1); i.le(user.protocolOrdersCount); i = i.plus(BigInt.fromI32(1))) {
-    let protocolOrder = loadProtocolOrder(user, i)
-    if (protocolOrder.subjectToken != subjectToken.id || protocolOrder.auctionOrderStatus == CANCELLED || protocolOrder.auctionOrderStatus == PLACED) {
-      log.debug("incoming sell order id: {},skipping protocolOrder id: {} protocolOrder.subjectToken {} order.subject {} protocolOrder.auctionOrderStatus {}", [order.id, protocolOrder.id, protocolOrder.subjectToken, subjectToken.id, protocolOrder.auctionOrderStatus])
-      // should reduce subjectAmountLeft only if subjectToken is matching
-      // skipping cancelled orders
-      continue
-    }
-    if (subjectTokenRemaining.gt(protocolOrder.subjectAmountLeft)) {
-      log.debug("incoming sell order id: {} subjectTokenRemaining {} > protocolOrder.subjectAmountLeft {} protocolOrder {} ", [order.id, subjectTokenRemaining.toString(), protocolOrder.subjectAmountLeft.toString(), protocolOrder.id])
-      subjectTokenRemaining = subjectTokenRemaining.minus(protocolOrder.subjectAmountLeft)
-      log.debug("incoming sell order id: {} new subjectTokenRemaining {} protocolOrder {} ", [order.id, subjectTokenRemaining.toString(), protocolOrder.id])
-      protocolOrder.subjectAmountLeft = BigInt.fromI32(0)
-    } else {
-      log.debug("incoming sell order id: {} subjectTokenRemaining {} < protocolOrder.subjectAmountLeft {} protocolOrder {} ", [order.id, subjectTokenRemaining.toString(), protocolOrder.subjectAmountLeft.toString(), protocolOrder.id])
-      protocolOrder.subjectAmountLeft = protocolOrder.subjectAmountLeft.minus(subjectTokenRemaining)
-      log.debug("incoming sell order id: {} new protocolOrder.subjectAmountLeft {} protocolOrder {} ", [order.id, protocolOrder.subjectAmountLeft.toString(), protocolOrder.id])
-      subjectTokenRemaining = BigInt.fromI32(0)
-    }
-    if (protocolOrder.subjectAmount == BigInt.zero()) {
-      protocolOrder.protocolTokenInvested = new BigDecimal(BigInt.zero())
-    } else {
-      protocolOrder.protocolTokenInvested = protocolOrder.subjectAmountLeft.times(protocolOrder.protocolTokenAmount).divDecimal(new BigDecimal(protocolOrder.subjectAmount))
-    }
-    protocolOrder.save()
-    user.protocolTokenInvested = user.protocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
-    portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
-    subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
-    summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.minus(new BigDecimal(protocolOrder.protocolTokenAmount)).plus(protocolOrder.protocolTokenInvested)
-  }
+  user.sellVolume = user.sellVolume.plus(event.params._buyAmount)
   summary.numberOfSellOrders = summary.numberOfSellOrders.plus(BigInt.fromI32(1))
   summary.totalSellVolume = summary.totalSellVolume.plus(event.params._buyAmount)
   summary.totalProtocolFee = summary.totalProtocolFee.plus(fees.protocolFee)
@@ -252,22 +221,19 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   subjectToken.beneficiaryFee = subjectToken.beneficiaryFee.plus(fees.subjectFee)
   subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
-  subjectToken.protocolTokenEarned = subjectToken.protocolTokenEarned.plus(event.params._buyAmount)
+  subjectToken.sellVolume = subjectToken.sellVolume.plus(event.params._buyAmount)
   saveSubjectToken(subjectToken, event.block)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()
-  log.warning("loading beneficiaryUser ", [])
 
   let beneficiary = subjectToken.beneficiary
   if (beneficiary) {
-    log.warning("beneficiaryUser {}", [beneficiary])
     let beneficiaryUser = User.load(beneficiary)
     if (beneficiaryUser) {
-      log.warning("beneficiaryUser loaded {}", [beneficiaryUser.id])
       let subjectFeeTransfer = beneficiaryUser.subjectFeeTransfer
       let pushResponse = subjectFeeTransfer.push(txHash)
-      log.warning("beneficiaryUser pushResponse {}", [pushResponse.toString()])
+
       beneficiaryUser.subjectFeeTransfer = subjectFeeTransfer
       saveUser(beneficiaryUser, event.block)
     }
