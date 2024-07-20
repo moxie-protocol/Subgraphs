@@ -9,7 +9,8 @@ export function handleTokenDeployed(event: TokenDeployed): void {
   handleTokenDeployedTx(event)
   let token = event.params._token
   let subjectToken = getOrCreateSubjectToken(token, null, event.block)
-  subjectToken.beneficiary = getOrCreateUser(event.params._beneficiary, event.block).id
+  let user = getOrCreateUser(event.params._beneficiary, event.block)
+  subjectToken.subject = user.id
   saveSubjectToken(subjectToken, event.block)
   SubjectTokenContract.create(token)
 }

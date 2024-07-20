@@ -43,7 +43,6 @@ export function handleTransfer(event: Transfer): void {
     portfolio.buyVolume = portfolio.buyVolume.plus(event.params.value)
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params.value))
 
-
     savePortfolio(portfolio, event.block)
 
     order.portfolio = portfolio.id
@@ -56,7 +55,8 @@ export function handleTransfer(event: Transfer): void {
     saveUser(user, event.block)
 
     let subjectToken = getOrCreateSubjectToken(Address.fromString(auctionNewSellOrderTx.subjectToken), null, event.block)
-    subjectToken.buyVolume = subjectToken.buyVolume.plus(event.params.value)
+    subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params.value)
+    subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params.value)
     subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(event.params.value))
     saveSubjectToken(subjectToken, event.block)
 
@@ -100,7 +100,8 @@ export function handleTransfer(event: Transfer): void {
     savePortfolio(portfolio, event.block)
 
     let subjectToken = getOrCreateSubjectToken(Address.fromString(order.subjectToken), null, event.block)
-    subjectToken.buyVolume = subjectToken.buyVolume.minus(event.params.value)
+    subjectToken.buySideVolume = subjectToken.buySideVolume.minus(event.params.value)
+    subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.minus(event.params.value)
     subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.minus(new BigDecimal(event.params.value))
     saveSubjectToken(subjectToken, event.block)
 
@@ -133,12 +134,14 @@ export function handleTransfer(event: Transfer): void {
     // reducing refund amount from user's portfolio
     let portfolio = getOrCreatePortfolio(event.params.to, Address.fromString(auctionClaimedFromOrderTx.subjectToken), event.transaction.hash, event.block)
     portfolio.buyVolume = portfolio.buyVolume.minus(event.params.value)
+
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.minus(new BigDecimal(event.params.value))
 
     savePortfolio(portfolio, event.block)
     // reducing refund from subject's buyVolume
     let subjectToken = getOrCreateSubjectToken(Address.fromString(order.subjectToken), null, event.block)
-    subjectToken.buyVolume = subjectToken.buyVolume.minus(event.params.value)
+    subjectToken.buySideVolume = subjectToken.buySideVolume.minus(event.params.value)
+    subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.minus(event.params.value)
     subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.minus(new BigDecimal(event.params.value))
     saveSubjectToken(subjectToken, event.block)
 

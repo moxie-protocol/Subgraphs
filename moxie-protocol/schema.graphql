@@ -16,7 +16,7 @@ type SubjectTokenRollingDailySnapshot @entity {
   subjectToken: SubjectToken!
 
   "address of the beneficiary"
-  beneficiary: User
+  subject: User
   "reserve balance (moxie)/ total locked value"
   reserve: BigInt!
 
@@ -45,11 +45,11 @@ type SubjectTokenRollingDailySnapshot @entity {
   dailyVolumeChange: BigInt!
 
   "total beneficiary fee at start of the snapshot"
-  startBeneficiaryFee: BigInt!
+  startSubjectFee: BigInt!
   "total beneficiary fee at end of the snapshot"
-  endBeneficiaryFee: BigInt!
+  endSubjectFee: BigInt!
   "daily beneficiary fee change"
-  dailyBeneficiaryFeeChange: BigInt!
+  dailySubjectFeeChange: BigInt!
   "total protocol fee at start of the snapshot"
   startProtocolFee: BigInt!
   "total protocol fee at end of the snapshot"
@@ -73,7 +73,7 @@ type SubjectTokenDailySnapshot @entity {
   subjectToken: SubjectToken!
 
   "address of the beneficiary"
-  beneficiary: User
+  subject: User
   "reserve balance (moxie)/ total locked value"
   reserve: BigInt!
 
@@ -102,11 +102,11 @@ type SubjectTokenDailySnapshot @entity {
   dailyVolumeChange: BigInt!
 
   "total beneficiary fee at start of the snapshot"
-  startBeneficiaryFee: BigInt!
+  startSubjectFee: BigInt!
   "total beneficiary fee at end of the snapshot"
-  endBeneficiaryFee: BigInt!
+  endSubjectFee: BigInt!
   "daily beneficiary fee change"
-  dailyBeneficiaryFeeChange: BigInt!
+  dailySubjectFeeChange: BigInt!
   "total protocol fee at start of the snapshot"
   startProtocolFee: BigInt!
   "total protocol fee at end of the snapshot"
@@ -130,7 +130,7 @@ type SubjectTokenHourlySnapshot @entity {
   subjectToken: SubjectToken!
 
   "address of the beneficiary"
-  beneficiary: User
+  subject: User
   "reserve balance (moxie)/ total locked value"
   reserve: BigInt!
 
@@ -159,11 +159,11 @@ type SubjectTokenHourlySnapshot @entity {
   hourlyVolumeChange: BigInt!
 
   "total beneficiary fee at start of the snapshot"
-  startBeneficiaryFee: BigInt!
+  startSubjectFee: BigInt!
   "total beneficiary fee at end of the snapshot"
-  endBeneficiaryFee: BigInt!
+  endSubjectFee: BigInt!
   "hourly beneficiary fee change"
-  hourlyBeneficiaryFeeChange: BigInt!
+  hourlySubjectFeeChange: BigInt!
   "total protocol fee at start of the snapshot"
   startProtocolFee: BigInt!
   "total protocol fee at end of the snapshot"
@@ -184,13 +184,13 @@ type SubjectToken @entity {
   "decimals of the token"
   decimals: BigInt!
   "address of the beneficiary"
-  beneficiary: User
+  subject: User
   "reserve balance in vault"
   reserve: BigInt!
   "current price of the token in Moxie"
   currentPriceinMoxie: BigDecimal!
   "current price of the token in Moxie in wei unit"
-  currentPriceinWeiInMoxie: BigDecimal!
+  currentPriceInWeiInMoxie: BigDecimal!
   "constant used to calculate bonding curve"
   reserveRatio: BigInt!
   "Total supply of the token"
@@ -200,18 +200,18 @@ type SubjectToken @entity {
 
   "total number of unique holders"
   uniqueHolders: BigInt!
-  "amount of moxie used to buy or sell this subject token"
-  volume: BigInt!
+  "amount of moxie used to buy or sell or auction this subject token"
+  lifetimeVolume: BigInt!
   "snapshots"
   hourlySnapshots: [SubjectTokenHourlySnapshot!]! @derivedFrom(field: "subjectToken")
   dailySnapshots: [SubjectTokenDailySnapshot!]! @derivedFrom(field: "subjectToken")
   latestRollingDailySnapshot: SubjectTokenRollingDailySnapshot
   "total beneficiary fees collected"
-  beneficiaryFee: BigInt!
+  subjectFee: BigInt!
   "total protocol fees collected"
   protocolFee: BigInt!
   "beneficiary fee transfer"
-  beneficiaryFeeTransfers: [SubjectFeeTransfer!]! @derivedFrom(field: "subjectToken")
+  subjectFeeTransfers: [SubjectFeeTransfer!]! @derivedFrom(field: "subjectToken")
   "protocol fee transfers"
   protocolFeeTransfers: [ProtocolFeeTransfer!]! @derivedFrom(field: "subjectToken")
   "portfolios with this subject"
@@ -222,9 +222,9 @@ type SubjectToken @entity {
   updatedAtBlockInfo: BlockInfo!
 
   "Moxie spent by all users buy this subject token"
-  buyVolume: BigInt!
+  buySideVolume: BigInt!
   "Moxie earned by all user to sell the subject token"
-  sellVolume: BigInt!
+  sellSideVolume: BigInt!
   "total moxie invested by the user, after reducing when user sells the token"
   protocolTokenInvested: BigDecimal!
   "orders associated with the subject"
@@ -232,6 +232,8 @@ type SubjectToken @entity {
 
   auction: Auction
   status: OnboardingStatus!
+
+  hourlySnapshotEndTimestamps: [BigInt!]!
 }
 enum OnboardingStatus {
   OnboardingInitialized
@@ -405,14 +407,14 @@ type SubjectFeeTransfer @entity {
   "subject token address"
   subjectToken: SubjectToken!
   "address of the beneficiary"
-  beneficiary: User
+  subject: User!
   "amount of moxie transferred"
   amount: BigInt!
 }
 
 type Summary @entity {
   id: ID!
-  totalTokensIssued: BigInt!
+  totalSubjectTokensIssued: BigInt!
   "total reserve in the vault"
   totalReserve: BigInt!
   "total protocol token spent by all users - after reducing when user sells the token"

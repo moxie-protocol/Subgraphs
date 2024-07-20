@@ -17,7 +17,6 @@ export function handleSubjectOnboardingInitiated(event: SubjectOnboardingInitiat
   auction.save()
 
   let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, auction, event.block)
-  subjectToken.save()
 
   auction.subjectToken = subjectToken.id
   auction.save()

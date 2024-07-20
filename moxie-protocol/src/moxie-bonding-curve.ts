@@ -50,11 +50,11 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
   let user = getOrCreateUser(event.params._beneficiary, event.block)
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, null, event.block)
-  subjectToken.buyVolume = subjectToken.buyVolume.plus(event.params._sellAmount)
+  subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params._sellAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   subjectToken.currentPriceinMoxie = price
-  subjectToken.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
-  subjectToken.volume = subjectToken.volume.plus(event.params._sellAmount)
+  subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
+  subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._sellAmount)
   // Saving order entity
   let order = new Order(getTxEntityId(event))
   order.protocolToken = event.params._sellToken
@@ -105,18 +105,18 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
 
-  createSubjectFeeTransfer(event, blockInfo, order, subjectToken, subjectToken.beneficiary, fees.subjectFee)
+  createSubjectFeeTransfer(event, blockInfo, order, subjectToken, fees.subjectFee)
 
   createProtocolFeeTransfer(event, blockInfo, order, subjectToken, activeFeeBeneficiary, fees.protocolFee)
 
-  subjectToken.beneficiaryFee = subjectToken.beneficiaryFee.plus(fees.subjectFee)
+  subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
   subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
   saveSubjectToken(subjectToken, event.block)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()
 
-  let beneficiary = subjectToken.beneficiary
+  let beneficiary = subjectToken.subject
   if (beneficiary) {
     let beneficiaryUser = User.load(beneficiary)
     if (beneficiaryUser) {
@@ -161,8 +161,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   let price = event.params._buyAmount.divDecimal(new BigDecimal(event.params._sellAmount))
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, null, event.block)
   subjectToken.currentPriceinMoxie = price
-  subjectToken.currentPriceinWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
-  subjectToken.volume = subjectToken.volume.plus(event.params._buyAmount)
+  subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
+  subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._buyAmount)
   if (event.transaction.from != event.params._beneficiary) {
     log.warning("event.transaction.from {}, event.params._beneficiary {} ", [event.transaction.from.toHexString(), event.params._beneficiary.toHexString()])
     // throw new Error("beneficiary should be the same as the transaction sender")
@@ -206,7 +206,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   let txHash = event.transaction.hash.toHexString()
   const fees = calculateSellSideFee(event.params._sellAmount)
 
-  createSubjectFeeTransfer(event, blockInfo, order, subjectToken, subjectToken.beneficiary, fees.subjectFee)
+  createSubjectFeeTransfer(event, blockInfo, order, subjectToken, fees.subjectFee)
 
   // increasing user protocol token earned
   user.sellVolume = user.sellVolume.plus(event.params._buyAmount)
@@ -219,15 +219,15 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   savePortfolio(portfolio, event.block)
   createProtocolFeeTransfer(event, blockInfo, order, subjectToken, activeFeeBeneficiary, fees.protocolFee)
 
-  subjectToken.beneficiaryFee = subjectToken.beneficiaryFee.plus(fees.subjectFee)
+  subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
   subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
-  subjectToken.sellVolume = subjectToken.sellVolume.plus(event.params._buyAmount)
+  subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(event.params._buyAmount)
   saveSubjectToken(subjectToken, event.block)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()
 
-  let beneficiary = subjectToken.beneficiary
+  let beneficiary = subjectToken.subject
   if (beneficiary) {
     let beneficiaryUser = User.load(beneficiary)
     if (beneficiaryUser) {
