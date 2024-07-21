@@ -255,6 +255,8 @@ type Auction @entity {
   endTxHash: Bytes
   startBlockInfo: BlockInfo!
   endBlockInfo: BlockInfo
+
+  auctionEndDate: BigInt!
 }
 
 type Portfolio @entity {

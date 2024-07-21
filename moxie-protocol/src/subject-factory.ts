@@ -9,11 +9,13 @@ export function handleSubjectOnboardingInitiated(event: SubjectOnboardingInitiat
   handleSubjectOnboardingInitiatedTx(event)
 
   let auction = new Auction(event.params._auctionId.toString())
+
   auction.amountRaised = BigInt.fromI32(0)
   auction.subjectFee = BigInt.fromI32(0)
   auction.protocolFee = BigInt.fromI32(0)
   auction.startTxHash = event.transaction.hash
   auction.startBlockInfo = getOrCreateBlockInfo(event.block).id
+  auction.auctionEndDate = event.params.auctionEndDate
   auction.save()
 
   let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, auction, event.block)
