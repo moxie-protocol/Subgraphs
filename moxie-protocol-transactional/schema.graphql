@@ -1,0 +1,97 @@
+type BlockInfo @entity {
+  id: ID!
+  hash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type SubjectToken @entity {
+  "address of the subject token"
+  id: ID!
+  "name of the token"
+  name: String!
+  "symbol of the token"
+  symbol: String!
+  "decimals of the token"
+  decimals: BigInt!
+  "address of the beneficiary"
+  subject: User
+  "reserve balance in vault"
+  reserve: BigInt!
+  "current price of the token in Moxie"
+  currentPriceinMoxie: BigDecimal!
+  "current price of the token in Moxie in wei unit"
+  currentPriceInWeiInMoxie: BigDecimal!
+  "constant used to calculate bonding curve"
+  reserveRatio: BigInt!
+  "Total supply of the token"
+  totalSupply: BigInt!
+  "initial supply when bonding curve is initialized"
+  initialSupply: BigInt!
+
+  "total number of unique holders"
+  uniqueHolders: BigInt!
+  "amount of moxie used to buy or sell or auction this subject token"
+  lifetimeVolume: BigInt!
+  "total beneficiary fees collected"
+  subjectFee: BigInt!
+  "total protocol fees collected"
+  protocolFee: BigInt!
+
+  "portfolios with this subject"
+  portfolio: [Portfolio!]! @derivedFrom(field: "subjectToken")
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+
+  "Moxie spent by all users buy this subject token"
+  buySideVolume: BigInt!
+  "Moxie earned by all user to sell the subject token"
+  sellSideVolume: BigInt!
+}
+
+type Portfolio @entity {
+  "User's address+-+Subject's token address"
+  id: ID!
+  "User's address"
+  user: User!
+  "Subject's token address"
+  subjectToken: SubjectToken!
+  "Net quantity of the subject token by the user"
+  balance: BigInt!
+  "Moxie spent by user to buy the subject token(buyShare + auctionOrders)"
+  buyVolume: BigInt!
+  "total subject token bought by user"
+  subjectTokenBuyVolume: BigInt!
+  "amount of moxie earned by user by selling the subject token"
+  sellVolume: BigInt!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+}
+
+type User @entity {
+  "Ethereum address of the user"
+  id: ID!
+  "User's Portfolio for each subject token he/she holds"
+  portfolio: [Portfolio!]! @derivedFrom(field: "user")
+  "total moxie spent by the user"
+  buyVolume: BigInt!
+  "Moxie earned by user to sell the subject token"
+  sellVolume: BigInt!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+}
+
+type Summary @entity {
+  id: ID!
+
+  protocolBuyFeePct: BigInt!
+  protocolSellFeePct: BigInt!
+  subjectBuyFeePct: BigInt!
+  subjectSellFeePct: BigInt!
+}
