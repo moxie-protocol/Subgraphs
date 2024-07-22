@@ -1,4 +1,4 @@
-import { BigInt, BigDecimal, Bytes, Address } from "@graphprotocol/graph-ts"
+import { BigInt, BigDecimal, Bytes, Address, log } from "@graphprotocol/graph-ts"
 import { NewAuction, ClaimedFromOrder, AuctionCleared, EasyAuction, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Auction, AuctionOrder, AuctionUser, Order } from "../generated/schema"
 import { getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, saveSubjectTokenAndSnapshots } from "./utils"
@@ -65,6 +65,10 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   let subjectTokenAddress = Address.fromString(auctionAndOrder.auction.subjectToken!)
   let protocolTokenAmount = auctionAndOrder.order.sellAmount.minus(auctionAndOrder.order.refund)
   let subjectAmount = auctionAndOrder.order.reward
+  if (subjectAmount.equals(BigInt.zero())) {
+    log.warning("Subject amount is zero, txHash: {}", [event.transaction.hash.toHexString()])
+    return
+  }
   let price = protocolTokenAmount.divDecimal(subjectAmount.toBigDecimal())
   let order = new Order(getTxEntityId(event))
   order.protocolToken = auctionAndOrder.auction.protocolToken
@@ -81,7 +85,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   order.blockInfo = blockInfo.id
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(Address.fromString(auctionAndOrder.user.id), subjectTokenAddress, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(Address.fromBytes(auctionAndOrder.user.userAddress), subjectTokenAddress, event.transaction.hash, event.block)
   portfolio.buyVolume = portfolio.buyVolume.plus(protocolTokenAmount)
   portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(subjectAmount)
@@ -89,7 +93,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   savePortfolio(portfolio, event.block)
   order.portfolio = portfolio.id
   order.save()
-  let user = getOrCreateUser(Address.fromString(auctionAndOrder.user.id), event.block)
+  let user = getOrCreateUser(Address.fromBytes(auctionAndOrder.user.userAddress), event.block)
   // increasing user protocol token spent
   user.buyVolume = user.buyVolume.plus(protocolTokenAmount)
   // increasing user investment
