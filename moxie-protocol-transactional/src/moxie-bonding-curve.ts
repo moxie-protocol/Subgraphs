@@ -8,7 +8,7 @@ export function handleBondingCurveInitialized(event: BondingCurveInitialized): v
   subjectToken.reserveRatio = event.params._reserveRatio
   subjectToken.initialSupply = event.params._initialSupply
   let price = event.params._reserve.divDecimal(new BigDecimal(event.params._initialSupply))
-  subjectToken.currentPriceinMoxie = price
+  subjectToken.currentPriceInMoxie = price
   subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   saveSubjectToken(subjectToken, event.block)
 }
@@ -43,7 +43,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params._sellAmount)
   // calculating price here the sell amount will be in protocol token and buy amount is protocol token since it's a buy
   let price = protocolTokenSpentAfterFees.divDecimal(new BigDecimal(event.params._buyAmount))
-  subjectToken.currentPriceinMoxie = price
+  subjectToken.currentPriceInMoxie = price
   subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._sellAmount)
   saveSubjectToken(subjectToken, event.block)
@@ -77,7 +77,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
   let price = protocolTokenSpentAfterFees.divDecimal(new BigDecimal(event.params._sellAmount))
-  subjectToken.currentPriceinMoxie = price
+  subjectToken.currentPriceInMoxie = price
   subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._buyAmount)
   subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(event.params._buyAmount)

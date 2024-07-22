@@ -19,7 +19,7 @@ type SubjectToken @entity {
   "reserve balance in vault"
   reserve: BigInt!
   "current price of the token in Moxie"
-  currentPriceinMoxie: BigDecimal!
+  currentPriceInMoxie: BigDecimal!
   "current price of the token in Moxie in wei unit"
   currentPriceInWeiInMoxie: BigDecimal!
   "constant used to calculate bonding curve"

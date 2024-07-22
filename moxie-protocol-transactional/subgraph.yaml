@@ -16,7 +16,6 @@ dataSources:
       entities:
         - Subject
         - User
-        - TokenManagerTokenDeployedTx
       abis:
         - name: TokenManager
           file: ./abis/TokenManager.json
@@ -43,6 +42,8 @@ dataSources:
       abis:
         - name: Vault
           file: ./abis/Vault.json
+        - name: ERC20
+          file: ./abis/ERC20.json
       eventHandlers:
         - event: VaultDeposit(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleVaultDeposit
@@ -64,12 +65,6 @@ dataSources:
         - Subject
         - Portfolio
         - Order
-        - MoxieBondingCurveBondingCurveInitializedTx
-        - MoxieBondingCurveSubjectSharePurchasedTx
-        - MoxieBondingCurveSubjectShareSoldTx
-        - MoxieBondingCurveUpdateBeneficiaryTx
-        - MoxieBondingCurveUpdateFeesTx
-        - MoxieBondingCurveUpdateFormulaTx
       abis:
         - name: MoxieBondingCurve
           file: ./abis/MoxieBondingCurve.json
@@ -101,7 +96,6 @@ templates:
       file: ./src/subject-token.ts
       entities:
         - Subject
-        - SubjectTokenTransferTx
       abis:
         - name: ERC20
           file: ./abis/ERC20.json

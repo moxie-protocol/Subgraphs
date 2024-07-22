@@ -14,7 +14,7 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
     // setting default values for now
     subjectToken.reserve = BigInt.zero()
     subjectToken.reserveRatio = BigInt.zero()
-    subjectToken.currentPriceinMoxie = BigDecimal.fromString("0")
+    subjectToken.currentPriceInMoxie = BigDecimal.fromString("0")
     subjectToken.currentPriceInWeiInMoxie = BigDecimal.fromString("0")
     subjectToken.totalSupply = BigInt.zero()
     subjectToken.initialSupply = BigInt.zero()
