@@ -11,7 +11,7 @@ import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, N
 import { Order } from "../generated/schema"
 import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "./transactions"
 
-import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId, getEncodedOrderId, createOrderTxn } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId, getEncodedOrderId, createOrderTxn, updateOrderCounter } from "./utils"
 import { ORDER_STATUS_CANCELLED, ORDER_STATUS_CLAIMED, ORDER_STATUS_PLACED } from "./constants"
 
 const ZERO = BigInt.zero()
@@ -52,7 +52,7 @@ export function handleAuctionCleared(event: AuctionCleared): void {
     log.error("Mismatch in clearing price. Calculated: {}, from contract: {} getTxEntityId(event) {}", [calculatedCurrentClearingPrice.toString(), clearingPriceFromContract.toString(), getTxEntityId(event)])
   }
   //If there is no active order don't update the price
-  if (auctionDetails.totalOrders != ZERO) {
+  if (auctionDetails.activeOrderCount != ZERO) {
     auctionDetails.currentClearingPrice = calculatedCurrentClearingPrice
   }
   clearingPriceOrder.userId = BigDecimal.fromString(parseInt(userId).toString())
@@ -79,6 +79,7 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
   let order = loadOrder(orderId)
   if (order) {
     order.status = ORDER_STATUS_CANCELLED
+    order.lastUpdatedIndex =  updateOrderCounter()
     order.save()
   }
 
@@ -100,12 +101,13 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
     activeOrders.splice(index, 1)
   }
   auctionDetails.activeOrders = activeOrders
+  auctionDetails.activeOrderCount = BigInt.fromI32(activeOrders.length)
 
   auctionDetails.totalOrders = auctionDetails.totalOrders.minus(ONE)
+  auctionDetails.currentBiddingAmount = auctionDetails.currentBiddingAmount.minus(order.sellAmount)
   auctionDetails.currentSubjectTokenBidAmount = auctionDetails.currentSubjectTokenBidAmount.minus(order.buyAmount)
   auctionDetails.save()
-
-  updateAuctionStats(auctionDetails.auctionId)
+  updateAuctionStats(auctionDetails)
 
   createOrderTxn(event, orderId, ORDER_STATUS_CANCELLED)
 }
@@ -129,6 +131,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   }
   if (order) {
     order.status = ORDER_STATUS_CLAIMED
+    order.lastUpdatedIndex =  updateOrderCounter()
     order.save()
   }
 
@@ -151,6 +154,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
     activeOrders.splice(index, 1)
   }
   auctionDetails.activeOrders = activeOrders
+  auctionDetails.activeOrderCount = BigInt.fromI32(activeOrders.length)
   auctionDetails.save()
 
   // adding order transaction
@@ -183,7 +187,6 @@ export function handleNewAuction(event: NewAuction): void {
   let isPrivateAuction = !allowListContract.equals(Address.zero())
 
   let order = new Order(orderId)
-
   order.auction = auctionId.toString()
   order.buyAmount = buyAmount
   order.sellAmount = sellAmount
@@ -197,7 +200,9 @@ export function handleNewAuction(event: NewAuction): void {
   order.blockInfo = getOrCreateBlockInfo(event).id
   order.isExactOrder = true
   order.encodedOrderId = getEncodedOrderId(userId, buyAmount, sellAmount)
+  order.lastUpdatedIndex =  updateOrderCounter()
   order.save()
+
 
   // increasing bid value and total Orders count in summary
   increaseTotalBiddingValueAndOrdersCount(sellAmount)
@@ -227,6 +232,7 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.claimedOrders = []
   auctionDetails.cancelledOrders = []
   auctionDetails.activeOrders = []
+  auctionDetails.activeOrderCount = new BigInt(0)
   auctionDetails.minBuyAmount = event.params._minBuyAmount
   auctionDetails.initialSupply = event.params._auctionedSellAmount
   auctionDetails.minimumPriceInMoxie = order.price
@@ -299,6 +305,7 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   order.blockInfo = getOrCreateBlockInfo(event).id
   order.isExactOrder = false
   order.encodedOrderId = getEncodedOrderId(userId, buyAmount, sellAmount)
+  order.lastUpdatedIndex =  updateOrderCounter()
   order.save()
 
   let orders: string[] = []
@@ -314,6 +321,7 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   }
   activeOrders.push(order.id)
   auctionDetails.activeOrders = activeOrders
+  auctionDetails.activeOrderCount = BigInt.fromI32(activeOrders.length)
 
   // Check if auctionId is present in participatedAuction list. If not, add it.
   let participatedAuctions = user.participatedAuctions
@@ -322,11 +330,12 @@ export function handleNewSellOrder(event: NewSellOrder): void {
     user.participatedAuctions = participatedAuctions
   }
   user.save()
+  auctionDetails.currentBiddingAmount = auctionDetails.currentBiddingAmount.plus(order.sellAmount)
   auctionDetails.currentSubjectTokenBidAmount = auctionDetails.currentSubjectTokenBidAmount.plus(order.buyAmount)
   auctionDetails.totalOrders = auctionDetails.totalOrders.plus(ONE)
   auctionDetails.save()
 
-  updateAuctionStats(auctionDetails.auctionId)
+  updateAuctionStats(auctionDetails)
 
   // adding order transaction
   createOrderTxn(event, orderId, ORDER_STATUS_PLACED)
