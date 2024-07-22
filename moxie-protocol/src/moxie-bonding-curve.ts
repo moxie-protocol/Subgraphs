@@ -2,11 +2,9 @@ import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { Order, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectFeeTransfer, Summary, User } from "../generated/schema"
 
-import { handleBondingCurveInitializedTx, handleSubjectSharePurchasedTx, handleSubjectShareSoldTx, handleUpdateBeneficiaryTx, handleUpdateFeesTx, handleUpdateFormulaTx } from "./moxie-bonding-curve-tx"
 import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, createUserProtocolOrder, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, loadProtocolOrder, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, saveSubjectTokenAndSnapshots } from "./utils"
 import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL, SUMMARY_ID } from "./constants"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
-  handleBondingCurveInitializedTx(event)
   let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, null, event.block)
   subjectToken.reserveRatio = event.params._reserveRatio
   subjectToken.initialSupply = event.params._initialSupply // initial supply of subject token
@@ -48,7 +46,6 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   // _beneficiary.portfolio.balance += _buyAmount
   // _beneficiary.portfolio.protocolTokenInvested += 0
 
-  handleSubjectSharePurchasedTx(event)
   const fees = calculateBuySideFee(event.params._sellAmount)
   let protocolTokenSpentAfterFees = event.params._sellAmount.minus(fees.protocolFee).minus(fees.subjectFee)
 
@@ -164,7 +161,6 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   // _beneficiary.portfolio.balance -= 0
   // _beneficiary.portfolio.protocolTokenInvested += 0
-  handleSubjectShareSoldTx(event)
 
   const fees = calculateSellSideFee(event.params._buyAmount)
   let protocolTokenSpentAfterFees = event.params._buyAmount.minus(fees.protocolFee).minus(fees.subjectFee)
@@ -255,22 +251,16 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 }
 
 export function handleUpdateBeneficiary(event: UpdateBeneficiary): void {
-  handleUpdateBeneficiaryTx(event)
   handleNewBeneficiary(event.params._beneficiary)
 }
 
 export function handleUpdateFees(event: UpdateFees): void {
-  handleUpdateFeesTx(event)
   let summary = getOrCreateSummary()
   summary.protocolBuyFeePct = event.params._protocolBuyFeePct
   summary.protocolSellFeePct = event.params._protocolSellFeePct
   summary.subjectBuyFeePct = event.params._subjectBuyFeePct
   summary.subjectSellFeePct = event.params._subjectSellFeePct
   summary.save()
-}
-
-export function handleUpdateFormula(event: UpdateFormula): void {
-  handleUpdateFormulaTx(event)
 }
 
 export function handleInitialized(event: Initialized): void {

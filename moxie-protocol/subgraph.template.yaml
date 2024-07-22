@@ -111,8 +111,6 @@ dataSources:
           handler: handleUpdateBeneficiary
         - event: UpdateFees(uint256,uint256,uint256,uint256)
           handler: handleUpdateFees
-        - event: UpdateFormula(address)
-          handler: handleUpdateFormula
         - event: Initialized(uint64)
           handler: handleInitialized
       file: ./src/moxie-bonding-curve.ts
