@@ -12,6 +12,8 @@ type SubjectTokenRollingDailySnapshot @entity {
   startTimestamp: BigInt!
   "end block timestamp"
   endTimestamp: BigInt!
+  "reference snapshot's end timestamp"
+  startReferenceTimestamp: BigInt!
   "subject token address"
   subjectToken: SubjectToken!
 

@@ -139,14 +139,13 @@ function getSnapshotId(subjectToken: SubjectToken, timestamp: BigInt): string {
 }
 
 /**
- * This function tries to load hourly snapshot for the last 24 hours
+ * This function tries to load hourly snapshot from previous daily snapshot
  * @param subjectToken
  * @param timestamp
  * @param latestSnapshotId
  * @returns
  */
-function loadSubjectTokenHourlySnapshotOneDayBack(subjectToken: SubjectToken, timestamp: BigInt): SubjectTokenHourlySnapshot {
-  let time24HourAgo = timestamp.minus(SECONDS_IN_DAY)
+function loadClosestSubjectTokenHourlySnapshotInPreviousDailySnapshot(subjectToken: SubjectToken, timestamp: BigInt): SubjectTokenHourlySnapshot {
   if (!subjectToken.previousDailySnapshot) {
     throw new Error("Previous daily snapshot not found for subject token: " + subjectToken.id + " and timestamp: " + timestamp.toString())
   }
@@ -154,7 +153,7 @@ function loadSubjectTokenHourlySnapshotOneDayBack(subjectToken: SubjectToken, ti
   if (!previousDailySnapshot) {
     throw new Error("Previous daily snapshot not loading for subject token: " + subjectToken.id + " and timestamp: " + timestamp.toString())
   }
-  let snapshotTimestamp = findClosest(previousDailySnapshot.hourlySnapshotEndTimestamps, time24HourAgo)
+  let snapshotTimestamp = findClosest(previousDailySnapshot.hourlySnapshotEndTimestamps, timestamp)
 
   let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
   let snapshot = SubjectTokenHourlySnapshot.load(snapshotId)
@@ -236,12 +235,14 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
  */
 function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
   let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_HOUR)).plus(SECONDS_IN_HOUR)
+  let time24HourAgo = timestamp.minus(SECONDS_IN_DAY)
   let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
   let snapshot = SubjectTokenRollingDailySnapshot.load(snapshotId)
   if (!snapshot) {
     snapshot = new SubjectTokenRollingDailySnapshot(snapshotId)
-    let hourlySnapshot = loadSubjectTokenHourlySnapshotOneDayBack(subjectToken, snapshotTimestamp)
-    snapshot.startTimestamp = hourlySnapshot.endTimestamp
+    let hourlySnapshot = loadClosestSubjectTokenHourlySnapshotInPreviousDailySnapshot(subjectToken, time24HourAgo)
+    snapshot.startTimestamp = time24HourAgo
+    snapshot.startReferenceTimestamp = hourlySnapshot.endTimestamp
     snapshot.startPrice = hourlySnapshot.endPrice
     snapshot.startUniqueHolders = hourlySnapshot.endUniqueHolders
     snapshot.startVolume = hourlySnapshot.endVolume
