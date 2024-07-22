@@ -16,7 +16,6 @@ dataSources:
       entities:
         - Subject
         - User
-        - TokenManagerTokenDeployedTx
       abis:
         - name: TokenManager
           file: ./abis/TokenManager.json
@@ -89,12 +88,6 @@ dataSources:
         - Subject
         - Portfolio
         - Order
-        - MoxieBondingCurveBondingCurveInitializedTx
-        - MoxieBondingCurveSubjectSharePurchasedTx
-        - MoxieBondingCurveSubjectShareSoldTx
-        - MoxieBondingCurveUpdateBeneficiaryTx
-        - MoxieBondingCurveUpdateFeesTx
-        - MoxieBondingCurveUpdateFormulaTx
       abis:
         - name: MoxieBondingCurve
           file: ./abis/MoxieBondingCurve.json
@@ -127,9 +120,6 @@ dataSources:
       language: wasm/assemblyscript
       entities:
         - AuctioningToken
-        - AuctionCancellationSellOrderTx
-        - AuctionClaimedFromOrderTx
-        - AuctionNewSellOrderTx
       abis:
         - name: EasyAuction
           file: ./abis/EasyAuction.json
@@ -142,6 +132,8 @@ dataSources:
           handler: handleNewAuction
         - event: AuctionCleared(indexed uint256,uint96,uint96,bytes32)
           handler: handleAuctionCleared
+        - event: UserRegistration(indexed address,uint64)
+          handler: handleUserRegistration
       file: ./src/auction.ts
 
 templates:
@@ -157,7 +149,6 @@ templates:
       file: ./src/subject-token.ts
       entities:
         - Subject
-        - SubjectTokenTransferTx
       abis:
         - name: ERC20
           file: ./abis/ERC20.json

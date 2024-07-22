@@ -398,22 +398,6 @@ export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: Block
   subjectFeeTransfer.save()
 }
 
-export function createUserProtocolOrder(user: User, order: Order, block: ethereum.Block): void {
-  user.protocolOrdersCount = user.protocolOrdersCount.plus(BigInt.fromI32(1))
-  saveUser(user, block)
-
-  order.userProtocolOrderIndex = user.protocolOrdersCount
-  order.save()
-
-  let entityId = user.id.concat("-").concat(user.protocolOrdersCount.toString())
-  let userProtocolOrder = new UserProtocolOrder(entityId)
-  userProtocolOrder.user = user.id
-  userProtocolOrder.order = order.id
-  userProtocolOrder.subjectToken = order.subjectToken
-  userProtocolOrder.userProtocolOrderIndex = user.protocolOrdersCount
-  userProtocolOrder.save()
-}
-
 export function loadProtocolOrder(user: User, index: BigInt): Order {
   let entityId = user.id.concat("-").concat(index.toString())
   let userProtocolOrder = UserProtocolOrder.load(entityId)
