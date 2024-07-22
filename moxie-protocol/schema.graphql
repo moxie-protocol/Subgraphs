@@ -244,10 +244,18 @@ enum OnboardingStatus {
   OnboardingFinished
 }
 
-"data from subjectOnboardingFinished event"
 type Auction @entity {
+  "auctionid"
   id: ID!
 
+  minFundingThreshold: BigInt!
+  minFundingThresholdNotReached: Boolean!
+
+  clearingUserId: BigInt!
+  clearingBuyAmount: BigInt!
+  clearingSellAmount: BigInt!
+  clearingPrice: BigDecimal!
+  volumeClearingPriceOrder: BigInt!
   subjectToken: SubjectToken
   "_bondingAmount + _protocolFee + _subjectFee -> from auction , should be added in summary buyVolume "
   amountRaised: BigInt!
@@ -451,74 +459,12 @@ type Summary @entity {
   totalSubjectFeeFromAuction: BigInt!
 }
 
-type MoxieTransferTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  from: Bytes!
-  to: Bytes!
-  value: BigInt!
-  txn: Transaction!
-}
-
-type AuctionNewSellOrderTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  "auctioning token/subject token"
-  subjectToken: SubjectToken!
-  userId: BigInt!
-  buyAmount: BigInt!
-  sellAmount: BigInt!
-  txn: Transaction!
-}
-
-type AuctionClaimedFromOrderTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  "auctioning token /subject token"
-  subjectToken: SubjectToken!
-  userId: BigInt!
-  buyAmount: BigInt!
-  sellAmount: BigInt!
-  txn: Transaction!
-}
-
-type AuctionCancellationSellOrderTx @entity {
-  "txHash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  "auctioning token /subject token"
-  subjectToken: SubjectToken!
-  userId: BigInt!
-  buyAmount: BigInt!
-  sellAmount: BigInt!
-  txn: Transaction!
-}
-
-type AuctioningToken @entity {
-  "auctionId"
-  id: ID!
-  "auctioning token /subject token"
-  subjectToken: SubjectToken!
-}
-
 type AuctionOrder @entity {
-  "subjectId+-+userId+-+buyAmount+-+sellAmount"
   id: ID!
-  "associated protocol order"
-  order: Order!
-  auctionClaimedFromOrderTx: AuctionClaimedFromOrderTx
-  auctionCancellationSellOrderTx: AuctionCancellationSellOrderTx
-  auctionNewSellOrderTx: AuctionNewSellOrderTx
-}
-
-type Transaction @entity {
-  "txhash"
-  id: ID!
-  moxieTransferTx: [MoxieTransferTx!]! @derivedFrom(field: "txn")
-  auctionClaimedFromOrderTx: [AuctionClaimedFromOrderTx!]! @derivedFrom(field: "txn")
-  auctionNewSellOrderTx: [AuctionNewSellOrderTx!]! @derivedFrom(field: "txn")
-  auctionCancellationSellOrderTx: [AuctionCancellationSellOrderTx!]! @derivedFrom(field: "txn")
+  auction: Auction!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+  reward: BigInt!
+  refund: BigInt!
 }

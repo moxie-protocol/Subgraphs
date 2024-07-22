@@ -1,6 +1,6 @@
-import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store } from "@graphprotocol/graph-ts"
+import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { Transaction, BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, UserProtocolOrder, SubjectTokenRollingDailySnapshot, Auction } from "../generated/schema"
+import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, UserProtocolOrder, SubjectTokenRollingDailySnapshot, Auction } from "../generated/schema"
 import { ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
 
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, auction: Auction | null, block: ethereum.Block): SubjectToken {
@@ -375,15 +375,6 @@ export function calculateSellSideFee(_depositAmount: BigInt): Fees {
   return new Fees(protocolFee_, subjectFee_)
 }
 
-export function getOrCreateTransactionId(txHash: Bytes): string {
-  let transaction = Transaction.load(txHash.toHexString())
-  if (!transaction) {
-    transaction = new Transaction(txHash.toHexString())
-    transaction.save()
-  }
-  return transaction.id
-}
-
 export function createProtocolFeeTransfer(event: ethereum.Event, blockInfo: BlockInfo, order: Order, subjectToken: SubjectToken, beneficiary: ProtocolFeeBeneficiary, fee: BigInt): void {
   let protocolFeeTransfer = new ProtocolFeeTransfer(getTxEntityId(event))
   protocolFeeTransfer.txHash = event.transaction.hash
@@ -455,4 +446,34 @@ function findClosest(arr: Array<BigInt>, target: BigInt): BigInt {
   }
 
   return closest
+}
+
+export class AuctionOrderClass {
+  userId: BigInt
+  buyAmount: BigInt
+  sellAmount: BigInt
+  constructor(_userId: BigInt, _buyAmount: BigInt, _sellAmount: BigInt) {
+    this.userId = _userId
+    this.buyAmount = _buyAmount
+    this.sellAmount = _sellAmount
+  }
+  smallerThan(orderRight: AuctionOrderClass): bool {
+    if (this.buyAmount.times(orderRight.sellAmount) < orderRight.buyAmount.times(this.sellAmount)) return true
+    if (this.buyAmount.times(orderRight.sellAmount) > orderRight.buyAmount.times(this.sellAmount)) return false
+    if (this.buyAmount < orderRight.buyAmount) return true
+    if (this.buyAmount > orderRight.buyAmount) return false
+    if (this.userId < orderRight.userId) return true
+    return false
+  }
+}
+
+export function decodeOrder(encodedOrderId: Bytes): AuctionOrderClass {
+  let clearingPriceOrder = encodedOrderId.toHexString()
+  let userIdHex = "0x" + clearingPriceOrder.substring(2, 18)
+  let buyAmountHex = "0x" + clearingPriceOrder.substring(19, 42)
+  let sellAmountHex = "0x" + clearingPriceOrder.substring(43, 66)
+  let userId = BigInt.fromString(BigDecimal.fromString(parseInt(userIdHex).toString()).toString())
+  let buyAmount = BigInt.fromString(BigDecimal.fromString(parseInt(buyAmountHex).toString()).toString())
+  let sellAmount = BigInt.fromString(BigDecimal.fromString(parseInt(sellAmountHex).toString()).toString())
+  return new AuctionOrderClass(userId, buyAmount, sellAmount)
 }

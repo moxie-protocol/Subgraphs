@@ -1,64 +1,84 @@
-import { BigInt } from "@graphprotocol/graph-ts"
-import { NewAuction, NewSellOrder, ClaimedFromOrder, CancellationSellOrder } from "../generated/EasyAuction/EasyAuction"
-import { AuctionCancellationSellOrderTx, AuctionClaimedFromOrderTx, AuctioningToken, AuctionNewSellOrderTx } from "../generated/schema"
-import { getOrCreateTransactionId, getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary } from "./utils"
-
-export function handleNewSellOrder(event: NewSellOrder): void {
-  let auctioningToken = loadAuctioningToken(event.params.auctionId.toString())
-  let newSellOrder = new AuctionNewSellOrderTx(getTxEntityId(event))
-  newSellOrder.subjectToken = auctioningToken.subjectToken
-  newSellOrder.txHash = event.transaction.hash
-  newSellOrder.txn = getOrCreateTransactionId(event.transaction.hash)
-  newSellOrder.userId = event.params.userId
-  newSellOrder.buyAmount = event.params.buyAmount
-  newSellOrder.sellAmount = event.params.sellAmount
-  newSellOrder.save()
-
-  let summary = getOrCreateSummary()
-  summary.numberOfAuctionOrders = summary.numberOfAuctionOrders.plus(BigInt.fromI32(1))
-  summary.save()
-}
+import { BigInt, BigDecimal, Bytes } from "@graphprotocol/graph-ts"
+import { NewAuction, ClaimedFromOrder, AuctionCleared, EasyAuction } from "../generated/EasyAuction/EasyAuction"
+import { Auction, AuctionOrder, Order } from "../generated/schema"
+import { getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass } from "./utils"
 
 export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
-  let auctioningToken = loadAuctioningToken(event.params.auctionId.toString())
-  let claimedFromOrder = new AuctionClaimedFromOrderTx(getTxEntityId(event))
-  claimedFromOrder.subjectToken = auctioningToken.subjectToken
-  claimedFromOrder.txn = getOrCreateTransactionId(event.transaction.hash)
-  claimedFromOrder.txHash = event.transaction.hash
+  let auction = Auction.load(event.params.auctionId.toString())
+  if (!auction) {
+    throw new Error("Auction not loaded: auctionId : " + event.params.auctionId.toString())
+  }
+  // calculate refund and reward
+  let order = new AuctionOrder(getTxEntityId(event))
+  order.auction = auction.id
+  order.buyAmount = event.params.buyAmount
+  order.sellAmount = event.params.sellAmount
+  order.userId = event.params.userId
+  let auctionOrderObj = new AuctionOrderClass(order.userId, order.buyAmount, order.sellAmount)
+  let clearingOrderObj = new AuctionOrderClass(auction.clearingUserId, auction.clearingBuyAmount, auction.clearingSellAmount)
 
-  claimedFromOrder.userId = event.params.userId
-  claimedFromOrder.buyAmount = event.params.buyAmount
-  claimedFromOrder.sellAmount = event.params.sellAmount
-  claimedFromOrder.save()
-}
+  let sumBiddingTokenAmount = BigInt.zero()
+  let sumAuctioningTokenAmount = BigInt.zero()
 
-export function handleCancellationSellOrder(event: CancellationSellOrder): void {
-  let auctioningToken = loadAuctioningToken(event.params.auctionId.toString())
-  let cancellationSellOrder = new AuctionCancellationSellOrderTx(getTxEntityId(event))
-  cancellationSellOrder.txn = getOrCreateTransactionId(event.transaction.hash)
-  cancellationSellOrder.txHash = event.transaction.hash
+  let priceNumerator = auction.clearingBuyAmount
+  let priceDenominator = auction.clearingSellAmount
 
-  cancellationSellOrder.subjectToken = auctioningToken.subjectToken
-  cancellationSellOrder.userId = event.params.userId
-  cancellationSellOrder.buyAmount = event.params.buyAmount
-  cancellationSellOrder.sellAmount = event.params.sellAmount
-  cancellationSellOrder.save()
-
-  let summary = getOrCreateSummary()
-  summary.numberOfAuctionOrders = summary.numberOfAuctionOrders.minus(BigInt.fromI32(1))
-  summary.save()
+  if (auction.minFundingThresholdNotReached) {
+    sumBiddingTokenAmount = order.sellAmount
+  } else {
+    if (auction.clearingBuyAmount.equals(order.buyAmount) && auction.clearingSellAmount.equals(order.sellAmount) && auction.clearingUserId.equals(order.userId)) {
+      sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(auction.volumeClearingPriceOrder).times(priceNumerator).div(priceDenominator)
+      sumBiddingTokenAmount = sumBiddingTokenAmount.plus(order.sellAmount.minus(auction.volumeClearingPriceOrder))
+    } else {
+      if (auctionOrderObj.smallerThan(clearingOrderObj)) {
+        sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(order.sellAmount).times(priceNumerator).div(priceDenominator)
+      } else {
+        sumBiddingTokenAmount = sumBiddingTokenAmount.plus(order.sellAmount)
+      }
+    }
+  }
+  order.reward = sumAuctioningTokenAmount // subject token
+  order.refund = sumBiddingTokenAmount // moxie
+  order.save()
 }
 
 export function handleNewAuction(event: NewAuction): void {
-  let auctioningToken = new AuctioningToken(event.params.auctionId.toString())
-  auctioningToken.subjectToken = getOrCreateSubjectToken(event.params._auctioningToken, null, event.block).id
-  auctioningToken.save()
+  // minFundingThresholdNotReached = event.params.minFundingThresholdNotReached need to see
+  let auction = new Auction(event.params.auctionId.toString())
+  auction.minFundingThreshold = event.params.minFundingThreshold
+  auction.auctionEndDate = event.params.auctionEndDate
+
+  auction.clearingUserId = BigInt.zero()
+  auction.clearingBuyAmount = BigInt.zero()
+  auction.clearingSellAmount = BigInt.zero()
+  auction.clearingPrice = BigDecimal.zero()
+  auction.amountRaised = BigInt.zero()
+  auction.subjectFee = BigInt.zero()
+  auction.protocolFee = BigInt.zero()
+  auction.startTxHash = event.transaction.hash
+  auction.startBlockInfo = getOrCreateBlockInfo(event.block).id
+  auction.minFundingThresholdNotReached = false
+  auction.volumeClearingPriceOrder = BigInt.zero()
+  auction.save()
 }
 
-export function loadAuctioningToken(auctionId: string): AuctioningToken {
-  let auctioningToken = AuctioningToken.load(auctionId)
-  if (auctioningToken == null) {
-    throw new Error("Auctioning token not found for auctionId: " + auctionId)
+export function handleAuctionCleared(event: AuctionCleared): void {
+  let easyAuction = EasyAuction.bind(event.address)
+
+  let auctionDetails = easyAuction.auctionData(event.params.auctionId)
+  let decodedOrder = decodeOrder(event.params.clearingPriceOrder)
+
+  let auction = Auction.load(event.params.auctionId.toString())
+  if (!auction) {
+    throw new Error("Auction not loaded: auctionId : " + event.params.auctionId.toString())
   }
-  return auctioningToken as AuctioningToken
+  auction.clearingUserId = decodedOrder.userId
+  auction.clearingBuyAmount = decodedOrder.buyAmount
+  auction.clearingSellAmount = decodedOrder.sellAmount
+  let currentBidSum = event.params.soldBiddingTokens
+  if (auction.minFundingThreshold.gt(currentBidSum)) {
+    auction.minFundingThresholdNotReached = true
+  }
+  auction.volumeClearingPriceOrder = auctionDetails.value9
+  auction.save()
 }
