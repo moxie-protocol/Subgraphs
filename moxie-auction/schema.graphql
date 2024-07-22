@@ -40,6 +40,7 @@ type Order @entity {
   isExactOrder: Boolean!
   "encoded orderId representing userId,buyAmount,sellAmount"
   encodedOrderId: String!
+  lastUpdatedIndex: BigInt!
 }
 
 type OrderTxn @entity {
@@ -109,6 +110,8 @@ type AuctionDetail @entity {
   isCleared: Boolean!
   "totalOrders which are not cancelled"
   totalOrders: BigInt!
+  "number of active bids"
+  activeOrderCount: BigInt!
 
   "transaction hash of the auction creation"
   txHash: Bytes!
@@ -244,4 +247,9 @@ type UserRegistration @entity {
   blockInfo: BlockInfo!
   user: Bytes!
   userId: BigInt!
+}
+
+type OrderCounter @entity {
+  id: ID!
+  counter: BigInt!
 }
