@@ -30,7 +30,6 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, auction: A
     if (auction) {
       subjectToken.auction = auction.id
     }
-    subjectToken.hourlySnapshotEndTimestamps = []
     saveSubjectToken(subjectToken, block)
   }
   return subjectToken
@@ -88,7 +87,10 @@ export function saveUser(user: User, block: ethereum.Block): void {
   user.save()
 }
 
-function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
+/**
+ * Creates a new hourly snapshot for the subject token and returns the timestamp of the snapshot
+ */
+function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp: BigInt): BigInt {
   let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_HOUR)).plus(SECONDS_IN_HOUR)
   let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
   let snapshot = SubjectTokenHourlySnapshot.load(snapshotId)
@@ -102,9 +104,6 @@ function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp:
     snapshot.startProtocolFee = subjectToken.protocolFee
     snapshot.createdAtBlockInfo = subjectToken.createdAtBlockInfo
 
-    let hourlySnapshotEndTimestamps = subjectToken.hourlySnapshotEndTimestamps
-    hourlySnapshotEndTimestamps.push(snapshotTimestamp)
-    subjectToken.hourlySnapshotEndTimestamps = hourlySnapshotEndTimestamps
     subjectToken.save()
   }
   snapshot.endTimestamp = snapshotTimestamp
@@ -131,6 +130,8 @@ function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp:
   snapshot.hourlyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
   snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
   snapshot.save()
+
+  return snapshotTimestamp
 }
 
 function getSnapshotId(subjectToken: SubjectToken, timestamp: BigInt): string {
@@ -146,8 +147,14 @@ function getSnapshotId(subjectToken: SubjectToken, timestamp: BigInt): string {
  */
 function loadSubjectTokenHourlySnapshotOneDayBack(subjectToken: SubjectToken, timestamp: BigInt): SubjectTokenHourlySnapshot {
   let time24HourAgo = timestamp.minus(SECONDS_IN_DAY)
-
-  let snapshotTimestamp = findClosest(subjectToken.hourlySnapshotEndTimestamps, time24HourAgo)
+  if (!subjectToken.previousDailySnapshot) {
+    throw new Error("Previous daily snapshot not found for subject token: " + subjectToken.id + " and timestamp: " + timestamp.toString())
+  }
+  let previousDailySnapshot = SubjectTokenDailySnapshot.load(subjectToken.previousDailySnapshot!)
+  if (!previousDailySnapshot) {
+    throw new Error("Previous daily snapshot not loading for subject token: " + subjectToken.id + " and timestamp: " + timestamp.toString())
+  }
+  let snapshotTimestamp = findClosest(previousDailySnapshot.hourlySnapshotEndTimestamps, time24HourAgo)
 
   let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
   let snapshot = SubjectTokenHourlySnapshot.load(snapshotId)
@@ -157,10 +164,11 @@ function loadSubjectTokenHourlySnapshotOneDayBack(subjectToken: SubjectToken, ti
   return snapshot
 }
 
-function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
+function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: BigInt, lastHourlySnapshotEndTimestamp: BigInt): void {
   let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_DAY)).plus(SECONDS_IN_DAY)
   let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
   let snapshot = SubjectTokenDailySnapshot.load(snapshotId)
+  let justCreated = false
   if (!snapshot) {
     snapshot = new SubjectTokenDailySnapshot(snapshotId)
     snapshot.startTimestamp = timestamp
@@ -170,6 +178,8 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
     snapshot.startSubjectFee = subjectToken.subjectFee
     snapshot.startProtocolFee = subjectToken.protocolFee
     snapshot.createdAtBlockInfo = subjectToken.createdAtBlockInfo
+    snapshot.hourlySnapshotEndTimestamps = []
+    justCreated = true
   }
   snapshot.endTimestamp = snapshotTimestamp
 
@@ -194,15 +204,35 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
   snapshot.endProtocolFee = subjectToken.protocolFee
   snapshot.dailyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
   snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
+
+  let hourlySnapshotEndTimestamps = snapshot.hourlySnapshotEndTimestamps
+  if (!hourlySnapshotEndTimestamps.includes(lastHourlySnapshotEndTimestamp)) {
+    hourlySnapshotEndTimestamps.push(lastHourlySnapshotEndTimestamp)
+  }
+  snapshot.hourlySnapshotEndTimestamps = hourlySnapshotEndTimestamps
   snapshot.save()
+
+  if (justCreated) {
+    // means we are creating a new daily snapshot for the first time
+    // subject token needs to be updated with the latest daily snapshot
+    if (!subjectToken.previousDailySnapshot) {
+      // adding previous daily snapshot for the first time
+      subjectToken.previousDailySnapshot = snapshotId
+    } else {
+      // setting previous daily snapshot to the latest daily from subjectToken, since we are creating a new daily snapshot
+      subjectToken.previousDailySnapshot = subjectToken.latestDailySnapshot
+    }
+    subjectToken.latestDailySnapshot = snapshotId
+    subjectToken.save()
+  }
 }
 
 /**
  * This function creates a rolling daily snapshot for the subject token
  * It takes a timestamp and finds the closest hourly snapshot 24 hour before as a startpoint
  * function also deletes the existing rolling daily snapshot for the subject token
- * @param subjectToken 
- * @param timestamp 
+ * @param subjectToken
+ * @param timestamp
  */
 function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
   let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_HOUR)).plus(SECONDS_IN_HOUR)
@@ -243,11 +273,12 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
   snapshot.endProtocolFee = subjectToken.protocolFee
   snapshot.dailyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
   snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
+
   snapshot.save()
 
   // deleting existing rolling daily snapshot for subject token
   let oldRollingDailySnapshot = subjectToken.latestRollingDailySnapshot
-  if (oldRollingDailySnapshot) {
+  if (oldRollingDailySnapshot && oldRollingDailySnapshot != snapshotId) {
     store.remove("SubjectTokenRollingDailySnapshot", oldRollingDailySnapshot)
   }
   subjectToken.latestRollingDailySnapshot = snapshotId
@@ -257,8 +288,12 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
 export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block): void {
   subject.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   subject.save()
-  createSubjectTokenHourlySnapshot(subject, block.timestamp)
-  createSubjectTokenDailySnapshot(subject, block.timestamp)
+}
+
+export function saveSubjectTokenAndSnapshots(subject: SubjectToken, block: ethereum.Block): void {
+  saveSubjectToken(subject, block)
+  let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subject, block.timestamp)
+  createSubjectTokenDailySnapshot(subject, block.timestamp, lastHourylSnapshotEndTimestamp)
   createSubjectTokenRollingDailySnapshot(subject, block.timestamp)
 }
 

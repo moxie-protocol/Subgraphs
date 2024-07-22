@@ -116,7 +116,9 @@ type SubjectTokenDailySnapshot @entity {
 
   createdAtBlockInfo: BlockInfo!
   updatedAtBlockInfo: BlockInfo!
-  initialHourlySnapshot: SubjectTokenHourlySnapshot
+  lastSubjectTokenDailySnapshot: SubjectTokenDailySnapshot
+
+  hourlySnapshotEndTimestamps: [BigInt!]!
 }
 
 type SubjectTokenHourlySnapshot @entity {
@@ -206,6 +208,8 @@ type SubjectToken @entity {
   hourlySnapshots: [SubjectTokenHourlySnapshot!]! @derivedFrom(field: "subjectToken")
   dailySnapshots: [SubjectTokenDailySnapshot!]! @derivedFrom(field: "subjectToken")
   latestRollingDailySnapshot: SubjectTokenRollingDailySnapshot
+  latestDailySnapshot: SubjectTokenDailySnapshot
+  previousDailySnapshot: SubjectTokenDailySnapshot
   "total beneficiary fees collected"
   subjectFee: BigInt!
   "total protocol fees collected"
@@ -232,8 +236,6 @@ type SubjectToken @entity {
 
   auction: Auction
   status: OnboardingStatus!
-
-  hourlySnapshotEndTimestamps: [BigInt!]!
 }
 enum OnboardingStatus {
   OnboardingInitialized
@@ -336,6 +338,10 @@ type Order @entity {
   subjectAmount: BigInt!
   "investment amount in moxie"
   protocolTokenInvested: BigDecimal!
+  "subject fee"
+  subjectFee: BigInt!
+  "protocol fee"
+  protocolFee: BigInt!
   "Price of the subject token"
   price: BigDecimal!
   "BUY/SELL order type"

@@ -24,6 +24,8 @@ export function handleTransfer(event: Transfer): void {
   if (auctionNewSellOrderTx) {
     // creating new Order
     let order = new Order(entityId)
+    order.subjectFee = BigInt.zero()
+    order.protocolFee = BigInt.zero()
     order.protocolToken = event.address
     order.protocolTokenAmount = event.params.value
     order.protocolTokenInvested = new BigDecimal(event.params.value)

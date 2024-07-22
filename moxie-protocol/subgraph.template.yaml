@@ -42,6 +42,8 @@ dataSources:
       abis:
         - name: SubjectFactory
           file: ./abis/SubjectFactory.json
+        - name: ERC20
+          file: ./abis/ERC20.json
       eventHandlers:
         - event: SubjectOnboardingInitiated(address,address,uint256,address,uint256,uint256)
           handler: handleSubjectOnboardingInitiated

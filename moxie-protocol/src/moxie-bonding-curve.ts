@@ -3,14 +3,18 @@ import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, Updat
 import { Order, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectFeeTransfer, Summary, User } from "../generated/schema"
 
 import { handleBondingCurveInitializedTx, handleSubjectSharePurchasedTx, handleSubjectShareSoldTx, handleUpdateBeneficiaryTx, handleUpdateFeesTx, handleUpdateFormulaTx } from "./moxie-bonding-curve-tx"
-import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, createUserProtocolOrder, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, loadProtocolOrder, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser } from "./utils"
+import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, createUserProtocolOrder, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, loadProtocolOrder, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, saveSubjectTokenAndSnapshots } from "./utils"
 import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL, SUMMARY_ID } from "./constants"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   handleBondingCurveInitializedTx(event)
   let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, null, event.block)
   subjectToken.reserveRatio = event.params._reserveRatio
-  subjectToken.initialSupply = event.params._initialSupply
-  saveSubjectToken(subjectToken, event.block)
+  subjectToken.initialSupply = event.params._initialSupply // initial supply of subject token
+  // price during initialization = reserve (moxie) / initial supply (subject token)
+  let price = event.params._reserve.divDecimal(new BigDecimal(event.params._initialSupply))
+  subjectToken.currentPriceinMoxie = price
+  subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
+  saveSubjectTokenAndSnapshots(subjectToken, event.block)
 }
 
 export function handleSubjectSharePurchased(event: SubjectSharePurchased): void {
@@ -45,9 +49,13 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   // _beneficiary.portfolio.protocolTokenInvested += 0
 
   handleSubjectSharePurchasedTx(event)
+  const fees = calculateBuySideFee(event.params._sellAmount)
+  let protocolTokenSpentAfterFees = event.params._sellAmount.minus(fees.protocolFee).minus(fees.subjectFee)
+
   const blockInfo = getOrCreateBlockInfo(event.block)
   // calculating price here the sell amount will be in protocol token and buy amount is protocol token since it's a buy
-  let price = event.params._sellAmount.divDecimal(new BigDecimal(event.params._buyAmount))
+  let price = protocolTokenSpentAfterFees.divDecimal(new BigDecimal(event.params._buyAmount))
+  // TODO: need to fix for spender
   let user = getOrCreateUser(event.params._beneficiary, event.block)
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, null, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params._sellAmount)
@@ -64,6 +72,8 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   order.subjectAmount = event.params._buyAmount
   order.orderType = BUY
   order.user = user.id
+  order.subjectFee = fees.subjectFee
+  order.protocolFee = fees.protocolFee
   order.price = price
   order.auctionOrderStatus = NA
   order.blockInfo = blockInfo.id
@@ -100,7 +110,6 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
     throw new Error("protocol beneficiary not found")
   }
   const txHash = event.transaction.hash.toHexString()
-  const fees = calculateBuySideFee(event.params._sellAmount)
   summary.totalProtocolFee = summary.totalProtocolFee.plus(fees.protocolFee)
   summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
@@ -111,7 +120,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 
   subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
   subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
-  saveSubjectToken(subjectToken, event.block)
+  saveSubjectTokenAndSnapshots(subjectToken, event.block)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()
@@ -156,10 +165,13 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // _beneficiary.portfolio.balance -= 0
   // _beneficiary.portfolio.protocolTokenInvested += 0
   handleSubjectShareSoldTx(event)
+
+  const fees = calculateSellSideFee(event.params._buyAmount)
+  let protocolTokenSpentAfterFees = event.params._buyAmount.minus(fees.protocolFee).minus(fees.subjectFee)
+
   const blockInfo = getOrCreateBlockInfo(event.block)
   // calculating price here the sell amount will be subject token and buy amount is protocol token since it's a sell
-  log.warning("txhash {} sellAmount {} buyAmount {} ", [event.transaction.hash.toHexString(), event.params._sellAmount.toString(), event.params._buyAmount.toString()])
-  let price = event.params._buyAmount.divDecimal(new BigDecimal(event.params._sellAmount))
+  let price = protocolTokenSpentAfterFees.divDecimal(new BigDecimal(event.params._sellAmount))
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, null, event.block)
   subjectToken.currentPriceinMoxie = price
   subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
@@ -179,6 +191,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.orderType = SELL
   order.user = user.id
   order.price = price
+  order.subjectFee = fees.subjectFee
+  order.protocolFee = fees.protocolFee
   order.blockInfo = blockInfo.id
   order.auctionOrderStatus = NA
   order.userProtocolOrderIndex = BigInt.fromI32(0)
@@ -205,7 +219,6 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
     throw new Error("protocol beneficiary not found")
   }
   let txHash = event.transaction.hash.toHexString()
-  const fees = calculateSellSideFee(event.params._sellAmount)
 
   createSubjectFeeTransfer(event, blockInfo, order, subjectToken, fees.subjectFee)
 
@@ -223,7 +236,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
   subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
   subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(event.params._buyAmount)
-  saveSubjectToken(subjectToken, event.block)
+  saveSubjectTokenAndSnapshots(subjectToken, event.block)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()
