@@ -1,7 +1,7 @@
 import { BigInt, BigDecimal, Bytes, Address, log } from "@graphprotocol/graph-ts"
 import { NewAuction, ClaimedFromOrder, AuctionCleared, EasyAuction, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Auction, AuctionUser, Order } from "../generated/schema"
-import { getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, saveSubjectTokenAndSnapshots, Price } from "./utils"
+import { getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, saveSubjectTokenAndSnapshots, CalculatePrice } from "./utils"
 import { ORDER_TYPE_AUCTION } from "./constants"
 
 class AuctionAndOrder {
@@ -73,7 +73,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
     log.warning("Subject amount is zero, txHash: {}", [event.transaction.hash.toHexString()])
     return
   }
-  let price = new Price(protocolTokenAmount, subjectAmount)
+  let calculatedPrice = new CalculatePrice(protocolTokenAmount, subjectAmount)
   let order = new Order(getTxEntityId(event))
   order.protocolToken = auctionAndOrder.auction.protocolToken
   order.protocolTokenAmount = protocolTokenAmount
@@ -85,7 +85,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   order.user = auctionAndOrder.user.id
   order.subjectFee = BigInt.zero()
   order.protocolFee = BigInt.zero()
-  order.price = price.price
+  order.price = calculatedPrice.price
   order.blockInfo = blockInfo.id
 
   // updating user's portfolio
@@ -114,8 +114,8 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(protocolTokenAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
 
-  subjectToken.currentPriceInMoxie = price.price
-  subjectToken.currentPriceInWeiInMoxie = price.priceInWei
+  subjectToken.currentPriceInMoxie = calculatedPrice.price
+  subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   saveSubjectTokenAndSnapshots(subjectToken, event.block)
 }

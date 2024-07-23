@@ -1,5 +1,4 @@
-import { Address, BigInt } from "@graphprotocol/graph-ts"
-import { dataSource } from "@graphprotocol/graph-ts"
+import { BigInt } from "@graphprotocol/graph-ts"
 
 export const SECONDS_IN_HOUR = BigInt.fromI32(60 * 60)
 export const SECONDS_IN_DAY = SECONDS_IN_HOUR.times(BigInt.fromI32(24))
@@ -17,3 +16,5 @@ export const ORDER_TYPE_AUCTION = "AUCTION"
 
 export const ONBOARDING_STATUS_ONBOARDING_INITIALIZED = "OnboardingInitialized"
 export const ONBOARDING_STATUS_ONBOARDING_FINISHED = "OnboardingFinished"
+
+export const TOKEN_DECIMALS = BigInt.fromI32(18)

@@ -1,7 +1,7 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction } from "../generated/schema"
-import { ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
+import { ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS } from "./constants"
 
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, auction: Auction | null, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
@@ -10,12 +10,12 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, auction: A
     let token = ERC20.bind(subjectTokenAddress)
     subjectToken.name = token.name()
     subjectToken.symbol = token.symbol()
-    subjectToken.decimals = BigInt.fromI32(token.decimals())
+    subjectToken.decimals = TOKEN_DECIMALS
     // setting default values for now
     subjectToken.reserve = BigInt.zero()
     subjectToken.reserveRatio = BigInt.zero()
-    subjectToken.currentPriceInMoxie = BigDecimal.fromString("0")
-    subjectToken.currentPriceInWeiInMoxie = BigDecimal.fromString("0")
+    subjectToken.currentPriceInMoxie = BigDecimal.zero()
+    subjectToken.currentPriceInWeiInMoxie = BigDecimal.zero()
     subjectToken.totalSupply = BigInt.zero()
     subjectToken.initialSupply = BigInt.zero()
     subjectToken.uniqueHolders = BigInt.zero()
@@ -25,7 +25,7 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, auction: A
     subjectToken.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     subjectToken.buySideVolume = BigInt.zero()
     subjectToken.sellSideVolume = BigInt.zero()
-    subjectToken.protocolTokenInvested = BigDecimal.fromString("0")
+    subjectToken.protocolTokenInvested = BigDecimal.zero()
     subjectToken.status = ONBOARDING_STATUS_ONBOARDING_INITIALIZED
     if (auction) {
       subjectToken.auction = auction.id
@@ -49,10 +49,9 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.user = user.id
     portfolio.subjectToken = subjectToken.id
     portfolio.balance = BigInt.zero()
-    log.info("Portfolio {} initialized {} balance: {}", [portfolioId, txHash.toHexString(), portfolio.balance.toString()])
     portfolio.buyVolume = BigInt.zero()
     portfolio.sellVolume = BigInt.zero()
-    portfolio.protocolTokenInvested = BigDecimal.fromString("0")
+    portfolio.protocolTokenInvested = BigDecimal.zero()
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     portfolio.subjectTokenBuyVolume = BigInt.zero()
     savePortfolio(portfolio, block)
@@ -72,7 +71,7 @@ export function getOrCreateUser(userAddress: Address, block: ethereum.Block): Us
     user.subjectFeeTransfer = []
     user.buyVolume = BigInt.zero()
     user.sellVolume = BigInt.zero()
-    user.protocolTokenInvested = BigDecimal.fromString("0")
+    user.protocolTokenInvested = BigDecimal.zero()
     user.protocolOrdersCount = BigInt.zero()
     user.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     saveUser(user, block)
@@ -398,18 +397,19 @@ export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: Block
   subjectFeeTransfer.save()
 }
 
+function absBigInt(a: BigInt): BigInt {
+  if (a.lt(BigInt.zero())) {
+    return a.times(BigInt.fromI32(-1))
+  }
+  return a
+}
+
 function findClosest(arr: Array<BigInt>, target: BigInt): BigInt {
   let closest = arr[0]
-  let minDiff = target.minus(closest)
-  if (minDiff.lt(BigInt.zero())) {
-    minDiff = minDiff.times(BigInt.fromI32(-1))
-  }
+  let minDiff = absBigInt(target.minus(closest))
 
   for (let i = arr.length - 1; i >= 0; i--) {
-    let diff = target.minus(arr[i])
-    if (diff.lt(BigInt.zero())) {
-      diff = diff.times(BigInt.fromI32(-1))
-    }
+    let diff = absBigInt(target.minus(arr[i]))
     if (diff.lt(minDiff)) {
       closest = arr[i]
       minDiff = diff
@@ -428,6 +428,11 @@ export class AuctionOrderClass {
     this.buyAmount = _buyAmount
     this.sellAmount = _sellAmount
   }
+  /**
+   * Replicates behavior in contract
+   * @param orderRight
+   * @returns
+   */
   smallerThan(orderRight: AuctionOrderClass): bool {
     if (this.buyAmount.times(orderRight.sellAmount) < orderRight.buyAmount.times(this.sellAmount)) return true
     if (this.buyAmount.times(orderRight.sellAmount) > orderRight.buyAmount.times(this.sellAmount)) return false
@@ -448,7 +453,7 @@ export function decodeOrder(encodedOrderId: Bytes): AuctionOrderClass {
   let sellAmount = BigInt.fromString(BigDecimal.fromString(parseInt(sellAmountHex).toString()).toString())
   return new AuctionOrderClass(userId, buyAmount, sellAmount)
 }
-export class Price {
+export class CalculatePrice {
   price: BigDecimal
   priceInWei: BigDecimal
   constructor(protocolTokenAmount: BigInt, subjectTokenAmount: BigInt) {
