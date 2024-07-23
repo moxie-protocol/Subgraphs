@@ -22,7 +22,7 @@ dataSources:
         - name: ERC20
           file: ./abis/ERC20.json
       eventHandlers:
-        - event: TokenDeployed(address,address,uint256)
+        - event: TokenDeployed(indexed address,indexed address,uint256)
           handler: handleTokenDeployed
       file: ./src/token-manager.ts
   - kind: ethereum
@@ -71,11 +71,11 @@ dataSources:
         - name: ERC20
           file: ./abis/ERC20.json
       eventHandlers:
-        - event: BondingCurveInitialized(address,address,uint256,uint256,uint32)
+        - event: BondingCurveInitialized(indexed address,indexed address,uint256,uint256,uint32)
           handler: handleBondingCurveInitialized
-        - event: SubjectSharePurchased(address,address,uint256,address,uint256,address)
+        - event: SubjectSharePurchased(indexed address,indexed address,uint256,address,address,uint256,indexed address)
           handler: handleSubjectSharePurchased
-        - event: SubjectShareSold(address,address,uint256,address,uint256,address)
+        - event: SubjectShareSold(indexed address,indexed address,uint256,address,address,uint256,indexed address)
           handler: handleSubjectShareSold
         - event: UpdateFees(uint256,uint256,uint256,uint256)
           handler: handleUpdateFees

@@ -1,15 +1,15 @@
 {
   "network": "base-sepolia",
-  "EasyAuction": "0x28E8A1817Af21d39d6820Fd930FDE618e03d4d8d",
-  "EasyAuctionStartBlock": "12228929",
-  "TokenManager": "0xE665ceBF6111B6bCd8B84538D31F4048666B489a",
-  "TokenManagerStartBlock": "12228958",
-  "Vault": "0x2E412b90838dcD9dD336196558798D8ac3aF48dB",
-  "VaultStartBlock": "12228960",
-  "MoxieBondingCurve": "0x0f0EcB17575c232077075EF9d78fC9afad808B4D",
-  "MoxieBondingCurveStartBlock": "12228966",
-  "MoxieToken": "0xf80945fc1436b0ae8b86c8835f09870deeaf03d5",
-  "MoxieTokenStartBlock": "12228785",
-  "SubjectFactory": "0x3199219bda5dbC9ee45bb3DFad180be56A7ebfd0",
-  "SubjectFactoryStartBlock": "12228950"
+  "EasyAuction": "0x8EB6A9275637358Fea56D8431e85B6BB6F260853",
+  "EasyAuctionStartBlock": "12934136",
+  "TokenManager": "0xFd990aF1c711cC0fc46E66B22877B028aF7eF59C",
+  "TokenManagerStartBlock": "12934201",
+  "Vault": "0x3C1Fd0E625765A40fFd58adc4784603A07f5D05f",
+  "VaultStartBlock": "12934204",
+  "MoxieBondingCurve": "0xF80Fe11Ace879AD3695f8caA51be0368318C32fA",
+  "MoxieBondingCurveStartBlock": "12933779",
+  "MoxieToken": "0x5D7cb10515D07a1726A30AffFFEDBE3cc048C412",
+  "MoxieTokenStartBlock": "12933750",
+  "SubjectFactory": "0x9cE6e0c6282ac0050B1888656C5c5716a4Ef4BE8",
+  "SubjectFactoryStartBlock": "12934191"
 }
