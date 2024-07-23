@@ -5,12 +5,12 @@
 // While initiating an auction, the exactOrder/initialOrder sellAmount corresponds to AUT and buyAmount corresponds to BDT
 // While placing an order, the sellAmount corresponds to BDT and buyAmount corresponds to AUT
 
-import { Address, BigInt, BigDecimal, log, Bytes, ethereum } from "@graphprotocol/graph-ts"
-import { AuctionDetail, ClearingPriceOrder, OrderTxn, Token, User } from "../generated/schema"
+import { Address, BigInt, BigDecimal, log, Bytes, ethereum, ByteArray } from "@graphprotocol/graph-ts"
+import { AuctionDetail, ClearingPriceOrder, Token, User } from "../generated/schema"
 import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, NewAuction, NewSellOrder, NewUser, OwnershipTransferred, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Order } from "../generated/schema"
 
-import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, getOrCreateBlockInfo, getTxEntityId, getEncodedOrderId, createOrderTxn, updateOrderCounter } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, getOrCreateBlockInfo, getTxEntityId, getEncodedOrderId, updateOrderCounter, getClaimedAmounts } from "./utils"
 import { ORDER_STATUS_CANCELLED, ORDER_STATUS_CLAIMED, ORDER_STATUS_PLACED } from "./constants"
 
 const ZERO = BigInt.zero()
@@ -23,18 +23,14 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   const biddingTokensSold = event.params.soldBiddingTokens
 
   let auctionDetails = loadAuctionDetail(auctionId.toString())
-  let auctioningToken = loadToken(auctionDetails.auctioningToken)
-  let biddingToken = loadToken(auctionDetails.biddingToken)
-  const decimalAuctioningToken = auctioningToken.decimals
-  const decimalBiddingToken = biddingToken.decimals
 
   auctionDetails.currentClearingOrderBuyAmount = auctioningTokensSold
   auctionDetails.currentClearingOrderSellAmount = biddingTokensSold
-  const pricePoint = convertToPricePoint(biddingTokensSold, auctioningTokensSold, decimalAuctioningToken.toI32(), decimalBiddingToken.toI32())
+  const pricePoint = convertToPricePoint(biddingTokensSold, auctioningTokensSold, 18, 18)
   let calculatedCurrentClearingPrice = pricePoint.get("price")
   auctionDetails.currentVolume = pricePoint.get("volume")
   auctionDetails.currentBiddingAmount = biddingTokensSold
-  auctionDetails.interestScore = pricePoint.get("volume").div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
+  auctionDetails.interestScore = pricePoint.get("volume").div(TEN.pow(18).toBigDecimal())
   auctionDetails.isCleared = true
 
   let clearingPriceOrderString = event.params.clearingPriceOrder.toHexString()
@@ -43,6 +39,7 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   let buyAmount = "0x" + clearingPriceOrderString.substring(19, 42)
   let sellAmount = "0x" + clearingPriceOrderString.substring(43, 66)
 
+  auctionDetails.currentClearingOrderUserId = BigDecimal.fromString(parseInt(userId).toString())
   let sellAmountBigDec = BigDecimal.fromString(parseInt(sellAmount).toString())
   let buyAmountBigDec = BigDecimal.fromString(parseInt(buyAmount).toString())
   let clearingPriceFromContract = sellAmountBigDec.div(buyAmountBigDec)
@@ -58,6 +55,9 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   clearingPriceOrder.sellAmount = BigDecimal.fromString(parseInt(sellAmount).toString())
   clearingPriceOrder.save()
   auctionDetails.clearingPriceOrder = clearingPriceOrder.id
+  let easyAuction = EasyAuction.bind(event.address)
+  let auctionDetailFromRPC = easyAuction.auctionData(event.params.auctionId)
+  auctionDetails.volumeClearingPriceOrder = auctionDetailFromRPC.value9
   auctionDetails.save()
 }
 
@@ -74,18 +74,11 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
   let orderId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
   let order = loadOrder(orderId)
   if (order) {
+    order.finalTxHash = event.transaction.hash
     order.status = ORDER_STATUS_CANCELLED
     order.lastUpdatedIndex =  updateOrderCounter()
     order.save()
   }
-
-  // added cancelled order to cancelledOrders array
-  let cancelledOrders: string[] = []
-  if (auctionDetails.cancelledOrders) {
-    cancelledOrders = auctionDetails.cancelledOrders!
-  }
-  cancelledOrders.push(order.id)
-  auctionDetails.cancelledOrders = cancelledOrders
 
   // removing cancelled order from activeOrders array
   let activeOrders: string[] = []
@@ -104,8 +97,6 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
   auctionDetails.currentSubjectTokenBidAmount = auctionDetails.currentSubjectTokenBidAmount.minus(order.buyAmount)
   auctionDetails.save()
   updateAuctionStats(auctionDetails)
-
-  createOrderTxn(event, orderId, ORDER_STATUS_CANCELLED)
 }
 
 // Remove claimed orders
@@ -115,6 +106,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   let buyAmount = event.params.buyAmount
   let userId = event.params.userId
 
+  log.error("Tx Hash: {}", [event.transaction.hash.toHexString()])
   let auctionDetails = loadAuctionDetail(auctionId.toString())
 
   let orderId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
@@ -126,17 +118,14 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   }
   if (order) {
     order.status = ORDER_STATUS_CLAIMED
-    order.lastUpdatedIndex =  updateOrderCounter()
+    //Need to populate the refund amount, finalised buy and finalised sell
+    let amounts = getClaimedAmounts(order, auctionDetails)
+    order.refundAmount = amounts[0]
+    order.finalizedBuyAmount = amounts[1]
+    order.finalizedSellAmount = amounts[2]
+    order.finalTxHash = event.transaction.hash
     order.save()
   }
-
-  // added cancelled order to claimedOrders array
-  let claimedOrders: string[] = []
-  if (auctionDetails.claimedOrders) {
-    claimedOrders = auctionDetails.claimedOrders!
-  }
-  claimedOrders.push(order.id)
-  auctionDetails.claimedOrders = claimedOrders
 
   // Remove order from the list of orders in the activeOrders array
   let activeOrders: string[] = []
@@ -152,8 +141,6 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   auctionDetails.activeOrderCount = BigInt.fromI32(activeOrders.length)
   auctionDetails.save()
 
-  // adding order transaction
-  createOrderTxn(event, orderId, ORDER_STATUS_CLAIMED)
 }
 
 export function handleNewAuction(event: NewAuction): void {
@@ -176,7 +163,7 @@ export function handleNewAuction(event: NewAuction): void {
   let auctionContract = EasyAuction.bind(event.address)
   let isAtomicClosureAllowed = auctionContract.auctionData(auctionId).value11
 
-  let pricePoint = convertToPricePoint(sellAmount, buyAmount, biddingTokenDetails.decimals.toI32(), auctioningTokenDetails.decimals.toI32())
+  let pricePoint = convertToPricePoint(sellAmount, buyAmount, 18, 18)
 
   let isPrivateAuction = !allowListContract.equals(Address.zero())
 
@@ -195,6 +182,9 @@ export function handleNewAuction(event: NewAuction): void {
   order.isExactOrder = true
   order.encodedOrderId = getEncodedOrderId(userId, buyAmount, sellAmount)
   order.lastUpdatedIndex =  updateOrderCounter()
+  order.finalizedBuyAmount = new BigInt(0)
+  order.finalizedSellAmount = new BigInt(0)
+  order.refundAmount = new BigInt(0)
   order.save()
 
 
@@ -221,13 +211,12 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.currentVolume = BigDecimal.fromString("0")
   auctionDetails.currentClearingOrderSellAmount = new BigInt(0)
   auctionDetails.currentClearingOrderBuyAmount = new BigInt(0)
-  auctionDetails.orders = []
-  auctionDetails.claimedOrders = []
-  auctionDetails.cancelledOrders = []
+  auctionDetails.currentClearingOrderUserId = new BigDecimal(ZERO)
+  auctionDetails.volumeClearingPriceOrder = new BigInt(0)
   auctionDetails.activeOrders = []
   auctionDetails.activeOrderCount = new BigInt(0)
   auctionDetails.minBuyAmount = event.params._minBuyAmount
-  auctionDetails.initialSupply = event.params._auctionedSellAmount
+  auctionDetails.auctionSupply = event.params._auctionedSellAmount
   auctionDetails.minimumPriceInMoxie = order.price
 
   auctionDetails.uniqueBidders = new BigInt(0)
@@ -268,11 +257,10 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   }
 
   let auctionDetails = loadAuctionDetail(auctionId.toString())
-  let auctioningToken = loadToken(auctionDetails.auctioningToken)
-  let biddingToken = loadToken(auctionDetails.biddingToken)
+
 
   let orderId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
-  let pricePoint = convertToPricePoint(sellAmount, buyAmount, auctioningToken.decimals.toI32(), biddingToken.decimals.toI32())
+  let pricePoint = convertToPricePoint(sellAmount, buyAmount, 18, 18)
 
   let order = new Order(orderId)
 
@@ -291,14 +279,10 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   order.isExactOrder = false
   order.encodedOrderId = getEncodedOrderId(userId, buyAmount, sellAmount)
   order.lastUpdatedIndex =  updateOrderCounter()
+  order.finalizedBuyAmount = new BigInt(0)
+  order.finalizedSellAmount = new BigInt(0)
+  order.refundAmount = new BigInt(0)
   order.save()
-
-  let orders: string[] = []
-  if (auctionDetails.orders) {
-    orders = auctionDetails.orders!
-  }
-  orders.push(order.id)
-  auctionDetails.orders = orders
 
   let activeOrders: string[] = []
   if (auctionDetails.activeOrders) {
@@ -321,23 +305,28 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   auctionDetails.save()
 
   updateAuctionStats(auctionDetails)
-
-  // adding order transaction
-  createOrderTxn(event, orderId, ORDER_STATUS_PLACED)
 }
 
 export function handleNewUser(event: NewUser): void {
-}
-
-export function handleOwnershipTransferred(event: OwnershipTransferred): void {
+  let userId = event.params.userId
+  let userAddress = event.params.userAddress
+  if(!User.load(userId.toString())) {
+    let user = new User(userId.toString())
+    user.address = userAddress
+    user.createdAuctions = new Array()
+    user.participatedAuctions = new Array()
+    user.save()
+  }
 }
 
 export function handleUserRegistration(event: UserRegistration): void {
   let userId = event.params.userId
   let userAddress = event.params.user
-  let user = new User(userId.toString())
-  user.address = userAddress
-  user.createdAuctions = new Array()
-  user.participatedAuctions = new Array()
-  user.save()
+  if(!User.load(userId.toString())) {
+    let user = new User(userId.toString())
+    user.address = userAddress
+    user.createdAuctions = new Array()
+    user.participatedAuctions = new Array()
+    user.save()
+  }
 }

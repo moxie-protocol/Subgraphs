@@ -40,8 +40,6 @@ dataSources:
           handler: handleNewSellOrder
         - event: NewUser(indexed uint64,indexed address)
           handler: handleNewUser
-        - event: OwnershipTransferred(indexed address,indexed address)
-          handler: handleOwnershipTransferred
         - event: UserRegistration(indexed address,uint64)
           handler: handleUserRegistration
       file: ./src/mapping.ts
