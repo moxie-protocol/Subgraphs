@@ -304,8 +304,6 @@ type User @entity {
   portfolio: [Portfolio!]! @derivedFrom(field: "user")
   "orders placed by the user (auction, buy & sell)"
   orders: [Order!]! @derivedFrom(field: "user")
-  "orders responsible for the user's portfolio - auction & buy orders"
-  protocolOrders: [UserProtocolOrder!]! @derivedFrom(field: "user")
   "beneficiary fee transfers"
   subjectFeeTransfer: [SubjectFeeTransfer!]!
   "total moxie spent by the user"
@@ -320,20 +318,6 @@ type User @entity {
   createdAtBlockInfo: BlockInfo!
   "updated at block information"
   updatedAtBlockInfo: BlockInfo!
-}
-
-# these are orders used to calculate the user's portfolio
-type UserProtocolOrder @entity {
-  "User's address+-+userProtocolOrderIndex"
-  id: ID!
-  "index of the order"
-  userProtocolOrderIndex: BigInt!
-  "User's address"
-  user: User!
-  "Order's id"
-  order: Order!
-  "subject token address"
-  subjectToken: SubjectToken!
 }
 
 type Order @entity {

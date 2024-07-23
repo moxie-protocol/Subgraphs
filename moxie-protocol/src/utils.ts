@@ -1,6 +1,6 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, UserProtocolOrder, SubjectTokenRollingDailySnapshot, Auction } from "../generated/schema"
+import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction } from "../generated/schema"
 import { ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID } from "./constants"
 
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, auction: Auction | null, block: ethereum.Block): SubjectToken {
@@ -396,19 +396,6 @@ export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: Block
   subjectFeeTransfer.subject = subjectToken.subject!
 
   subjectFeeTransfer.save()
-}
-
-export function loadProtocolOrder(user: User, index: BigInt): Order {
-  let entityId = user.id.concat("-").concat(index.toString())
-  let userProtocolOrder = UserProtocolOrder.load(entityId)
-  if (!userProtocolOrder) {
-    throw new Error("UserProtocolOrder not found for entityId: " + entityId)
-  }
-  let order = Order.load(userProtocolOrder.order)
-  if (!order) {
-    throw new Error("Order not found for entityId: " + entityId)
-  }
-  return order
 }
 
 function findClosest(arr: Array<BigInt>, target: BigInt): BigInt {
