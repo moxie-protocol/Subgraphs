@@ -1,5 +1,5 @@
 import { Address, BigInt, BigDecimal, log, ethereum } from "@graphprotocol/graph-ts"
-import { Order, AuctionDetail, Token, User, BlockInfo, OrderCounter, ClearingPriceOrder } from "../generated/schema"
+import { Order, AuctionDetail, Token, User, BlockInfo, OrderCounter, Summary } from "../generated/schema"
 import { ERC20Contract } from "../generated/EasyAuction/ERC20Contract"
 
 import { ORDER_ENTITY_COUNTER_ID } from "./constants"
@@ -175,6 +175,18 @@ export function loadOrder(orderId: string): Order {
   return order as Order
 }
 
+export function loadSummary(): Summary {
+  let summary = Summary.load("SUMMARY")
+  if (!summary) {
+    summary = new Summary("SUMMARY")
+    summary.totalBiddingValue = BigInt.fromI32(0)
+    summary.totalOrders = BigInt.fromI32(0)
+    summary.totalAuctions = BigInt.fromI32(0)
+    summary.save()
+  }
+  return summary as Summary
+}
+
 export function getTokenDetails(tokenAddress: Address): Token {
   let token = Token.load(tokenAddress.toHexString())
   if (token) {
@@ -329,4 +341,18 @@ function smallerThan(orderA: Order, sellAmount: BigInt, buyAmount: BigInt, userI
   if (orderA.buyAmount > buyAmount) return false
   if (BigInt.fromString(orderA.user).lt(userId)) return true
   return false
+}
+
+export function increaseTotalBiddingValueAndOrdersCount(value: BigInt): void {
+  let summary = loadSummary()
+  summary.totalBiddingValue = summary.totalBiddingValue.plus(value)
+  summary.totalOrders = summary.totalOrders.plus(BigInt.fromI32(1))
+  summary.save()
+}
+
+export function decreaseTotalBiddingValueAndOrdersCount(value: BigInt): void {
+  let summary = loadSummary()
+  summary.totalBiddingValue = summary.totalBiddingValue.minus(value)
+  summary.totalOrders = summary.totalOrders.minus(BigInt.fromI32(1))
+  summary.save()
 }

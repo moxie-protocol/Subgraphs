@@ -5,16 +5,16 @@ type BlockInfo @entity {
   timestamp: BigInt!
 }
 
-# type Summary @entity {
-#   "hardcoded id: SUMMARY"
-#   id: ID!
-#   "total bidding value (combining all orders) in the system"
-#   totalBiddingValue: BigInt!
-#   "total orders in the system"
-#   totalOrders: BigInt!
-#   "total auctions in the system"
-#   totalAuctions: BigInt!
-# }
+type Summary @entity {
+  "hardcoded id: SUMMARY"
+  id: ID!
+  "total bidding value (combining all orders) in the system"
+  totalBiddingValue: BigInt!
+  "total orders in the system"
+  totalOrders: BigInt!
+  "total auctions in the system"
+  totalAuctions: BigInt!
+}
 
 type Order @entity {
   id: ID!
@@ -98,7 +98,7 @@ type AuctionDetail @entity {
   uniqueBidders: BigInt!
   "set true when AuctionCleared is emitted"
   isCleared: Boolean!
-  "totalOrders which are not cancelled"
+  "totalOrders involved in the auction cancelled or claimed or active"
   totalOrders: BigInt!
   "number of active bids"
   activeOrderCount: BigInt!

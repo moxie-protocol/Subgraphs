@@ -10,7 +10,7 @@ import { AuctionDetail, ClearingPriceOrder, Token, User } from "../generated/sch
 import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, NewAuction, NewSellOrder, NewUser, OwnershipTransferred, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Order } from "../generated/schema"
 
-import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, getOrCreateBlockInfo, getTxEntityId, getEncodedOrderId, updateOrderCounter, getClaimedAmounts } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, getOrCreateBlockInfo, getTxEntityId, getEncodedOrderId, updateOrderCounter, getClaimedAmounts, increaseTotalBiddingValueAndOrdersCount, decreaseTotalBiddingValueAndOrdersCount } from "./utils"
 import { ORDER_STATUS_CANCELLED, ORDER_STATUS_CLAIMED, ORDER_STATUS_PLACED } from "./constants"
 
 const ZERO = BigInt.zero()
@@ -68,6 +68,7 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
   let buyAmount = event.params.buyAmount
   let userId = event.params.userId
 
+  decreaseTotalBiddingValueAndOrdersCount(sellAmount)
   let auctionDetails = loadAuctionDetail(auctionId.toString())
 
   // setting order as cancelled
@@ -92,7 +93,6 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
   auctionDetails.activeOrders = activeOrders
   auctionDetails.activeOrderCount = BigInt.fromI32(activeOrders.length)
 
-  auctionDetails.totalOrders = auctionDetails.totalOrders.minus(ONE)
   auctionDetails.currentBiddingAmount = auctionDetails.currentBiddingAmount.minus(order.sellAmount)
   auctionDetails.currentSubjectTokenBidAmount = auctionDetails.currentSubjectTokenBidAmount.minus(order.buyAmount)
   auctionDetails.save()
@@ -189,6 +189,8 @@ export function handleNewAuction(event: NewAuction): void {
 
 
   // increasing bid value and total Orders count in summary
+  increaseTotalBiddingValueAndOrdersCount(sellAmount)
+
   let auctionDetails = new AuctionDetail(auctionId.toString())
   auctionDetails.auctionId = auctionId
   auctionDetails.exactOrder = order.id
@@ -248,6 +250,8 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   let sellAmount = event.params.sellAmount
   let buyAmount = event.params.buyAmount
   let userId = event.params.userId
+
+  increaseTotalBiddingValueAndOrdersCount(sellAmount)
 
   // let user = loadUser(userId.toString()) TODO: revisit after sync
   let user = User.load(userId.toString())
