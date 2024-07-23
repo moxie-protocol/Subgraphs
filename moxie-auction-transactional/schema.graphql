@@ -79,7 +79,7 @@ type AuctionDetail @entity {
   minimumBiddingAmountPerOrder: BigInt!
   minFundingThreshold: BigInt!
   minBuyAmount: BigInt!
-  initialSupply: BigInt!
+  auctionSupply: BigInt!
   allowListManager: Bytes!
   allowListSigner: Bytes!
   currentVolume: BigDecimal!

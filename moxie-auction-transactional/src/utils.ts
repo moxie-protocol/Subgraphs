@@ -295,8 +295,8 @@ function getLowestBidId(orders: string[]): string {
 export function getClaimedAmounts(order: Order, event: ethereum.Event, auctionDetails: AuctionDetail): BigInt[] {
   let sumBiddingTokenAmount = BigInt.zero()
   let sumAuctioningTokenAmount = BigInt.zero()
-  let priceNumerator =  auctionDetails.currentClearingOrderSellAmount
-  let priceDenominator =  auctionDetails.currentClearingOrderBuyAmount
+  let priceNumerator =  auctionDetails.currentClearingOrderBuyAmount
+  let priceDenominator =  auctionDetails.currentClearingOrderSellAmount
   let userId = BigInt.fromString(auctionDetails.currentClearingOrderUserId.toString())
   log.error("User ID: {}", [userId.toString()])
 
@@ -308,8 +308,9 @@ export function getClaimedAmounts(order: Order, event: ethereum.Event, auctionDe
     if(auctionDetails.currentClearingOrderBuyAmount.equals(order.buyAmount) 
       && auctionDetails.currentClearingOrderSellAmount.equals(order.sellAmount) 
     && userId.equals(BigInt.fromString(order.user))){
-
-      sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(auctionDetails.volumeClearingPriceOrder).times(priceNumerator).div(priceDenominator)
+      let diff = auctionDetails.volumeClearingPriceOrder.times(priceNumerator).div(priceDenominator)
+      log.error("Diff: {} for orderId: {}", [diff.toString(), order.id])
+      sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(diff)
       sumBiddingTokenAmount = sumBiddingTokenAmount.plus(order.sellAmount.minus(auctionDetails.volumeClearingPriceOrder))
 
     } else {
@@ -321,6 +322,9 @@ export function getClaimedAmounts(order: Order, event: ethereum.Event, auctionDe
     }
   }
   //refund, subjectTokenPurchased, moxie Spent
+  if (new BigInt(4) == auctionDetails.auctionId) {
+    log.warning("Refund: {}, SubjectTokenPurchased: {}, MoxieSpent: {} for order id: {}", [order.sellAmount.minus(sumBiddingTokenAmount).toString(), sumAuctioningTokenAmount.toString(), sumBiddingTokenAmount.toString(), order.id])
+  }
   return [sumBiddingTokenAmount, sumAuctioningTokenAmount, order.sellAmount.minus(sumBiddingTokenAmount)]
 }
 

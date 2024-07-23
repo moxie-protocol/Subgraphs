@@ -216,7 +216,7 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.activeOrders = []
   auctionDetails.activeOrderCount = new BigInt(0)
   auctionDetails.minBuyAmount = event.params._minBuyAmount
-  auctionDetails.initialSupply = event.params._auctionedSellAmount
+  auctionDetails.auctionSupply = event.params._auctionedSellAmount
   auctionDetails.minimumPriceInMoxie = order.price
 
   auctionDetails.uniqueBidders = new BigInt(0)
@@ -317,9 +317,6 @@ export function handleNewUser(event: NewUser): void {
     user.participatedAuctions = new Array()
     user.save()
   }
-}
-
-export function handleOwnershipTransferred(event: OwnershipTransferred): void {
 }
 
 export function handleUserRegistration(event: UserRegistration): void {
