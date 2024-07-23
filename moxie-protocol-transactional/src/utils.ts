@@ -131,3 +131,33 @@ export function calculateSellSideFee(_depositAmount: BigInt): Fees {
   let subjectFee_ = _depositAmount.times(summary.subjectSellFeePct).div(PCT_BASE)
   return new Fees(protocolFee_, subjectFee_)
 }
+
+export class AuctionOrderClass {
+  userId: BigInt
+  buyAmount: BigInt
+  sellAmount: BigInt
+  constructor(_userId: BigInt, _buyAmount: BigInt, _sellAmount: BigInt) {
+    this.userId = _userId
+    this.buyAmount = _buyAmount
+    this.sellAmount = _sellAmount
+  }
+  smallerThan(orderRight: AuctionOrderClass): bool {
+    if (this.buyAmount.times(orderRight.sellAmount) < orderRight.buyAmount.times(this.sellAmount)) return true
+    if (this.buyAmount.times(orderRight.sellAmount) > orderRight.buyAmount.times(this.sellAmount)) return false
+    if (this.buyAmount < orderRight.buyAmount) return true
+    if (this.buyAmount > orderRight.buyAmount) return false
+    if (this.userId < orderRight.userId) return true
+    return false
+  }
+}
+
+export function decodeOrder(encodedOrderId: Bytes): AuctionOrderClass {
+  let clearingPriceOrder = encodedOrderId.toHexString()
+  let userIdHex = "0x" + clearingPriceOrder.substring(2, 18)
+  let buyAmountHex = "0x" + clearingPriceOrder.substring(19, 42)
+  let sellAmountHex = "0x" + clearingPriceOrder.substring(43, 66)
+  let userId = BigInt.fromString(BigDecimal.fromString(parseInt(userIdHex).toString()).toString())
+  let buyAmount = BigInt.fromString(BigDecimal.fromString(parseInt(buyAmountHex).toString()).toString())
+  let sellAmount = BigInt.fromString(BigDecimal.fromString(parseInt(sellAmountHex).toString()).toString())
+  return new AuctionOrderClass(userId, buyAmount, sellAmount)
+}

@@ -1,8 +1,9 @@
-import { Address, BigDecimal, BigInt, store } from "@graphprotocol/graph-ts"
+import { Address, BigInt, log, store } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/templates/SubjectTokenContract/ERC20"
 import { getOrCreatePortfolio, getOrCreateSubjectToken, savePortfolio, saveSubjectToken } from "./utils"
 
 export function handleTransfer(event: Transfer): void {
+  log.warning("Transfer event: {}", [event.transaction.hash.toHexString()])
   let contractAddress = event.address
   let from = event.params.from
   let to = event.params.to
@@ -25,11 +26,13 @@ export function handleTransfer(event: Transfer): void {
   // updating portfolios
   if (!mint) {
     let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
-    fromAddressPortfolio.balance = fromAddressPortfolio.balance.minus(value)
-    savePortfolio(fromAddressPortfolio, event.block)
-    if (fromAddressPortfolio.balance.equals(BigInt.fromI32(0))) {
+    let updatedBalance = fromAddressPortfolio.balance.minus(value)
+    if (updatedBalance.equals(BigInt.fromI32(0))) {
       subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(BigInt.fromI32(1))
       store.remove("Portfolio", fromAddressPortfolio.id)
+    } else {
+      fromAddressPortfolio.balance = updatedBalance
+      savePortfolio(fromAddressPortfolio, event.block)
     }
   }
   if (!burn) {

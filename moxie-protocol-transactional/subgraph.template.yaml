@@ -82,7 +82,34 @@ dataSources:
         - event: Initialized(uint64)
           handler: handleInitialized
       file: ./src/moxie-bonding-curve.ts
-
+  - kind: ethereum
+    name: EasyAuction
+    network: {{network}}
+    source:
+      address: "{{EasyAuction}}"
+      abi: EasyAuction
+      startBlock: {{EasyAuctionStartBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - AuctioningToken
+      abis:
+        - name: EasyAuction
+          file: ./abis/EasyAuction.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: ClaimedFromOrder(indexed uint256,indexed uint64,uint96,uint96)
+          handler: handleClaimedFromOrder
+        - event: NewAuction(indexed uint256,indexed address,indexed address,uint256,uint256,uint64,uint96,uint96,uint256,uint256,address,bytes)
+          handler: handleNewAuction
+        - event: AuctionCleared(indexed uint256,uint96,uint96,bytes32)
+          handler: handleAuctionCleared
+        - event: UserRegistration(indexed address,uint64)
+          handler: handleUserRegistration
+      file: ./src/auction.ts
 templates:
   - kind: ethereum/contract
     name: SubjectTokenContract
