@@ -123,7 +123,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
     let beneficiaryUser = User.load(beneficiary)
     if (beneficiaryUser) {
       let subjectFeeTransfer = beneficiaryUser.subjectFeeTransfer
-      let pushResponse = subjectFeeTransfer.push(txHash)
+      subjectFeeTransfer.push(txHash)
       beneficiaryUser.subjectFeeTransfer = subjectFeeTransfer
       saveUser(beneficiaryUser, event.block)
     }

@@ -461,3 +461,11 @@ export class CalculatePrice {
     this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
   }
 }
+
+export function loadAuction(auctionId: BigInt): Auction {
+  let auction = Auction.load(auctionId.toString())
+  if (!auction) {
+    throw new Error("Auction not loaded: auctionId : " + auctionId.toString())
+  }
+  return auction
+}

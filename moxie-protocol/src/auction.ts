@@ -1,7 +1,7 @@
 import { BigInt, BigDecimal, Bytes, Address, log } from "@graphprotocol/graph-ts"
 import { NewAuction, ClaimedFromOrder, AuctionCleared, EasyAuction, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Auction, AuctionUser, Order } from "../generated/schema"
-import { getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, saveSubjectTokenAndSnapshots, CalculatePrice } from "./utils"
+import { getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, saveSubjectTokenAndSnapshots, CalculatePrice, loadAuction } from "./utils"
 import { ORDER_TYPE_AUCTION } from "./constants"
 
 class AuctionAndOrder {
@@ -23,13 +23,10 @@ export function enrichAuctionOrderWithRewardAndRefund(event: ClaimedFromOrder): 
   let userId = event.params.userId
   let buyAmount = event.params.buyAmount
   let sellAmount = event.params.sellAmount
-  let auction = Auction.load(auctionId.toString())
-  if (!auction) {
-    throw new Error("Auction not loaded: auctionId : " + auctionId.toString())
-  }
+  let auction = loadAuction(auctionId)
   let user = AuctionUser.load(userId.toString())
   if (!user) {
-    throw new Error("User not loaded: userId : " + userId.toString())
+    throw new Error("AuctionUser not loaded: userId : " + userId.toString())
   }
   // calculate refund and reward
 
@@ -60,6 +57,7 @@ export function enrichAuctionOrderWithRewardAndRefund(event: ClaimedFromOrder): 
   let refund = sumBiddingTokenAmount // moxie
   return new AuctionAndOrder(auction, user, sellAmount, reward, refund)
 }
+
 export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   let blockInfo = getOrCreateBlockInfo(event.block)
   let auctionAndOrder = enrichAuctionOrderWithRewardAndRefund(event)
@@ -67,6 +65,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
     throw new Error("Subject token not exist, txHash: " + event.transaction.hash.toHexString())
   }
   let subjectTokenAddress = Address.fromString(auctionAndOrder.auction.subjectToken!)
+  let userAddress = Address.fromBytes(auctionAndOrder.user.userAddress)
   let protocolTokenAmount = auctionAndOrder.sellAmount.minus(auctionAndOrder.refund)
   let subjectAmount = auctionAndOrder.reward
   if (subjectAmount.equals(BigInt.zero())) {
@@ -74,33 +73,30 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
     return
   }
   let calculatedPrice = new CalculatePrice(protocolTokenAmount, subjectAmount)
+  // updating user's portfolio
+  let portfolio = getOrCreatePortfolio(userAddress, subjectTokenAddress, event.transaction.hash, event.block)
+  portfolio.buyVolume = portfolio.buyVolume.plus(protocolTokenAmount)
+  portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
+  portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(subjectAmount)
+  savePortfolio(portfolio, event.block)
+
   let order = new Order(getTxEntityId(event))
   order.protocolToken = auctionAndOrder.auction.protocolToken
   order.protocolTokenAmount = protocolTokenAmount
   order.protocolTokenInvested = new BigDecimal(protocolTokenAmount)
   order.subjectToken = auctionAndOrder.auction.subjectToken!
   order.subjectAmount = subjectAmount
-
   order.orderType = ORDER_TYPE_AUCTION
   order.user = auctionAndOrder.user.id
   order.subjectFee = BigInt.zero()
   order.protocolFee = BigInt.zero()
   order.price = calculatedPrice.price
   order.blockInfo = blockInfo.id
-
-  // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(Address.fromBytes(auctionAndOrder.user.userAddress), subjectTokenAddress, event.transaction.hash, event.block)
-  portfolio.buyVolume = portfolio.buyVolume.plus(protocolTokenAmount)
-  portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
-  portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(subjectAmount)
-
-  savePortfolio(portfolio, event.block)
   order.portfolio = portfolio.id
   order.save()
-  let user = getOrCreateUser(Address.fromBytes(auctionAndOrder.user.userAddress), event.block)
-  // increasing user protocol token spent
+
+  let user = getOrCreateUser(userAddress, event.block)
   user.buyVolume = user.buyVolume.plus(protocolTokenAmount)
-  // increasing user investment
   user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   saveUser(user, event.block)
 
@@ -113,7 +109,6 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   let subjectToken = getOrCreateSubjectToken(subjectTokenAddress, null, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(protocolTokenAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
-
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
@@ -121,7 +116,6 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
 }
 
 export function handleNewAuction(event: NewAuction): void {
-  // minFundingThresholdNotReached = event.params.minFundingThresholdNotReached need to see
   let auction = new Auction(event.params.auctionId.toString())
   auction.minFundingThreshold = event.params.minFundingThreshold
   auction.auctionEndDate = event.params.auctionEndDate
@@ -146,10 +140,7 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   let auctionDetails = easyAuction.auctionData(event.params.auctionId)
   let decodedOrder = decodeOrder(event.params.clearingPriceOrder)
 
-  let auction = Auction.load(event.params.auctionId.toString())
-  if (!auction) {
-    throw new Error("Auction not loaded: auctionId : " + event.params.auctionId.toString())
-  }
+  let auction = loadAuction(event.params.auctionId)
   auction.clearingUserId = decodedOrder.userId
   auction.clearingBuyAmount = decodedOrder.buyAmount
   auction.clearingSellAmount = decodedOrder.sellAmount
