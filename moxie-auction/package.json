@@ -7,7 +7,7 @@
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy": "graph deploy --studio auction",
-    "cbd:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build && graph deploy --studio auction",
+    "cbd:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build && graph deploy --node https://api.graph-ams.p2pify.com/f0e31cf4b2a6b79e178ca563c41fb99b/deploy --ipfs https://api.graph-ams.p2pify.com/f0e31cf4b2a6b79e178ca563c41fb99b/ipfs sgr-031-164-079",
     "cbd:testing": "yarn prepare:testing && graph codegen && graph build && graph deploy --studio auction",
     "cbt": "graph codegen && graph build && graph test -d",
     "cb": "graph codegen && graph build",

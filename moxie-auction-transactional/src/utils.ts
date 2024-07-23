@@ -1,5 +1,5 @@
 import { Address, BigInt, BigDecimal, log, ethereum } from "@graphprotocol/graph-ts"
-import { Order, AuctionDetail, Token, User, BlockInfo, OrderTxn, OrderCounter } from "../generated/schema"
+import { Order, AuctionDetail, Token, User, BlockInfo, OrderCounter, ClearingPriceOrder } from "../generated/schema"
 import { ERC20Contract } from "../generated/EasyAuction/ERC20Contract"
 
 import { ORDER_ENTITY_COUNTER_ID } from "./constants"
@@ -215,16 +215,6 @@ export function getEncodedOrderId(userId: BigInt, buyAmount: BigInt, sellAmount:
   return "0x" + userId.toHexString().slice(2).padStart(16, "0") + buyAmount.toHexString().slice(2).padStart(24, "0") + sellAmount.toHexString().slice(2).padStart(24, "0")
 }
 
-// creates a new order transaction
-export function createOrderTxn(event: ethereum.Event, orderId: string, status: string): void {
-  let orderTxn = new OrderTxn(getTxEntityId(event))
-  orderTxn.order = orderId
-  orderTxn.txHash = event.transaction.hash
-  orderTxn.blockInfo = getOrCreateBlockInfo(event).id
-  orderTxn.newStatus = status
-  orderTxn.save()
-}
-
 export function updateOrderCounter(): BigInt {
   let orderEntityCounter = OrderCounter.load(ORDER_ENTITY_COUNTER_ID)
   if (!orderEntityCounter) {
@@ -300,4 +290,45 @@ function getLowestBidId(orders: string[]): string {
     }
   }
   return getOrderEntityId(BigInt.fromI32(0), initialBiddingTokenAmount, initialAuctioningTokenAmount, initialUserId)
+}
+//getClaimedAmounts(order, event, auctionDetails)
+export function getClaimedAmounts(order: Order, event: ethereum.Event, auctionDetails: AuctionDetail): BigInt[] {
+  let sumBiddingTokenAmount = BigInt.zero()
+  let sumAuctioningTokenAmount = BigInt.zero()
+  let priceNumerator =  auctionDetails.currentClearingOrderSellAmount
+  let priceDenominator =  auctionDetails.currentClearingOrderBuyAmount
+  let userId = BigInt.fromString(auctionDetails.currentClearingOrderUserId.toString())
+  log.error("User ID: {}", [userId.toString()])
+
+  //This means that the moxie funding the auction asked for is not met so all moxie is refunded
+  if(auctionDetails.minFundingThreshold.gt(auctionDetails.currentClearingOrderSellAmount)){
+    sumBiddingTokenAmount = order.sellAmount
+  } else {
+    //Checking if the order is the clearing price order
+    if(auctionDetails.currentClearingOrderBuyAmount.equals(order.buyAmount) 
+      && auctionDetails.currentClearingOrderSellAmount.equals(order.sellAmount) 
+    && userId.equals(BigInt.fromString(order.user))){
+
+      sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(auctionDetails.volumeClearingPriceOrder).times(priceNumerator).div(priceDenominator)
+      sumBiddingTokenAmount = sumBiddingTokenAmount.plus(order.sellAmount.minus(auctionDetails.volumeClearingPriceOrder))
+
+    } else {
+        if(smallerThan(order, auctionDetails.currentClearingOrderSellAmount, auctionDetails.currentClearingOrderBuyAmount, userId)){
+          sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(order.sellAmount).times(priceNumerator).div(priceDenominator)
+        } else {
+          sumBiddingTokenAmount = sumBiddingTokenAmount.plus(order.sellAmount)
+        }
+    }
+  }
+  //refund, subjectTokenPurchased, moxie Spent
+  return [sumBiddingTokenAmount, sumAuctioningTokenAmount, order.sellAmount.minus(sumBiddingTokenAmount)]
+}
+
+function smallerThan(orderA: Order, sellAmount: BigInt, buyAmount: BigInt, userId: BigInt): boolean {
+  if (orderA.buyAmount.times(sellAmount) < buyAmount.times(orderA.sellAmount)) return true
+  if (orderA.buyAmount.times(sellAmount) > buyAmount.times(orderA.sellAmount)) return false
+  if (orderA.buyAmount < buyAmount) return true
+  if (orderA.buyAmount > buyAmount) return false
+  if (BigInt.fromString(orderA.user).lt(userId)) return true
+  return false
 }

@@ -34,22 +34,16 @@ type Order @entity {
   txHash: Bytes!
   "block information of the order transaction"
   blockInfo: BlockInfo!
-  "order transactions"
-  orderTxns: [OrderTxn!]! @derivedFrom(field: "order")
   "exactOrder gets created when auction is created"
   isExactOrder: Boolean!
   "encoded orderId representing userId,buyAmount,sellAmount"
   encodedOrderId: String!
   lastUpdatedIndex: BigInt!
-}
-
-type OrderTxn @entity {
-  "txhash+-+logIndex"
-  id: ID!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-  order: Order!
-  newStatus: Status!
+  finalizedBuyAmount: BigInt!
+  finalizedSellAmount: BigInt!
+  refundAmount: BigInt!
+  "transaction hash of auction claimed not cancelled"
+  finalTxHash: Bytes
 }
 
 enum Status {
@@ -75,14 +69,8 @@ type AuctionDetail @entity {
   highestPriceBidOrder: Order
   "order with lowest price"
   lowestPriceBidOrder: Order
-  "all orders in the auction(contains placed, claimed, cancelled orders)"
-  orders: [Order!]
   "orders which are not cancelled or claimed"
   activeOrders: [Order!]
-  "orders which are claimed"
-  claimedOrders: [Order!]
-  "orders which are cancelled"
-  cancelledOrders: [Order!]
   auctioningToken: Token!
   biddingToken: Token!
   auctionEndDate: BigInt!
@@ -95,8 +83,10 @@ type AuctionDetail @entity {
   allowListManager: Bytes!
   allowListSigner: Bytes!
   currentVolume: BigDecimal!
+  volumeClearingPriceOrder: BigInt!
   currentClearingOrderSellAmount: BigInt!
   currentClearingOrderBuyAmount: BigInt!
+  currentClearingOrderUserId: BigDecimal!
   currentClearingPrice: BigDecimal!
   "Total sell amount of all orders in the auction"
   currentBiddingAmount: BigInt!
