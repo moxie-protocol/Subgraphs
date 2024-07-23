@@ -3,12 +3,9 @@
   "license": "UNLICENSED",
   "scripts": {
     "prepare:base-sepolia": "mustache ./config/base-sepolia.json subgraph.template.yaml > subgraph.yaml",
-    "prepare:base-sepolia-v4": "mustache ./config/base-sepolia-v4.json subgraph.template.yaml > subgraph.yaml",
     "codegen": "graph codegen",
     "build": "graph build",
-    "cb": "graph codegen && graph build",
-    "cbd": "yarn prepare:base-sepolia && graph codegen && graph build && graph deploy --studio protocol -l v4.2.7",
-    "cbd-v4": "yarn prepare:base-sepolia-v4 && graph codegen && graph build && graph deploy --studio protocol -l v5.1.7",
+    "cb": "yarn prepare:base-sepolia && graph codegen && graph build",
     "test": "graph test -d",
     "cbt": "graph codegen && graph build && graph test -d",
     "clean": "rm -rf generated/ build/"

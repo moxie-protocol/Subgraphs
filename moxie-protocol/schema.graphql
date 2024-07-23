@@ -192,7 +192,7 @@ type SubjectToken @entity {
   "reserve balance in vault"
   reserve: BigInt!
   "current price of the token in Moxie"
-  currentPriceinMoxie: BigDecimal!
+  currentPriceInMoxie: BigDecimal!
   "current price of the token in Moxie in wei unit"
   currentPriceInWeiInMoxie: BigDecimal!
   "constant used to calculate bonding curve"
@@ -257,7 +257,6 @@ type Auction @entity {
   clearingUserId: BigInt!
   clearingBuyAmount: BigInt!
   clearingSellAmount: BigInt!
-  clearingPrice: BigDecimal!
   volumeClearingPriceOrder: BigInt!
   "_bondingAmount + _protocolFee + _subjectFee -> from auction , should be added in summary buyVolume "
   amountRaised: BigInt!

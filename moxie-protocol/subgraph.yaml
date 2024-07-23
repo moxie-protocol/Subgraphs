@@ -6,9 +6,9 @@ dataSources:
     name: TokenManager
     network: base-sepolia
     source:
-      address: "0x990591A096934FEF9d0eb6E2b9669f20ee0E424B"
+      address: "0xFd990aF1c711cC0fc46E66B22877B028aF7eF59C"
       abi: TokenManager
-      startBlock: 12648943
+      startBlock: 12934201
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -22,31 +22,31 @@ dataSources:
         - name: ERC20
           file: ./abis/ERC20.json
       eventHandlers:
-        - event: TokenDeployed(address,address,uint256)
+        - event: TokenDeployed(indexed address,indexed address,uint256)
           handler: handleTokenDeployed
       file: ./src/token-manager.ts
   - kind: ethereum
     name: SubjectFactory
     network: base-sepolia
     source:
-      address: "0x0b34EB0DE7977b1d3e7facD449b92a0Fe5772A40"
+      address: "0x9cE6e0c6282ac0050B1888656C5c5716a4Ef4BE8"
       abi: SubjectFactory
-      startBlock: 12648935
+      startBlock: 12934191
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-        - TODO
+        - Auction
       abis:
         - name: SubjectFactory
           file: ./abis/SubjectFactory.json
         - name: ERC20
           file: ./abis/ERC20.json
       eventHandlers:
-        - event: SubjectOnboardingInitiated(address,address,uint256,address,uint256,uint256)
+        - event: SubjectOnboardingInitiated(indexed address,indexed address,uint256,address,uint256,uint256)
           handler: handleSubjectOnboardingInitiated
-        - event: SubjectOnboardingFinished(address,address,uint256,uint256,uint256,uint256,uint256)
+        - event: SubjectOnboardingFinished(indexed address,indexed address,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleSubjectOnboardingFinished
       file: ./src/subject-factory.ts
 
@@ -54,9 +54,9 @@ dataSources:
     name: Vault
     network: base-sepolia
     source:
-      address: "0x56ebfCCef61065C0b18C43f97e693b102E86570A"
+      address: "0x3C1Fd0E625765A40fFd58adc4784603A07f5D05f"
       abi: Vault
-      startBlock: 12648946
+      startBlock: 12934204
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -77,9 +77,9 @@ dataSources:
     name: MoxieBondingCurve
     network: base-sepolia
     source:
-      address: "0xAE03AC8F00cD242f69f996BD06DE5Ab9363c20Ac"
+      address: "0xF80Fe11Ace879AD3695f8caA51be0368318C32fA"
       abi: MoxieBondingCurve
-      startBlock: 12648953
+      startBlock: 12933779
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -94,11 +94,11 @@ dataSources:
         - name: ERC20
           file: ./abis/ERC20.json
       eventHandlers:
-        - event: BondingCurveInitialized(address,address,uint256,uint256,uint32)
+        - event: BondingCurveInitialized(indexed address,indexed address,uint256,uint256,uint32)
           handler: handleBondingCurveInitialized
-        - event: SubjectSharePurchased(address,address,uint256,address,uint256,address)
+        - event: SubjectSharePurchased(indexed address,indexed address,uint256,address,address,uint256,indexed address)
           handler: handleSubjectSharePurchased
-        - event: SubjectShareSold(address,address,uint256,address,uint256,address)
+        - event: SubjectShareSold(indexed address,indexed address,uint256,address,address,uint256,indexed address)
           handler: handleSubjectShareSold
         - event: UpdateBeneficiary(address)
           handler: handleUpdateBeneficiary
@@ -111,9 +111,9 @@ dataSources:
     name: EasyAuction
     network: base-sepolia
     source:
-      address: "0x6DE3Ce213f27FAF4339383C8aEc7e255a1Eb2A24"
+      address: "0x8EB6A9275637358Fea56D8431e85B6BB6F260853"
       abi: EasyAuction
-      startBlock: 12648913
+      startBlock: 12934136
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6

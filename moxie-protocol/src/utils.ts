@@ -14,7 +14,7 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, auction: A
     // setting default values for now
     subjectToken.reserve = BigInt.zero()
     subjectToken.reserveRatio = BigInt.zero()
-    subjectToken.currentPriceinMoxie = BigDecimal.fromString("0")
+    subjectToken.currentPriceInMoxie = BigDecimal.fromString("0")
     subjectToken.currentPriceInWeiInMoxie = BigDecimal.fromString("0")
     subjectToken.totalSupply = BigInt.zero()
     subjectToken.initialSupply = BigInt.zero()
@@ -97,7 +97,7 @@ function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp:
   if (!snapshot) {
     snapshot = new SubjectTokenHourlySnapshot(snapshotId)
     snapshot.startTimestamp = timestamp
-    snapshot.startPrice = subjectToken.currentPriceinMoxie
+    snapshot.startPrice = subjectToken.currentPriceInMoxie
     snapshot.startUniqueHolders = subjectToken.uniqueHolders
     snapshot.startVolume = subjectToken.lifetimeVolume
     snapshot.startSubjectFee = subjectToken.subjectFee
@@ -112,7 +112,7 @@ function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp:
 
   snapshot.subject = subjectToken.subject
   snapshot.reserve = subjectToken.reserve
-  snapshot.endPrice = subjectToken.currentPriceinMoxie
+  snapshot.endPrice = subjectToken.currentPriceInMoxie
   snapshot.hourlyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
 
   snapshot.totalSupply = subjectToken.totalSupply
@@ -171,7 +171,7 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
   if (!snapshot) {
     snapshot = new SubjectTokenDailySnapshot(snapshotId)
     snapshot.startTimestamp = timestamp
-    snapshot.startPrice = subjectToken.currentPriceinMoxie
+    snapshot.startPrice = subjectToken.currentPriceInMoxie
     snapshot.startUniqueHolders = subjectToken.uniqueHolders
     snapshot.startVolume = subjectToken.lifetimeVolume
     snapshot.startSubjectFee = subjectToken.subjectFee
@@ -186,7 +186,7 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
 
   snapshot.subject = subjectToken.subject
   snapshot.reserve = subjectToken.reserve
-  snapshot.endPrice = subjectToken.currentPriceinMoxie
+  snapshot.endPrice = subjectToken.currentPriceInMoxie
   snapshot.dailyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
 
   snapshot.totalSupply = subjectToken.totalSupply
@@ -257,7 +257,7 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
 
   snapshot.subject = subjectToken.subject
   snapshot.reserve = subjectToken.reserve
-  snapshot.endPrice = subjectToken.currentPriceinMoxie
+  snapshot.endPrice = subjectToken.currentPriceInMoxie
   snapshot.dailyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
 
   snapshot.totalSupply = subjectToken.totalSupply

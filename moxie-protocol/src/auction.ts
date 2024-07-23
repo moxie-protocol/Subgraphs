@@ -109,7 +109,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   let subjectToken = getOrCreateSubjectToken(subjectTokenAddress, null, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(protocolTokenAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
-  subjectToken.currentPriceinMoxie = price
+  subjectToken.currentPriceInMoxie = price
   subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   saveSubjectTokenAndSnapshots(subjectToken, event.block)
@@ -125,7 +125,6 @@ export function handleNewAuction(event: NewAuction): void {
   auction.clearingUserId = BigInt.zero()
   auction.clearingBuyAmount = BigInt.zero()
   auction.clearingSellAmount = BigInt.zero()
-  auction.clearingPrice = BigDecimal.zero()
   auction.amountRaised = BigInt.zero()
   auction.subjectFee = BigInt.zero()
   auction.protocolFee = BigInt.zero()
@@ -154,6 +153,8 @@ export function handleAuctionCleared(event: AuctionCleared): void {
     auction.minFundingThresholdNotReached = true
   }
   auction.volumeClearingPriceOrder = auctionDetails.value9
+  auction.endTxHash = event.transaction.hash
+  auction.endBlockInfo = getOrCreateBlockInfo(event.block).id
   auction.save()
 }
 

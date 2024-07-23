@@ -10,7 +10,7 @@ export function handleBondingCurveInitialized(event: BondingCurveInitialized): v
   subjectToken.initialSupply = event.params._initialSupply // initial supply of subject token
   // price during initialization = reserve (moxie) / initial supply (subject token)
   let price = event.params._reserve.divDecimal(new BigDecimal(event.params._initialSupply))
-  subjectToken.currentPriceinMoxie = price
+  subjectToken.currentPriceInMoxie = price
   subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   saveSubjectTokenAndSnapshots(subjectToken, event.block)
 }
@@ -57,7 +57,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, null, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params._sellAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
-  subjectToken.currentPriceinMoxie = price
+  subjectToken.currentPriceInMoxie = price
   subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._sellAmount)
   // Saving order entity
@@ -166,7 +166,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // calculating price here the sell amount will be subject token and buy amount is protocol token since it's a sell
   let price = protocolTokenSpentAfterFees.divDecimal(new BigDecimal(event.params._sellAmount))
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, null, event.block)
-  subjectToken.currentPriceinMoxie = price
+  subjectToken.currentPriceInMoxie = price
   subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._buyAmount)
   if (event.transaction.from != event.params._beneficiary) {
