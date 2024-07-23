@@ -25,6 +25,7 @@ type Order @entity {
   "sellAmount * 10 ^ -decimalsSellToken"
   volume: BigDecimal!
   timestamp: BigInt!
+  auctionId: BigInt!
   auction: AuctionDetail
   user: User!
   "added to easiness on querying user's orders by address"

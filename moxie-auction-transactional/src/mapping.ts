@@ -168,6 +168,7 @@ export function handleNewAuction(event: NewAuction): void {
   let isPrivateAuction = !allowListContract.equals(Address.zero())
 
   let order = new Order(orderId)
+  order.auctionId = auctionId
   order.auction = auctionId.toString()
   order.buyAmount = buyAmount
   order.sellAmount = sellAmount
@@ -229,6 +230,7 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.blockInfo = getOrCreateBlockInfo(event).id
   auctionDetails.save()
   // adding auction to order
+  order.auctionId = auctionDetails.auctionId
   order.auction = auctionDetails.id
   order.save()
   // Check if auctionId is present in createdAuction list. If not, add it.
@@ -274,6 +276,7 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   order.price = pricePoint.get("price")
   order.volume = pricePoint.get("volume")
   order.timestamp = event.block.timestamp
+  order.auctionId = auctionId
   order.auction = auctionDetails.id
   order.user = user.id
   order.userWalletAddress = user.address
