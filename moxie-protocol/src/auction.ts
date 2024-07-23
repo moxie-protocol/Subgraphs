@@ -1,35 +1,39 @@
 import { BigInt, BigDecimal, Bytes, Address, log } from "@graphprotocol/graph-ts"
 import { NewAuction, ClaimedFromOrder, AuctionCleared, EasyAuction, UserRegistration } from "../generated/EasyAuction/EasyAuction"
-import { Auction, AuctionOrder, AuctionUser, Order } from "../generated/schema"
-import { getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, saveSubjectTokenAndSnapshots } from "./utils"
+import { Auction, AuctionUser, Order } from "../generated/schema"
+import { getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, saveSubjectTokenAndSnapshots, Price } from "./utils"
 import { ORDER_TYPE_AUCTION } from "./constants"
 
 class AuctionAndOrder {
   auction: Auction
-  order: AuctionOrder
   user: AuctionUser
-  constructor(auction: Auction, order: AuctionOrder, user: AuctionUser) {
+  sellAmount: BigInt
+  reward: BigInt
+  refund: BigInt
+  constructor(auction: Auction, user: AuctionUser, sellAmount: BigInt, reward: BigInt, refund: BigInt) {
     this.auction = auction
-    this.order = order
     this.user = user
+    this.sellAmount = sellAmount
+    this.reward = reward
+    this.refund = refund
   }
 }
 export function enrichAuctionOrderWithRewardAndRefund(event: ClaimedFromOrder): AuctionAndOrder {
-  let auction = Auction.load(event.params.auctionId.toString())
+  let auctionId = event.params.auctionId
+  let userId = event.params.userId
+  let buyAmount = event.params.buyAmount
+  let sellAmount = event.params.sellAmount
+  let auction = Auction.load(auctionId.toString())
   if (!auction) {
-    throw new Error("Auction not loaded: auctionId : " + event.params.auctionId.toString())
+    throw new Error("Auction not loaded: auctionId : " + auctionId.toString())
   }
-  let user = AuctionUser.load(event.params.userId.toString())
+  let user = AuctionUser.load(userId.toString())
   if (!user) {
-    throw new Error("User not loaded: userId : " + event.params.userId.toString())
+    throw new Error("User not loaded: userId : " + userId.toString())
   }
   // calculate refund and reward
-  let order = new AuctionOrder(getTxEntityId(event))
-  order.auction = auction.id
-  order.buyAmount = event.params.buyAmount
-  order.sellAmount = event.params.sellAmount
-  order.user = user.id
-  let auctionOrderObj = new AuctionOrderClass(event.params.userId, order.buyAmount, order.sellAmount)
+
+  let auctionOrderObj = new AuctionOrderClass(userId, buyAmount, sellAmount)
   let clearingOrderObj = new AuctionOrderClass(auction.clearingUserId, auction.clearingBuyAmount, auction.clearingSellAmount)
 
   let sumBiddingTokenAmount = BigInt.zero()
@@ -39,22 +43,22 @@ export function enrichAuctionOrderWithRewardAndRefund(event: ClaimedFromOrder): 
   let priceDenominator = auction.clearingSellAmount
 
   if (auction.minFundingThresholdNotReached) {
-    sumBiddingTokenAmount = order.sellAmount
+    sumBiddingTokenAmount = sellAmount
   } else {
-    if (auction.clearingBuyAmount.equals(order.buyAmount) && auction.clearingSellAmount.equals(order.sellAmount) && auction.clearingUserId.equals(event.params.userId)) {
+    if (auction.clearingBuyAmount.equals(buyAmount) && auction.clearingSellAmount.equals(sellAmount) && auction.clearingUserId.equals(userId)) {
       sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(auction.volumeClearingPriceOrder).times(priceNumerator).div(priceDenominator)
-      sumBiddingTokenAmount = sumBiddingTokenAmount.plus(order.sellAmount.minus(auction.volumeClearingPriceOrder))
+      sumBiddingTokenAmount = sumBiddingTokenAmount.plus(sellAmount.minus(auction.volumeClearingPriceOrder))
     } else {
       if (auctionOrderObj.smallerThan(clearingOrderObj)) {
-        sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(order.sellAmount).times(priceNumerator).div(priceDenominator)
+        sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(sellAmount).times(priceNumerator).div(priceDenominator)
       } else {
-        sumBiddingTokenAmount = sumBiddingTokenAmount.plus(order.sellAmount)
+        sumBiddingTokenAmount = sumBiddingTokenAmount.plus(sellAmount)
       }
     }
   }
-  order.reward = sumAuctioningTokenAmount // subject token
-  order.refund = sumBiddingTokenAmount // moxie
-  return new AuctionAndOrder(auction, order, user)
+  let reward = sumAuctioningTokenAmount // subject token
+  let refund = sumBiddingTokenAmount // moxie
+  return new AuctionAndOrder(auction, user, sellAmount, reward, refund)
 }
 export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   let blockInfo = getOrCreateBlockInfo(event.block)
@@ -63,13 +67,13 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
     throw new Error("Subject token not exist, txHash: " + event.transaction.hash.toHexString())
   }
   let subjectTokenAddress = Address.fromString(auctionAndOrder.auction.subjectToken!)
-  let protocolTokenAmount = auctionAndOrder.order.sellAmount.minus(auctionAndOrder.order.refund)
-  let subjectAmount = auctionAndOrder.order.reward
+  let protocolTokenAmount = auctionAndOrder.sellAmount.minus(auctionAndOrder.refund)
+  let subjectAmount = auctionAndOrder.reward
   if (subjectAmount.equals(BigInt.zero())) {
     log.warning("Subject amount is zero, txHash: {}", [event.transaction.hash.toHexString()])
     return
   }
-  let price = protocolTokenAmount.divDecimal(subjectAmount.toBigDecimal())
+  let price = new Price(protocolTokenAmount, subjectAmount)
   let order = new Order(getTxEntityId(event))
   order.protocolToken = auctionAndOrder.auction.protocolToken
   order.protocolTokenAmount = protocolTokenAmount
@@ -81,7 +85,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   order.user = auctionAndOrder.user.id
   order.subjectFee = BigInt.zero()
   order.protocolFee = BigInt.zero()
-  order.price = price
+  order.price = price.price
   order.blockInfo = blockInfo.id
 
   // updating user's portfolio
@@ -109,8 +113,9 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   let subjectToken = getOrCreateSubjectToken(subjectTokenAddress, null, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(protocolTokenAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
-  subjectToken.currentPriceInMoxie = price
-  subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
+
+  subjectToken.currentPriceInMoxie = price.price
+  subjectToken.currentPriceInWeiInMoxie = price.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   saveSubjectTokenAndSnapshots(subjectToken, event.block)
 }

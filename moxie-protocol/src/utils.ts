@@ -448,3 +448,11 @@ export function decodeOrder(encodedOrderId: Bytes): AuctionOrderClass {
   let sellAmount = BigInt.fromString(BigDecimal.fromString(parseInt(sellAmountHex).toString()).toString())
   return new AuctionOrderClass(userId, buyAmount, sellAmount)
 }
+export class Price {
+  price: BigDecimal
+  priceInWei: BigDecimal
+  constructor(protocolTokenAmount: BigInt, subjectTokenAmount: BigInt) {
+    this.price = protocolTokenAmount.divDecimal(subjectTokenAmount.toBigDecimal())
+    this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
+  }
+}

@@ -434,16 +434,6 @@ type Summary @entity {
   totalSubjectFeeFromAuction: BigInt!
 }
 
-type AuctionOrder @entity {
-  id: ID!
-  auction: Auction!
-  user: AuctionUser!
-  buyAmount: BigInt!
-  sellAmount: BigInt!
-  reward: BigInt!
-  refund: BigInt!
-}
-
 type AuctionUser @entity {
   id: ID!
   userAddress: Bytes!
