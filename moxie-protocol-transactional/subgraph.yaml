@@ -54,9 +54,9 @@ dataSources:
     name: MoxieBondingCurve
     network: base-sepolia
     source:
-      address: "0xF80Fe11Ace879AD3695f8caA51be0368318C32fA"
+      address: "0x56147e70A57012ade3003fe93a394BFC35d747e3"
       abi: MoxieBondingCurve
-      startBlock: 12933779
+      startBlock: 12934212
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
