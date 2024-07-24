@@ -176,7 +176,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // Saving order entity
   let order = new Order(getTxEntityId(event))
   order.protocolToken = event.params._buyToken
-  order.protocolTokenAmount = protocolTokenAmount
+  // actual amount got by user after fees
+  order.protocolTokenAmount = protocolTokenAmountReducingFees
   order.subjectToken = subjectToken.id
   order.subjectAmount = event.params._sellAmount
   order.protocolTokenInvested = new BigDecimal(BigInt.zero())
@@ -189,7 +190,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.transaction.hash, event.block)
-  portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
+  // actual amount got by user after fees
+  portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmountReducingFees)
 
   // this balance is only for temporary use, actual balance will be updated during Transfer event in subject token
   let updatedBalance = portfolio.balance.minus(event.params._sellAmount)
