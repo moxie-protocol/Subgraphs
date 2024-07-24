@@ -397,19 +397,14 @@ export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: Block
   subjectFeeTransfer.save()
 }
 
-function absBigInt(a: BigInt): BigInt {
-  if (a.lt(BigInt.zero())) {
-    return a.times(BigInt.fromI32(-1))
+export function findClosest(arr: Array<BigInt>, target: BigInt): BigInt {
+  if (arr.length == 0) {
+    throw new Error("Array is empty")
   }
-  return a
-}
-
-function findClosest(arr: Array<BigInt>, target: BigInt): BigInt {
   let closest = arr[0]
-  let minDiff = absBigInt(target.minus(closest))
-
+  let minDiff = target.minus(closest).abs()
   for (let i = arr.length - 1; i >= 0; i--) {
-    let diff = absBigInt(target.minus(arr[i]))
+    let diff = target.minus(arr[i]).abs()
     if (diff.lt(minDiff)) {
       closest = arr[i]
       minDiff = diff
