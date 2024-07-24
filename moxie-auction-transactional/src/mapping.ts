@@ -28,9 +28,9 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   auctionDetails.currentClearingOrderSellAmount = biddingTokensSold
   const pricePoint = convertToPricePoint(biddingTokensSold, auctioningTokensSold, 18, 18)
   let calculatedCurrentClearingPrice = pricePoint.get("price")
-  auctionDetails.currentVolume = pricePoint.get("volume")!
+  auctionDetails.currentVolume = pricePoint.get("volume")
   auctionDetails.currentBiddingAmount = biddingTokensSold
-  auctionDetails.interestScore = pricePoint.get("volume")!.div(TEN.pow(18).toBigDecimal())
+  auctionDetails.interestScore = pricePoint.get("volume").div(TEN.pow(18).toBigDecimal())
   auctionDetails.isCleared = true
 
   let clearingPriceOrderString = event.params.clearingPriceOrder.toHexString()
@@ -159,8 +159,8 @@ export function handleNewAuction(event: NewAuction): void {
   order.sellAmount = sellAmount
   order.user = user.id
   order.userWalletAddress = user.address
-  order.volume = pricePoint.get("volume")!
-  order.price = ONE.divDecimal(pricePoint.get("price")!) // 1/ (sellAmount/buyAmount)
+  order.volume = pricePoint.get("volume")
+  order.price = ONE.divDecimal(pricePoint.get("price")) // 1/ (sellAmount/buyAmount)
   order.timestamp = eventTimeStamp
   order.status = "Placed"
   order.txHash = event.transaction.hash
@@ -255,8 +255,8 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   order.buyAmount = buyAmount
   order.sellAmount = sellAmount
   order.user = user.id
-  order.price = pricePoint.get("price")!
-  order.volume = pricePoint.get("volume")!
+  order.price = pricePoint.get("price")
+  order.volume = pricePoint.get("volume")
   order.timestamp = event.block.timestamp
   order.auctionId = auctionId
   order.auction = auctionDetails.id
