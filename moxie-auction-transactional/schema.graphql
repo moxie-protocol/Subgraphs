@@ -114,16 +114,8 @@ type AuctionDetail @entity {
   txHash: Bytes!
   "block information of auction creation"
   blockInfo: BlockInfo!
-  clearingPriceOrder: ClearingPriceOrder
   "minimum price in moxie to purchase one subject token"
   minimumPriceInMoxie: BigDecimal!
-}
-
-type ClearingPriceOrder @entity {
-  id: ID!
-  userId: BigDecimal!
-  sellAmount: BigDecimal!
-  buyAmount: BigDecimal!
 }
 
 type Token @entity {
