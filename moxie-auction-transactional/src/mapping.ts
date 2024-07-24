@@ -97,7 +97,6 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   let buyAmount = event.params.buyAmount
   let userId = event.params.userId
 
-  log.error("Tx Hash: {}", [event.transaction.hash.toHexString()])
   let auctionDetails = loadAuctionDetail(auctionId.toString())
 
   let orderId = getOrderEntityId(auctionId, sellAmount, buyAmount, userId)
