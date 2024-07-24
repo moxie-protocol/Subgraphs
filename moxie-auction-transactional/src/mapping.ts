@@ -190,7 +190,7 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.minFundingThreshold = event.params.minFundingThreshold
   auctionDetails.allowListManager = event.params.allowListContract
   auctionDetails.allowListSigner = allowListSigner
-  auctionDetails.currentClearingPrice = ONE.divDecimal(pricePoint.get("price")!)
+  auctionDetails.currentClearingPrice = ONE.divDecimal(pricePoint.get("price"))
   auctionDetails.currentBiddingAmount = new BigInt(0)
   auctionDetails.isAtomicClosureAllowed = isAtomicClosureAllowed
   auctionDetails.isPrivateAuction = isPrivateAuction
