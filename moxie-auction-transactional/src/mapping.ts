@@ -38,7 +38,7 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   auctionDetails.currentClearingOrderUserId = BigDecimal.fromString(parseInt(userId).toString())
   //If there is no active order don't update the price
   if (auctionDetails.activeOrderCount != ZERO) {
-    auctionDetails.currentClearingPrice = calculatedCurrentClearingPrice!
+    auctionDetails.currentClearingPrice = calculatedCurrentClearingPrice
   }
 
   let easyAuction = EasyAuction.bind(event.address)

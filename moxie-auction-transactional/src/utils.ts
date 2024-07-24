@@ -160,11 +160,13 @@ function getBidInformation(orders: string[], auctionId: BigInt): BidDetails {
   let initialLowestBiddingTokenAmount = BigInt.fromString(orderArr[1])
   let initialLowestAuctioningTokenAmount = BigInt.fromString(orderArr[2])
   let initialLowestUserId = BigInt.fromString(orderArr[3])
+  let initialLowestPrice = initialLowestBiddingTokenAmount.div(initialLowestAuctioningTokenAmount)
   uniqueBidders.add(initialLowestUserId.toString())
 
   let initialHighestBiddingTokenAmount = BigInt.fromString(orderArr[1])
   let initialHighestAuctioningTokenAmount = BigInt.fromString(orderArr[2])
   let initialHighestUserId = BigInt.fromString(orderArr[3])
+  let initialHighestPrice = initialLowestBiddingTokenAmount.div(initialLowestAuctioningTokenAmount)
 
   for (let i = 1; i < orders.length; i++) {
     let order = orders[i]
@@ -172,33 +174,40 @@ function getBidInformation(orders: string[], auctionId: BigInt): BidDetails {
     let biddingTokenAmount = BigInt.fromString(orderArr[1])
     let auctioningTokenAmount = BigInt.fromString(orderArr[2])
     let userId = BigInt.fromString(orderArr[3])
+    let currentPrice = biddingTokenAmount.div(auctioningTokenAmount)
     uniqueBidders.add(userId.toString())
-    if (biddingTokenAmount.lt(initialLowestBiddingTokenAmount)) {
+    if (currentPrice.lt(initialLowestPrice)) {
       initialLowestBiddingTokenAmount = biddingTokenAmount
       initialLowestAuctioningTokenAmount = auctioningTokenAmount
       initialLowestUserId = userId
-    } else if (biddingTokenAmount.equals(initialLowestBiddingTokenAmount) && auctioningTokenAmount.lt(initialLowestAuctioningTokenAmount)) {
+      initialLowestPrice = currentPrice
+    } else if (currentPrice.equals(initialLowestPrice) && biddingTokenAmount.lt(initialLowestBiddingTokenAmount)) {
       initialLowestBiddingTokenAmount = biddingTokenAmount
       initialLowestAuctioningTokenAmount = auctioningTokenAmount
       initialLowestUserId = userId
-    } else if (biddingTokenAmount.equals(initialLowestBiddingTokenAmount) && auctioningTokenAmount.equals(initialLowestAuctioningTokenAmount) && userId.lt(initialLowestUserId)) {
+      initialLowestPrice = currentPrice
+    } else if (currentPrice.equals(initialLowestPrice) && biddingTokenAmount.equals(initialLowestBiddingTokenAmount) && userId.lt(initialLowestUserId)) {
       initialLowestBiddingTokenAmount = biddingTokenAmount
       initialLowestAuctioningTokenAmount = auctioningTokenAmount
       initialLowestUserId = userId
+      initialLowestPrice = currentPrice
     }
 
-    if (biddingTokenAmount.gt(initialHighestBiddingTokenAmount)) {
+    if (currentPrice.gt(initialHighestPrice)) {
       initialHighestBiddingTokenAmount = biddingTokenAmount
       initialHighestAuctioningTokenAmount = auctioningTokenAmount
       initialHighestUserId = userId
-    } else if (biddingTokenAmount.equals(initialHighestBiddingTokenAmount) && auctioningTokenAmount.lt(initialHighestAuctioningTokenAmount)) {
+      initialHighestPrice = currentPrice
+    } else if (currentPrice.equals(initialHighestPrice) && biddingTokenAmount.gt(initialHighestBiddingTokenAmount)) {
       initialHighestBiddingTokenAmount = biddingTokenAmount
       initialHighestAuctioningTokenAmount = auctioningTokenAmount
       initialHighestUserId = userId
-    } else if (biddingTokenAmount.equals(initialHighestBiddingTokenAmount) && auctioningTokenAmount.equals(initialHighestAuctioningTokenAmount) && userId.gt(initialHighestUserId)) {
+      initialHighestPrice = currentPrice
+    } else if (currentPrice.equals(initialHighestPrice) && biddingTokenAmount.equals(initialHighestBiddingTokenAmount) && userId.gt(initialHighestUserId)) {
       initialHighestBiddingTokenAmount = biddingTokenAmount
       initialHighestAuctioningTokenAmount = auctioningTokenAmount
       initialHighestUserId = userId
+      initialHighestPrice = currentPrice
     }
   }
   bidDetails.lowestPriceBidOrder = getOrderEntityId(auctionId, initialLowestBiddingTokenAmount, initialLowestAuctioningTokenAmount, initialLowestUserId)
