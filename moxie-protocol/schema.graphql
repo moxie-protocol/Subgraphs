@@ -346,9 +346,9 @@ type Order @entity {
   "associated portfolio"
   portfolio: Portfolio!
   "subject fee transaction"
-  subjectFeeTransfer: SubjectFeeTransfer! @derivedFrom(field: "order")
+  subjectFeeTransfer: SubjectFeeTransfer
   "protocol fee transaction"
-  protocolFeeTransfer: ProtocolFeeTransfer! @derivedFrom(field: "order")
+  protocolFeeTransfer: ProtocolFeeTransfer
   "block information"
   blockInfo: BlockInfo!
 }

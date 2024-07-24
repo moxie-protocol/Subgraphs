@@ -363,10 +363,27 @@ export function calculateBuySideFee(_depositAmount: BigInt): Fees {
   return new Fees(protocolFee_, subjectFee_)
 }
 
-export function calculateSellSideFee(_depositAmount: BigInt): Fees {
+export function calculateReturnAmountAddingBackFees(_buyAmount: BigInt): BigInt {
   let summary = getOrCreateSummary()
-  let protocolFee_ = _depositAmount.times(summary.protocolSellFeePct).div(PCT_BASE)
-  let subjectFee_ = _depositAmount.times(summary.subjectSellFeePct).div(PCT_BASE)
+  return _calculateReturnAmountAddingBackFees(summary.protocolSellFeePct, summary.subjectSellFeePct, _buyAmount)
+}
+
+export function _calculateReturnAmountAddingBackFees(protocolSellFeePct: BigInt, subjectSellFeePct: BigInt, _buyAmount: BigInt): BigInt {
+  let totalFeePCT = protocolSellFeePct.plus(subjectSellFeePct)
+  // moxieAmount_ = (estimatedAmount * PCT_BASE) / (PCT_BASE - totalFeePCT);
+  return _buyAmount.times(PCT_BASE).div(PCT_BASE.minus(totalFeePCT))
+}
+
+export function calculateSellSideFee(_sellAmount: BigInt): Fees {
+  let summary = getOrCreateSummary()
+  return _calculateSellSideFee(summary.protocolSellFeePct, summary.subjectSellFeePct, _sellAmount)
+}
+export function _calculateSellSideFee(protocolSellFeePct: BigInt, subjectSellFeePct: BigInt, _sellAmount: BigInt): Fees {
+  // protocolFee_ = (_sellAmount * protocolSellFeePct) / PCT_BASE
+  // subjectFee_ = (_sellAmount * subjectSellFeePct) / PCT_BASE
+
+  let protocolFee_ = _sellAmount.times(protocolSellFeePct).div(PCT_BASE)
+  let subjectFee_ = _sellAmount.times(subjectSellFeePct).div(PCT_BASE)
   return new Fees(protocolFee_, subjectFee_)
 }
 
@@ -379,6 +396,9 @@ export function createProtocolFeeTransfer(event: ethereum.Event, blockInfo: Bloc
   protocolFeeTransfer.beneficiary = beneficiary.id
   protocolFeeTransfer.amount = fee
   protocolFeeTransfer.save()
+
+  order.protocolFeeTransfer = protocolFeeTransfer.id
+  order.save()
 }
 
 export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: BlockInfo, order: Order, subjectToken: SubjectToken, fee: BigInt): void {
@@ -391,6 +411,9 @@ export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: Block
   subjectFeeTransfer.subject = subjectToken.subject!
 
   subjectFeeTransfer.save()
+
+  order.subjectFeeTransfer = subjectFeeTransfer.id
+  order.save()
 }
 
 export function findClosest(arr: Array<BigInt>, target: BigInt): BigInt {
