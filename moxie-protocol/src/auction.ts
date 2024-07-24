@@ -109,8 +109,6 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   let subjectToken = getOrCreateSubjectToken(subjectTokenAddress, null, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(protocolTokenAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
-  subjectToken.currentPriceInMoxie = calculatedPrice.price
-  subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   saveSubjectTokenAndSnapshots(subjectToken, event.block)
 }
