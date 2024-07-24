@@ -290,7 +290,8 @@ type Portfolio @entity {
   "total moxie invested by the user"
   protocolTokenInvested: BigDecimal!
   "Orders associated with the user's portfolio"
-  orders: [Order!]! @derivedFrom(field: "portfolio")
+  ordersAsBeneficiary: [Order!]! @derivedFrom(field: "beneficiaryPortfolio")
+  ordersAsSpender: [Order!]! @derivedFrom(field: "spenderPortfolio")
   "created at block information"
   createdAtBlockInfo: BlockInfo!
   "updated at block information"
@@ -302,8 +303,8 @@ type User @entity {
   id: ID!
   "User's Portfolio for each subject token he/she holds"
   portfolio: [Portfolio!]! @derivedFrom(field: "user")
-  "orders placed by the user (auction, buy & sell)"
-  orders: [Order!]! @derivedFrom(field: "user")
+  ordersAsBeneficiary: [Order!]! @derivedFrom(field: "beneficiary")
+  ordersAsSpender: [Order!]! @derivedFrom(field: "spender")
   "beneficiary fee transfers"
   subjectFeeTransfer: [SubjectFeeTransfer!]!
   "total moxie spent by the user"
@@ -341,10 +342,10 @@ type Order @entity {
   price: BigDecimal!
   "BUY/SELL order type"
   orderType: OrderType
-  "Seller/Buyer of Fan token"
-  user: User!
-  "associated portfolio"
-  portfolio: Portfolio!
+  beneficiary: User!
+  spender: User!
+  beneficiaryPortfolio: Portfolio!
+  spenderPortfolio: Portfolio!
   "subject fee transaction"
   subjectFeeTransfer: SubjectFeeTransfer! @derivedFrom(field: "order")
   "protocol fee transaction"

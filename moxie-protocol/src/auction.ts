@@ -87,12 +87,14 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   order.subjectToken = auctionAndOrder.auction.subjectToken!
   order.subjectAmount = subjectAmount
   order.orderType = ORDER_TYPE_AUCTION
-  order.user = auctionAndOrder.user.id
+  order.beneficiary = auctionAndOrder.user.id
+  order.spender = auctionAndOrder.user.id
   order.subjectFee = BigInt.zero()
   order.protocolFee = BigInt.zero()
   order.price = calculatedPrice.price
   order.blockInfo = blockInfo.id
-  order.portfolio = portfolio.id
+  order.beneficiaryPortfolio = portfolio.id
+  order.spenderPortfolio = portfolio.id
   order.save()
 
   let user = getOrCreateUser(userAddress, event.block)
