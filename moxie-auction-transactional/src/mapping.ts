@@ -36,9 +36,14 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   let clearingPriceOrderString = event.params.clearingPriceOrder.toHexString()
   let userId = "0x" + clearingPriceOrderString.substring(2, 18)
   auctionDetails.currentClearingOrderUserId = BigDecimal.fromString(parseInt(userId).toString())
+  let buyAmount = "0x" + clearingPriceOrderString.substring(19, 42)
+  let sellAmount = "0x" + clearingPriceOrderString.substring(43, 66)
+  let sellAmountBigDec = BigDecimal.fromString(parseInt(sellAmount).toString())
+  let buyAmountBigDec = BigDecimal.fromString(parseInt(buyAmount).toString())
+  let clearingPriceFromContract = sellAmountBigDec.div(buyAmountBigDec)
   //If there is no active order don't update the price
   if (auctionDetails.activeOrderCount != ZERO) {
-    auctionDetails.currentClearingPrice = calculatedCurrentClearingPrice
+    auctionDetails.currentClearingPrice = clearingPriceFromContract
   }
 
   let easyAuction = EasyAuction.bind(event.address)
