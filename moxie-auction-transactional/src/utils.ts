@@ -7,6 +7,17 @@ import { ORDER_ENTITY_COUNTER_ID } from "./constants"
 const ZERO = BigInt.zero()
 const TEN = BigInt.fromString("10")
 
+class BidDetails {
+  lowestPriceBidOrder: string;
+  highestPriceBidOrder: string;
+  uniqueHoldersCount: BigInt;
+  constructor() {
+    this.lowestPriceBidOrder = "";
+    this.highestPriceBidOrder = "";
+    this.uniqueHoldersCount = BigInt.fromI32(0);
+ }
+}
+
 export function convertToPricePoint(sellAmount: BigInt, buyAmount: BigInt, decimalsBuyToken: number, decimalsSellToken: number): Map<string, BigDecimal> {
   if (buyAmount.equals(ZERO)) {
     let pricePoint = new Map<string, BigDecimal>()
@@ -27,117 +38,16 @@ export function convertToPricePoint(sellAmount: BigInt, buyAmount: BigInt, decim
   return pricePoint
 }
 
-export function getUniqueBiddersCount(orderIds: string[]): BigInt {
-  let uniqueBidders = new Set<string>()
-  for (let i = 0; i < orderIds.length; i++) {
-    let orderArr = orderIds[i].split("-")
-    uniqueBidders.add(orderArr[3])
-  }
-  return BigInt.fromI32(uniqueBidders.size)
-}
-
 // export function (auctionDetails: AuctionDetail,sortedOrders:string[]): void {
 export function updateAuctionStats(auctionDetails: AuctionDetail): void {
   let orders = auctionDetails.activeOrders!
   if (orders.length > 0) {
-    auctionDetails.uniqueBidders = getUniqueBiddersCount(orders)
-    auctionDetails.highestPriceBidOrder = getHighestBidId(orders, auctionDetails.auctionId)
-    auctionDetails.lowestPriceBidOrder = getLowestBidId(orders, auctionDetails.auctionId)
+    let bidDetails = getBidInformation(orders, auctionDetails.auctionId)
+    auctionDetails.uniqueBidders = bidDetails.uniqueHoldersCount
+    auctionDetails.highestPriceBidOrder = bidDetails.highestPriceBidOrder
+    auctionDetails.lowestPriceBidOrder = bidDetails.lowestPriceBidOrder
     auctionDetails.save()
   }
-  // const initialOrderDetailsList = auctionDetails.exactOrder.split("-")
-  // const initialOrderSellAmount = BigInt.fromString(initialOrderDetailsList[1])
-  // const initialOrderBuyAmount = BigInt.fromString(initialOrderDetailsList[2])
-
-  // const auctioningTokenAmountOfInitialOrder = initialOrderSellAmount
-  // const biddingTokenAmountOfInitialOrder = initialOrderBuyAmount
-
-  // let biddingTokenTotal = ZERO
-  // let currentOrderId = ""
-
-  // // Loop through all the sorted orders
-  // // Orders are sorted from highest price to lowest
-  // for (let i = 0; i < orders.length; i++) {
-  //   let order = orders[i]
-  //   currentOrderId = order
-  //   let orderArr = order.split("-")
-  //   let orderSellAmount = BigInt.fromString(orderArr[1])
-  //   let orderBuyAmount = BigInt.fromString(orderArr[2])
-  //   // calculated the total bidding token amount (sellAmount is amount of moxie token on each order)
-  //   biddingTokenTotal = biddingTokenTotal.plus(orderSellAmount || ZERO)
-
-  //   if (biddingTokenTotal.divDecimal(auctioningTokenAmountOfInitialOrder.toBigDecimal()).ge(orderSellAmount.divDecimal(orderBuyAmount.toBigDecimal()))) {
-  //     break
-  //   }
-  // }
-
-  // if (currentOrderId.length == 0) {  
-  //   return
-  // }
-  // let orderArr = currentOrderId.split("-")
-  // let currentOrderSellAmount = BigInt.fromString(orderArr[1])
-  // let currentOrderBuyAmount = BigInt.fromString(orderArr[2])
-
-  // if (biddingTokenTotal.ge(ZERO) && biddingTokenTotal.divDecimal(auctioningTokenAmountOfInitialOrder.toBigDecimal()).ge(currentOrderSellAmount.divDecimal(currentOrderBuyAmount.toBigDecimal()))) {
-  //   let uncoveredBids = biddingTokenTotal.minus(auctioningTokenAmountOfInitialOrder.times(currentOrderSellAmount).div(currentOrderBuyAmount))
-
-  //   if (currentOrderSellAmount.gt(uncoveredBids)) {
-  //     let volume = currentOrderSellAmount.minus(uncoveredBids)
-  //     let currentBiddingAmount = biddingTokenTotal.minus(currentOrderSellAmount).plus(volume)
-  //     auctionDetails.currentClearingOrderBuyAmount = currentOrderBuyAmount
-  //     auctionDetails.currentClearingOrderSellAmount = currentOrderSellAmount
-
-  //     auctionDetails.currentClearingPrice = convertToPricePoint(currentOrderSellAmount, currentOrderBuyAmount, decimalAuctioningToken.toI32(), decimalBiddingToken.toI32()).get("price")
-  //     auctionDetails.currentVolume = new BigDecimal(volume)
-  //     auctionDetails.currentBiddingAmount = currentBiddingAmount
-  //     auctionDetails.interestScore = currentBiddingAmount.toBigDecimal().div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
-
-  //     auctionDetails.save()
-  //     return
-  //   } else {
-  //     let clearingOrderSellAmount = biddingTokenTotal.minus(currentOrderSellAmount)
-  //     let clearingOrderBuyAmount = auctioningTokenAmountOfInitialOrder
-  //     const currentBiddingAmount = biddingTokenTotal.minus(currentOrderSellAmount)
-  //     auctionDetails.currentClearingOrderBuyAmount = clearingOrderBuyAmount
-  //     auctionDetails.currentClearingOrderSellAmount = clearingOrderSellAmount
-  //     const currentClearingPrice = convertToPricePoint(clearingOrderSellAmount, clearingOrderBuyAmount, decimalAuctioningToken.toI32(), decimalBiddingToken.toI32()).get("price")
-  //     auctionDetails.currentClearingPrice = currentClearingPrice
-  //     auctionDetails.currentVolume = BigDecimal.fromString("0")
-  //     auctionDetails.currentBiddingAmount = currentBiddingAmount
-  //     auctionDetails.interestScore = currentBiddingAmount.toBigDecimal().div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
-
-  //     auctionDetails.save()
-  //     return
-  //   }
-  // } else if (biddingTokenTotal.ge(biddingTokenAmountOfInitialOrder)) {
-  //   const clearingOrderBuyAmount = auctioningTokenAmountOfInitialOrder
-  //   const clearingOrderSellAmount = biddingTokenTotal
-  //   auctionDetails.currentClearingOrderBuyAmount = clearingOrderBuyAmount
-  //   auctionDetails.currentClearingOrderSellAmount = clearingOrderSellAmount
-  //   const currentClearingPrice = convertToPricePoint(clearingOrderSellAmount, clearingOrderBuyAmount, decimalAuctioningToken.toI32(), decimalBiddingToken.toI32()).get("price")
-  //   auctionDetails.currentClearingPrice = currentClearingPrice
-  //   auctionDetails.currentVolume = BigDecimal.fromString("0")
-  //   auctionDetails.currentBiddingAmount = biddingTokenTotal
-  //   auctionDetails.interestScore = biddingTokenTotal.toBigDecimal().div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
-
-  //   auctionDetails.save()
-  //   return
-  // } else {
-  //   const clearingOrderBuyAmount = auctioningTokenAmountOfInitialOrder
-  //   const clearingOrderSellAmount = biddingTokenAmountOfInitialOrder
-
-  //   const volume = new BigDecimal(biddingTokenTotal).times(auctioningTokenAmountOfInitialOrder.divDecimal(new BigDecimal(biddingTokenAmountOfInitialOrder)))
-  //   auctionDetails.currentClearingOrderBuyAmount = clearingOrderBuyAmount
-  //   auctionDetails.currentClearingOrderSellAmount = clearingOrderSellAmount
-  //   const currentClearingPrice = convertToPricePoint(clearingOrderSellAmount, clearingOrderBuyAmount, decimalAuctioningToken.toI32(), decimalBiddingToken.toI32()).get("price")
-  //   auctionDetails.currentClearingPrice = currentClearingPrice
-  //   auctionDetails.currentVolume = volume
-  //   auctionDetails.currentBiddingAmount = biddingTokenTotal
-  //   auctionDetails.interestScore = biddingTokenTotal.toBigDecimal().div(TEN.pow(<u8>decimalBiddingToken.toI32()).toBigDecimal())
-
-  //   auctionDetails.save()
-  //   return
-  // }
 }
 
 export function getOrderEntityId(auctionId: BigInt, sellAmount: BigInt, buyAmount: BigInt, userId: BigInt): string {
@@ -238,15 +148,23 @@ export function updateOrderCounter(): BigInt {
   return orderEntityCounter.counter
 }
 
-function getHighestBidId(orders: string[], auctionId: BigInt): string {
+function getBidInformation(orders: string[], auctionId: BigInt): BidDetails {
+  let bidDetails = new BidDetails()
   if(orders.length == 0) {
-    return ""
+    return bidDetails
   }
+
   let order = orders[0]
+  let uniqueBidders = new Set<string>()
   let orderArr = order.split("-")
-  let initialBiddingTokenAmount = BigInt.fromString(orderArr[1])
-  let initialAuctioningTokenAmount = BigInt.fromString(orderArr[2])
-  let initialUserId = BigInt.fromString(orderArr[3])
+  let initialLowestBiddingTokenAmount = BigInt.fromString(orderArr[1])
+  let initialLowestAuctioningTokenAmount = BigInt.fromString(orderArr[2])
+  let initialLowestUserId = BigInt.fromString(orderArr[3])
+  uniqueBidders.add(initialLowestUserId.toString())
+
+  let initialHighestBiddingTokenAmount = BigInt.fromString(orderArr[1])
+  let initialHighestAuctioningTokenAmount = BigInt.fromString(orderArr[2])
+  let initialHighestUserId = BigInt.fromString(orderArr[3])
 
   for (let i = 1; i < orders.length; i++) {
     let order = orders[i]
@@ -254,54 +172,40 @@ function getHighestBidId(orders: string[], auctionId: BigInt): string {
     let biddingTokenAmount = BigInt.fromString(orderArr[1])
     let auctioningTokenAmount = BigInt.fromString(orderArr[2])
     let userId = BigInt.fromString(orderArr[3])
-    if (biddingTokenAmount.gt(initialBiddingTokenAmount)) {
-      initialBiddingTokenAmount = biddingTokenAmount
-      initialAuctioningTokenAmount = auctioningTokenAmount
-      initialUserId = userId
-    } else if (biddingTokenAmount.equals(initialBiddingTokenAmount) && auctioningTokenAmount.lt(initialAuctioningTokenAmount)) {
-      initialBiddingTokenAmount = biddingTokenAmount
-      initialAuctioningTokenAmount = auctioningTokenAmount
-      initialUserId = userId
-    } else if (biddingTokenAmount.equals(initialBiddingTokenAmount) && auctioningTokenAmount.equals(initialAuctioningTokenAmount) && userId.gt(initialUserId)) {
-      initialBiddingTokenAmount = biddingTokenAmount
-      initialAuctioningTokenAmount = auctioningTokenAmount
-      initialUserId = userId
+    uniqueBidders.add(userId.toString())
+    if (biddingTokenAmount.lt(initialLowestBiddingTokenAmount)) {
+      initialLowestBiddingTokenAmount = biddingTokenAmount
+      initialLowestAuctioningTokenAmount = auctioningTokenAmount
+      initialLowestUserId = userId
+    } else if (biddingTokenAmount.equals(initialLowestBiddingTokenAmount) && auctioningTokenAmount.lt(initialLowestAuctioningTokenAmount)) {
+      initialLowestBiddingTokenAmount = biddingTokenAmount
+      initialLowestAuctioningTokenAmount = auctioningTokenAmount
+      initialLowestUserId = userId
+    } else if (biddingTokenAmount.equals(initialLowestBiddingTokenAmount) && auctioningTokenAmount.equals(initialLowestAuctioningTokenAmount) && userId.lt(initialLowestUserId)) {
+      initialLowestBiddingTokenAmount = biddingTokenAmount
+      initialLowestAuctioningTokenAmount = auctioningTokenAmount
+      initialLowestUserId = userId
+    }
+
+    if (biddingTokenAmount.gt(initialHighestBiddingTokenAmount)) {
+      initialHighestBiddingTokenAmount = biddingTokenAmount
+      initialHighestAuctioningTokenAmount = auctioningTokenAmount
+      initialHighestUserId = userId
+    } else if (biddingTokenAmount.equals(initialHighestBiddingTokenAmount) && auctioningTokenAmount.lt(initialHighestAuctioningTokenAmount)) {
+      initialHighestBiddingTokenAmount = biddingTokenAmount
+      initialHighestAuctioningTokenAmount = auctioningTokenAmount
+      initialHighestUserId = userId
+    } else if (biddingTokenAmount.equals(initialHighestBiddingTokenAmount) && auctioningTokenAmount.equals(initialHighestAuctioningTokenAmount) && userId.gt(initialHighestUserId)) {
+      initialHighestBiddingTokenAmount = biddingTokenAmount
+      initialHighestAuctioningTokenAmount = auctioningTokenAmount
+      initialHighestUserId = userId
     }
   }
-  return getOrderEntityId(auctionId, initialBiddingTokenAmount, initialAuctioningTokenAmount, initialUserId)
-}
+  bidDetails.lowestPriceBidOrder = getOrderEntityId(auctionId, initialLowestBiddingTokenAmount, initialLowestAuctioningTokenAmount, initialLowestUserId)
+  bidDetails.highestPriceBidOrder = getOrderEntityId(auctionId, initialHighestBiddingTokenAmount, initialHighestAuctioningTokenAmount, initialHighestUserId)
+  bidDetails.uniqueHoldersCount =  BigInt.fromI32(uniqueBidders.size)
 
-function getLowestBidId(orders: string[], auctionId: BigInt): string {
-  if(orders.length == 0) {
-    return ""
-  }
-  let order = orders[0]
-  let orderArr = order.split("-")
-  let initialBiddingTokenAmount = BigInt.fromString(orderArr[1])
-  let initialAuctioningTokenAmount = BigInt.fromString(orderArr[2])
-  let initialUserId = BigInt.fromString(orderArr[3])
-
-  for (let i = 1; i < orders.length; i++) {
-    let order = orders[i]
-    let orderArr = order.split("-")
-    let biddingTokenAmount = BigInt.fromString(orderArr[1])
-    let auctioningTokenAmount = BigInt.fromString(orderArr[2])
-    let userId = BigInt.fromString(orderArr[3])
-    if (biddingTokenAmount.lt(initialBiddingTokenAmount)) {
-      initialBiddingTokenAmount = biddingTokenAmount
-      initialAuctioningTokenAmount = auctioningTokenAmount
-      initialUserId = userId
-    } else if (biddingTokenAmount.equals(initialBiddingTokenAmount) && auctioningTokenAmount.lt(initialAuctioningTokenAmount)) {
-      initialBiddingTokenAmount = biddingTokenAmount
-      initialAuctioningTokenAmount = auctioningTokenAmount
-      initialUserId = userId
-    } else if (biddingTokenAmount.equals(initialBiddingTokenAmount) && auctioningTokenAmount.equals(initialAuctioningTokenAmount) && userId.lt(initialUserId)) {
-      initialBiddingTokenAmount = biddingTokenAmount
-      initialAuctioningTokenAmount = auctioningTokenAmount
-      initialUserId = userId
-    }
-  }
-  return getOrderEntityId(auctionId, initialBiddingTokenAmount, initialAuctioningTokenAmount, initialUserId)
+  return bidDetails
 }
 //getClaimedAmounts(order, event, auctionDetails)
 export function getClaimedAmounts(order: Order, auctionDetails: AuctionDetail): BigInt[] {
@@ -343,10 +247,13 @@ function smallerThan(orderA: Order, sellAmount: BigInt, buyAmount: BigInt, userI
   return false
 }
 
-export function increaseTotalBiddingValueAndOrdersCount(value: BigInt): void {
+export function increaseTotalBiddingValueAndOrdersCount(value: BigInt, isNewAuction: boolean): void {
   let summary = loadSummary()
   summary.totalBiddingValue = summary.totalBiddingValue.plus(value)
   summary.totalOrders = summary.totalOrders.plus(BigInt.fromI32(1))
+  if (isNewAuction) {
+    summary.totalAuctions = summary.totalAuctions.plus(BigInt.fromI32(1))
+  }
   summary.save()
 }
 

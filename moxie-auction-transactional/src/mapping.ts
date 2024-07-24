@@ -190,7 +190,7 @@ export function handleNewAuction(event: NewAuction): void {
 
 
   // increasing bid value and total Orders count in summary
-  increaseTotalBiddingValueAndOrdersCount(sellAmount)
+  increaseTotalBiddingValueAndOrdersCount(sellAmount, true)
 
   let auctionDetails = new AuctionDetail(auctionId.toString())
   auctionDetails.auctionId = auctionId
@@ -206,7 +206,7 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.minFundingThreshold = event.params.minFundingThreshold
   auctionDetails.allowListManager = event.params.allowListContract
   auctionDetails.allowListSigner = allowListSigner
-  auctionDetails.currentClearingPrice = ONE.divDecimal(pricePoint.get("price"))
+  auctionDetails.currentClearingPrice = ZERO.toBigDecimal()
   auctionDetails.currentBiddingAmount = new BigInt(0)
   auctionDetails.isAtomicClosureAllowed = isAtomicClosureAllowed
   auctionDetails.isPrivateAuction = isPrivateAuction
@@ -253,7 +253,7 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   let buyAmount = event.params.buyAmount
   let userId = event.params.userId
 
-  increaseTotalBiddingValueAndOrdersCount(sellAmount)
+  increaseTotalBiddingValueAndOrdersCount(sellAmount, false)
 
   // let user = loadUser(userId.toString()) TODO: revisit after sync
   let user = User.load(userId.toString())
