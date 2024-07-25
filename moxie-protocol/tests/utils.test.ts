@@ -1,7 +1,7 @@
 import { BigInt, log } from "@graphprotocol/graph-ts"
 import { assert, beforeEach, clearStore, describe, test } from "matchstick-as"
 import { Bytes } from "@graphprotocol/graph-ts"
-import { _calculateReturnAmountWithoutFee, _calculateSellSideFee, decodeOrder, findClosest } from "../src/utils"
+import { _calculateSellSideProtocolAmountAddingBackFees, _calculateSellSideFee, decodeOrder, findClosest } from "../src/utils"
 describe("Decode Order", () => {
   test("test decodeOrder", () => {
     let clearingPriceOrder = Bytes.fromHexString("0x00000000000000040000003635C9ADC5DEA00000000004A89F54EF0121C00000")
@@ -17,11 +17,11 @@ describe("Decode Order", () => {
     log.warning("closest: {}", [closest.toString()])
   })
 
-  test("test _calculateReturnAmountWithoutFee", () => {
+  test("test _calculateSellSideProtocolAmountAddingBackFees", () => {
     let protocolSellFeePct = BigInt.fromString("20000000000000000")
     let subjectSellFeePct = BigInt.fromString("40000000000000000")
     let buyAmount = BigInt.fromString("14810226301686662274")
-    assert.stringEquals("15755559895411342844", _calculateReturnAmountWithoutFee(protocolSellFeePct, subjectSellFeePct, buyAmount).toString())
+    assert.stringEquals("15755559895411342844", _calculateSellSideProtocolAmountAddingBackFees(protocolSellFeePct, subjectSellFeePct, buyAmount).toString())
   })
 
   test("test _calculateSellSideFee", () => {

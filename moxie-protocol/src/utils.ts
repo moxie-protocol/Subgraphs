@@ -363,12 +363,12 @@ export function calculateBuySideFee(_depositAmount: BigInt): Fees {
   return new Fees(protocolFee_, subjectFee_)
 }
 
-export function calculateReturnAmountAddingBackFees(_buyAmount: BigInt): BigInt {
+export function calculateSellSideProtocolAmountAddingBackFees(_buyAmount: BigInt): BigInt {
   let summary = getOrCreateSummary()
-  return _calculateReturnAmountAddingBackFees(summary.protocolSellFeePct, summary.subjectSellFeePct, _buyAmount)
+  return _calculateSellSideProtocolAmountAddingBackFees(summary.protocolSellFeePct, summary.subjectSellFeePct, _buyAmount)
 }
 
-export function _calculateReturnAmountAddingBackFees(protocolSellFeePct: BigInt, subjectSellFeePct: BigInt, _buyAmount: BigInt): BigInt {
+export function _calculateSellSideProtocolAmountAddingBackFees(protocolSellFeePct: BigInt, subjectSellFeePct: BigInt, _buyAmount: BigInt): BigInt {
   let totalFeePCT = protocolSellFeePct.plus(subjectSellFeePct)
   // moxieAmount_ = (estimatedAmount * PCT_BASE) / (PCT_BASE - totalFeePCT);
   return _buyAmount.times(PCT_BASE).div(PCT_BASE.minus(totalFeePCT))
