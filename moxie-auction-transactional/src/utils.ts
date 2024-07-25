@@ -1,4 +1,4 @@
-import { Address, BigInt, BigDecimal, log, ethereum } from "@graphprotocol/graph-ts"
+import { Address, BigInt, BigDecimal, ethereum } from "@graphprotocol/graph-ts"
 import { Order, AuctionDetail, Token, User, BlockInfo, OrderCounter, Summary } from "../generated/schema"
 import { ERC20Contract } from "../generated/EasyAuction/ERC20Contract"
 

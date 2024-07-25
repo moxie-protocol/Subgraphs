@@ -5,12 +5,12 @@
 // While initiating an auction, the exactOrder/initialOrder sellAmount corresponds to AUT and buyAmount corresponds to BDT
 // While placing an order, the sellAmount corresponds to BDT and buyAmount corresponds to AUT
 
-import { Address, BigInt, BigDecimal, log, Bytes, ethereum, ByteArray } from "@graphprotocol/graph-ts"
-import { AuctionDetail, Token, User } from "../generated/schema"
-import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, NewAuction, NewSellOrder, NewUser, OwnershipTransferred, UserRegistration } from "../generated/EasyAuction/EasyAuction"
+import { Address, BigInt, BigDecimal, log } from "@graphprotocol/graph-ts"
+import { AuctionDetail, User } from "../generated/schema"
+import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, NewAuction, NewSellOrder, NewUser, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Order } from "../generated/schema"
 
-import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, getOrCreateBlockInfo, getTxEntityId, getEncodedOrderId, updateOrderCounter, getClaimedAmounts, increaseTotalBiddingValueAndOrdersCount, decreaseTotalBiddingValueAndOrdersCount } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadOrder, getTokenDetails, getOrCreateBlockInfo, getEncodedOrderId, updateOrderCounter, getClaimedAmounts, increaseTotalBiddingValueAndOrdersCount, decreaseTotalBiddingValueAndOrdersCount } from "./utils"
 import { ORDER_STATUS_CANCELLED, ORDER_STATUS_CLAIMED, ORDER_STATUS_PLACED } from "./constants"
 
 const ZERO = BigInt.zero()
@@ -28,9 +28,13 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   auctionDetails.currentClearingOrderSellAmount = biddingTokensSold
   const pricePoint = convertToPricePoint(biddingTokensSold, auctioningTokensSold, 18, 18)
   let calculatedCurrentClearingPrice = pricePoint.get("price")
-  auctionDetails.currentVolume = pricePoint.get("volume")
-  auctionDetails.currentBiddingAmount = biddingTokensSold
-  auctionDetails.interestScore = pricePoint.get("volume").div(TEN.pow(18).toBigDecimal())
+
+  auctionDetails.currentBiddingAmount = biddingTokensSold;
+  const volume = pricePoint && pricePoint.get("volume") ? pricePoint.get("volume")! : BigDecimal.zero();
+  auctionDetails.currentVolume = volume;
+  auctionDetails.interestScore = volume.div(TEN.pow(18).toBigDecimal());
+
+
   auctionDetails.isCleared = true
 
   let clearingPriceOrderString = event.params.clearingPriceOrder.toHexString()
@@ -166,7 +170,7 @@ export function handleNewAuction(event: NewAuction): void {
   order.volume = pricePoint.get("volume")
   order.price = ONE.divDecimal(pricePoint.get("price")) // 1/ (sellAmount/buyAmount)
   order.timestamp = eventTimeStamp
-  order.status = "Placed"
+  order.status = ORDER_STATUS_PLACED
   order.txHash = event.transaction.hash
   order.blockInfo = getOrCreateBlockInfo(event).id
   order.isExactOrder = true
