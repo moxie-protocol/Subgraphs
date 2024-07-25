@@ -168,15 +168,15 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   subjectToken.currentPriceInMoxie = price.price
   subjectToken.currentPriceInWeiInMoxie = price.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
-  if (event.transaction.from != event.params._beneficiary) {
-    // throw new Error("beneficiary should be the same as the transaction sender")
+  if (event.params._spender != event.params._beneficiary) {
+    // TODO: need to fix for spender
   }
   let user = getOrCreateUser(event.params._beneficiary, event.block)
 
   // Saving order entity
   let order = new Order(getTxEntityId(event))
   order.protocolToken = event.params._buyToken
-  // actual amount got by user after fees
+  // this entity is on user perspective, so this is actual amount is the amount user got after fees
   order.protocolTokenAmount = protocolTokenAmountReducingFees
   order.subjectToken = subjectToken.id
   order.subjectAmount = event.params._sellAmount
@@ -190,8 +190,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.transaction.hash, event.block)
-  // actual amount got by user after fees
-  portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmountReducingFees)
+  // volume calculation is using amount+fees
+  portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
 
   // this balance is only for temporary use, actual balance will be updated during Transfer event in subject token
   let updatedBalance = portfolio.balance.minus(event.params._sellAmount)
@@ -214,7 +214,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   createSubjectFeeTransfer(event, blockInfo, order, subjectToken, fees.subjectFee)
 
-  // increasing user protocol token earned
+  // volume calculation is using amount+fees
   user.sellVolume = user.sellVolume.plus(protocolTokenAmount)
   summary.numberOfSellOrders = summary.numberOfSellOrders.plus(BigInt.fromI32(1))
   summary.totalSellVolume = summary.totalSellVolume.plus(protocolTokenAmount)
@@ -227,7 +227,10 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
   subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
+  // volume calculation is using amount+fees
   subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(protocolTokenAmount)
+  // volume calculation is using amount+fees
+  subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   saveSubjectToken(subjectToken, event.block, true)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
