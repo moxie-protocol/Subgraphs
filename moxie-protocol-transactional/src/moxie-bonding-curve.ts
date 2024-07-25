@@ -2,7 +2,7 @@ import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { User } from "../generated/schema"
 
-import { calculateBuySideFee, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser } from "./utils"
+import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser } from "./utils"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
   subjectToken.reserveRatio = event.params._reserveRatio
@@ -75,22 +75,27 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // );
   // SubjectShareSold event is in perspective of user, so _buyAmount is the amount user gets back(fees already deducted)
   let protocolTokenAmountReducingFees = event.params._buyAmount
+  let protocolTokenAmount = calculateSellSideProtocolAmountAddingBackFees(protocolTokenAmountReducingFees)
+
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
   let price = protocolTokenAmountReducingFees.divDecimal(new BigDecimal(event.params._sellAmount))
   subjectToken.currentPriceInMoxie = price
   subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
-  subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmountReducingFees)
-  subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(protocolTokenAmountReducingFees)
+  // volume uses amount with fees
+  subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
+  // volume uses amount with fees
+  subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(protocolTokenAmount)
   saveSubjectToken(subjectToken, event.block)
 
   let user = getOrCreateUser(event.params._beneficiary, event.block)
-  // increasing user protocol token earned
-  user.sellVolume = user.sellVolume.plus(protocolTokenAmountReducingFees)
+  // volume uses amount with fees
+  user.sellVolume = user.sellVolume.plus(protocolTokenAmount)
   saveUser(user, event.block)
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.transaction.hash, event.block)
-  portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmountReducingFees)
+  // volume uses amount with fees
+  portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
   savePortfolio(portfolio, event.block)
 }
 
