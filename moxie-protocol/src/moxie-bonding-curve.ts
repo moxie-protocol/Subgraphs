@@ -2,7 +2,7 @@ import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { Order, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectFeeTransfer, Summary, User } from "../generated/schema"
 
-import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, saveSubjectTokenAndSnapshots, CalculatePrice } from "./utils"
+import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideProtocolAmountAddingBackFees } from "./utils"
 import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL, SUMMARY_ID } from "./constants"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, null, event.block)
@@ -11,7 +11,7 @@ export function handleBondingCurveInitialized(event: BondingCurveInitialized): v
   let calculatedPrice = new CalculatePrice(event.params._reserve, event.params._initialSupply)
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
-  saveSubjectTokenAndSnapshots(subjectToken, event.block)
+  saveSubjectToken(subjectToken, event.block, true)
 }
 
 export function handleSubjectSharePurchased(event: SubjectSharePurchased): void {
@@ -93,7 +93,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 
   subjectTokenEntity.subjectFee = subjectTokenEntity.subjectFee.plus(fees.subjectFee)
   subjectTokenEntity.protocolFee = subjectTokenEntity.protocolFee.plus(fees.protocolFee)
-  saveSubjectTokenAndSnapshots(subjectTokenEntity, event.block)
+  saveSubjectToken(subjectTokenEntity, event.block, true)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()
@@ -115,20 +115,24 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // _beneficiary gets protocolTokenAmount
 
   let beneficiary = event.params._beneficiary
+  let beneficiaryUser = getOrCreateUser(beneficiary, event.block)
   let spender = event.params._spender
-  let protocolTokenAmount = event.params._buyAmount
+  let spenderUser = getOrCreateUser(spender, event.block)
+  let protocolTokenAmountReducingFees = event.params._buyAmount
+  let protocolTokenAmount = calculateSellSideProtocolAmountAddingBackFees(protocolTokenAmountReducingFees)
   let subjectAmount = event.params._sellAmount
   let subjectToken = event.params._sellToken
 
-  let beneficiaryUser = getOrCreateUser(beneficiary, event.block)
-  let spenderUser = getOrCreateUser(event.params._spender, event.block)
   const fees = calculateSellSideFee(protocolTokenAmount)
-  let protocolTokenSpentAfterFees = protocolTokenAmount.minus(fees.protocolFee).minus(fees.subjectFee)
 
   const blockInfo = getOrCreateBlockInfo(event.block)
   // calculating price here the sell amount will be subject token and buy amount is protocol token since it's a sell
-  let price = new CalculatePrice(protocolTokenSpentAfterFees, subjectAmount)
+  let calculatedPrice = new CalculatePrice(protocolTokenAmountReducingFees, subjectAmount)
   let subjectTokenEntity = getOrCreateSubjectToken(subjectToken, null, event.block)
+  subjectTokenEntity.currentPriceInMoxie = calculatedPrice.price
+  subjectTokenEntity.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
+  subjectTokenEntity.lifetimeVolume = subjectTokenEntity.lifetimeVolume.plus(protocolTokenAmount)
+  let price = new CalculatePrice(protocolTokenAmountReducingFees, event.params._sellAmount)
   subjectTokenEntity.currentPriceInMoxie = price.price
   subjectTokenEntity.currentPriceInWeiInMoxie = price.priceInWei
   subjectTokenEntity.lifetimeVolume = subjectTokenEntity.lifetimeVolume.plus(protocolTokenAmount)
@@ -192,7 +196,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   subjectTokenEntity.subjectFee = subjectTokenEntity.subjectFee.plus(fees.subjectFee)
   subjectTokenEntity.protocolFee = subjectTokenEntity.protocolFee.plus(fees.protocolFee)
   subjectTokenEntity.sellSideVolume = subjectTokenEntity.sellSideVolume.plus(protocolTokenAmount)
-  saveSubjectTokenAndSnapshots(subjectTokenEntity, event.block)
+  saveSubjectToken(subjectTokenEntity, event.block, true)
 
   protocolFeeBeneficiary.totalFees = protocolFeeBeneficiary.totalFees.plus(fees.protocolFee)
   protocolFeeBeneficiary.save()

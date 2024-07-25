@@ -102,8 +102,6 @@ function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp:
     snapshot.startSubjectFee = subjectToken.subjectFee
     snapshot.startProtocolFee = subjectToken.protocolFee
     snapshot.createdAtBlockInfo = subjectToken.createdAtBlockInfo
-
-    subjectToken.save()
   }
   snapshot.endTimestamp = snapshotTimestamp
 
@@ -285,16 +283,14 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
   subjectToken.save()
 }
 
-export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block): void {
+export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block, saveSnapshot: boolean = false): void {
   subject.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   subject.save()
-}
-
-export function saveSubjectTokenAndSnapshots(subject: SubjectToken, block: ethereum.Block): void {
-  saveSubjectToken(subject, block)
-  let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subject, block.timestamp)
-  createSubjectTokenDailySnapshot(subject, block.timestamp, lastHourylSnapshotEndTimestamp)
-  createSubjectTokenRollingDailySnapshot(subject, block.timestamp)
+  if (saveSnapshot) {
+    let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subject, block.timestamp)
+    createSubjectTokenDailySnapshot(subject, block.timestamp, lastHourylSnapshotEndTimestamp)
+    createSubjectTokenRollingDailySnapshot(subject, block.timestamp)
+  }
 }
 
 export function getOrCreateSummary(): Summary {
@@ -367,10 +363,27 @@ export function calculateBuySideFee(_depositAmount: BigInt): Fees {
   return new Fees(protocolFee_, subjectFee_)
 }
 
-export function calculateSellSideFee(_depositAmount: BigInt): Fees {
+export function calculateSellSideProtocolAmountAddingBackFees(_buyAmount: BigInt): BigInt {
   let summary = getOrCreateSummary()
-  let protocolFee_ = _depositAmount.times(summary.protocolSellFeePct).div(PCT_BASE)
-  let subjectFee_ = _depositAmount.times(summary.subjectSellFeePct).div(PCT_BASE)
+  return _calculateSellSideProtocolAmountAddingBackFees(summary.protocolSellFeePct, summary.subjectSellFeePct, _buyAmount)
+}
+
+export function _calculateSellSideProtocolAmountAddingBackFees(protocolSellFeePct: BigInt, subjectSellFeePct: BigInt, _buyAmount: BigInt): BigInt {
+  let totalFeePCT = protocolSellFeePct.plus(subjectSellFeePct)
+  // moxieAmount_ = (estimatedAmount * PCT_BASE) / (PCT_BASE - totalFeePCT);
+  return _buyAmount.times(PCT_BASE).div(PCT_BASE.minus(totalFeePCT))
+}
+
+export function calculateSellSideFee(_sellAmount: BigInt): Fees {
+  let summary = getOrCreateSummary()
+  return _calculateSellSideFee(summary.protocolSellFeePct, summary.subjectSellFeePct, _sellAmount)
+}
+export function _calculateSellSideFee(protocolSellFeePct: BigInt, subjectSellFeePct: BigInt, _sellAmount: BigInt): Fees {
+  // protocolFee_ = (_sellAmount * protocolSellFeePct) / PCT_BASE
+  // subjectFee_ = (_sellAmount * subjectSellFeePct) / PCT_BASE
+
+  let protocolFee_ = _sellAmount.times(protocolSellFeePct).div(PCT_BASE)
+  let subjectFee_ = _sellAmount.times(subjectSellFeePct).div(PCT_BASE)
   return new Fees(protocolFee_, subjectFee_)
 }
 
@@ -383,6 +396,9 @@ export function createProtocolFeeTransfer(event: ethereum.Event, blockInfo: Bloc
   protocolFeeTransfer.beneficiary = beneficiary.id
   protocolFeeTransfer.amount = fee
   protocolFeeTransfer.save()
+
+  order.protocolFeeTransfer = protocolFeeTransfer.id
+  order.save()
 }
 
 export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: BlockInfo, order: Order, subjectToken: SubjectToken, fee: BigInt): void {
@@ -395,21 +411,19 @@ export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: Block
   subjectFeeTransfer.subject = subjectToken.subject!
 
   subjectFeeTransfer.save()
+
+  order.subjectFeeTransfer = subjectFeeTransfer.id
+  order.save()
 }
 
-function absBigInt(a: BigInt): BigInt {
-  if (a.lt(BigInt.zero())) {
-    return a.times(BigInt.fromI32(-1))
+export function findClosest(arr: Array<BigInt>, target: BigInt): BigInt {
+  if (arr.length == 0) {
+    throw new Error("Array is empty")
   }
-  return a
-}
-
-function findClosest(arr: Array<BigInt>, target: BigInt): BigInt {
   let closest = arr[0]
-  let minDiff = absBigInt(target.minus(closest))
-
+  let minDiff = target.minus(closest).abs()
   for (let i = arr.length - 1; i >= 0; i--) {
-    let diff = absBigInt(target.minus(arr[i]))
+    let diff = target.minus(arr[i]).abs()
     if (diff.lt(minDiff)) {
       closest = arr[i]
       minDiff = diff
