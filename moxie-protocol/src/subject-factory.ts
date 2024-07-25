@@ -6,16 +6,19 @@ import { ONBOARDING_STATUS_ONBOARDING_FINISHED } from "./constants"
 
 export function handleSubjectOnboardingInitiated(event: SubjectOnboardingInitiated): void {
   let auction = loadAuction(event.params._auctionId)
-  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, auction, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
   auction.subjectToken = subjectToken.id
   auction.save()
+
+  subjectToken.auction = auction.id
+  subjectToken.save()
 }
 export function handleSubjectOnboardingFinished(event: SubjectOnboardingFinished): void {
   let auctionId = event.params._auctionId
   let subjectFee = event.params._subjectFee
   let protocolFee = event.params._protocolFee
   let bondingAmount = event.params._bondingAmount
-  
+
   let auction = loadAuction(auctionId)
   auction.amountRaised = bondingAmount.plus(protocolFee).plus(subjectFee)
   auction.subjectFee = subjectFee
@@ -24,7 +27,7 @@ export function handleSubjectOnboardingFinished(event: SubjectOnboardingFinished
   auction.endBlockInfo = getOrCreateBlockInfo(event.block).id
   auction.save()
 
-  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, auction, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
   subjectToken.status = ONBOARDING_STATUS_ONBOARDING_FINISHED
   saveSubjectToken(subjectToken, event.block)
 

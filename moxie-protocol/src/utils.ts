@@ -3,7 +3,7 @@ import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction } from "../generated/schema"
 import { ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS } from "./constants"
 
-export function getOrCreateSubjectToken(subjectTokenAddress: Address, auction: Auction | null, block: ethereum.Block): SubjectToken {
+export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
   if (!subjectToken) {
     subjectToken = new SubjectToken(subjectTokenAddress.toHexString())
@@ -27,9 +27,6 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, auction: A
     subjectToken.sellSideVolume = BigInt.zero()
     subjectToken.protocolTokenInvested = BigDecimal.zero()
     subjectToken.status = ONBOARDING_STATUS_ONBOARDING_INITIALIZED
-    if (auction) {
-      subjectToken.auction = auction.id
-    }
     saveSubjectToken(subjectToken, block)
   }
   return subjectToken
@@ -45,7 +42,7 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
   let portfolio = Portfolio.load(portfolioId)
   if (!portfolio) {
     portfolio = new Portfolio(portfolioId)
-    let subjectToken = getOrCreateSubjectToken(subjectAddress, null, block)
+    let subjectToken = getOrCreateSubjectToken(subjectAddress, block)
     portfolio.user = user.id
     portfolio.subjectToken = subjectToken.id
     portfolio.balance = BigInt.zero()

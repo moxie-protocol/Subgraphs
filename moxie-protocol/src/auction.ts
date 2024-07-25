@@ -106,7 +106,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   summary.totalBuyVolume = summary.totalBuyVolume.plus(protocolTokenAmount)
   summary.save()
 
-  let subjectToken = getOrCreateSubjectToken(subjectTokenAddress, null, event.block)
+  let subjectToken = getOrCreateSubjectToken(subjectTokenAddress, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(protocolTokenAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
@@ -114,11 +114,12 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
 }
 
 export function handleNewAuction(event: NewAuction): void {
+  let subjectToken = getOrCreateSubjectToken(event.params._auctioningToken, event.block)
   let auction = new Auction(event.params.auctionId.toString())
   auction.minFundingThreshold = event.params.minFundingThreshold
   auction.auctionEndDate = event.params.auctionEndDate
   auction.protocolToken = event.params._biddingToken
-  auction.subjectToken = getOrCreateSubjectToken(event.params._auctioningToken, auction, event.block).id
+  auction.subjectToken = subjectToken.id
   auction.clearingUserId = BigInt.zero()
   auction.clearingBuyAmount = BigInt.zero()
   auction.clearingSellAmount = BigInt.zero()
@@ -130,6 +131,9 @@ export function handleNewAuction(event: NewAuction): void {
   auction.minFundingThresholdNotReached = false
   auction.volumeClearingPriceOrder = BigInt.zero()
   auction.save()
+
+  subjectToken.auction = auction.id
+  subjectToken.save()
 }
 
 export function handleAuctionCleared(event: AuctionCleared): void {

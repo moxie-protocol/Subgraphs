@@ -9,7 +9,7 @@ export function handleTransfer(event: Transfer): void {
   let to = event.params.to
   let value = event.params.value
 
-  let subjectToken = getOrCreateSubjectToken(contractAddress, null, event.block)
+  let subjectToken = getOrCreateSubjectToken(contractAddress, event.block)
   let totalSupply = subjectToken.totalSupply
   let summary = getOrCreateSummary()
   let mint = from == Address.zero()

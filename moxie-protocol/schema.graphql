@@ -342,7 +342,7 @@ type Order @entity {
   "BUY/SELL order type"
   orderType: OrderType
   "Seller/Buyer of Fan token"
-  user: User!
+  user: User
   "associated portfolio"
   portfolio: Portfolio!
   "subject fee transaction"

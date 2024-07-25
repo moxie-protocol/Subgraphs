@@ -11,7 +11,7 @@ export function handleVaultDeposit(event: VaultDeposit): void {
   //      uint256 totalReserve : reserves[_subjectToken][_token]
   //  );
   handleVaultDepositTx(event)
-  let subjectToken = getOrCreateSubjectToken(event.params.subject, null, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params.subject, event.block)
   // subject.reserve = subject.reserve.plus(event.params.amount)
   subjectToken.reserve = event.params.totalReserve
   saveSubjectToken(subjectToken, event.block, true)
@@ -31,7 +31,7 @@ export function handleVaultTransfer(event: VaultTransfer): void {
   // );
   // Transfers tokens(MOXIE) of amount _value to _to
   handleVaultTransferTx(event)
-  let subjectToken = getOrCreateSubjectToken(event.params.subject, null, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params.subject, event.block)
 
   // subjectToken.reserve = subjectToken.reserve.minus(event.params.amount)
   subjectToken.reserve = event.params.totalReserve
