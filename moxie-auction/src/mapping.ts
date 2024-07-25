@@ -5,13 +5,13 @@
 // While initiating an auction, the exactOrder/initialOrder sellAmount corresponds to AUT and buyAmount corresponds to BDT
 // While placing an order, the sellAmount corresponds to BDT and buyAmount corresponds to AUT
 
-import { Address, BigInt, BigDecimal, log, Bytes, ethereum } from "@graphprotocol/graph-ts"
-import { AuctionDetail, OrderTxn, Token, User } from "../generated/schema"
+import { Address, BigInt, BigDecimal, log } from "@graphprotocol/graph-ts"
+import { AuctionDetail, User } from "../generated/schema"
 import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, NewAuction, NewSellOrder, NewUser, OwnershipTransferred, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Order } from "../generated/schema"
 import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "./transactions"
 
-import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadToken, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId, getEncodedOrderId, createOrderTxn, getClaimedAmounts, updateOrderCounter } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId, getEncodedOrderId, createOrderTxn, getClaimedAmounts, updateOrderCounter } from "./utils"
 import { ORDER_STATUS_CANCELLED, ORDER_STATUS_CLAIMED, ORDER_STATUS_PLACED } from "./constants"
 
 const ZERO = BigInt.zero()
@@ -177,7 +177,7 @@ export function handleNewAuction(event: NewAuction): void {
   order.volume = pricePoint.get("volume")
   order.price = ONE.divDecimal(pricePoint.get("price")) // 1/ (sellAmount/buyAmount)
   order.timestamp = eventTimeStamp
-  order.status = "Placed"
+  order.status = ORDER_STATUS_PLACED
   order.txHash = event.transaction.hash
   order.blockInfo = getOrCreateBlockInfo(event).id
   order.isExactOrder = true
