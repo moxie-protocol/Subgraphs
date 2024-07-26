@@ -1,0 +1,255 @@
+type BlockInfo @entity {
+  id: ID!
+  hash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type Summary @entity {
+  "hardcoded id: SUMMARY"
+  id: ID!
+  "total bidding value (combining all orders) in the system"
+  totalBiddingValue: BigInt!
+  "total orders in the system"
+  totalOrders: BigInt!
+  "total auctions in the system"
+  totalAuctions: BigInt!
+}
+
+type Order @entity {
+  id: ID!
+  sellAmount: BigInt!
+  buyAmount: BigInt!
+  "sellAmount / buyAmount"
+  price: BigDecimal!
+  "sellAmount * 10 ^ -decimalsSellToken"
+  volume: BigDecimal!
+  "timestamp of the order"
+  timestamp: BigInt!
+  auctionId: BigInt!
+  auction: AuctionDetail
+  user: User!
+  "added to easiness on querying user's orders by address"
+  userWalletAddress: Bytes!
+  status: Status!
+  "transaction hash of the order"
+  txHash: Bytes!
+  "block information of the order transaction"
+  blockInfo: BlockInfo!
+  "order transactions"
+  orderTxns: [OrderTxn!]! @derivedFrom(field: "order")
+  "exactOrder gets created when auction is created"
+  isExactOrder: Boolean!
+  "encoded orderId representing userId,buyAmount,sellAmount"
+  encodedOrderId: String!
+  lastUpdatedIndex: BigInt!
+  "amount of buyAmount claimed after auction is claimed"
+  finalizedBuyAmount: BigInt!
+  "amount of sellAmount actually used in auction"
+  finalizedSellAmount: BigInt!
+  "amount of sellAmount returned back after auction is claimed"
+  refundAmount: BigInt!
+  "transaction hash of auction claimed not cancelled"
+  finalTxHash: Bytes
+}
+
+type OrderTxn @entity {
+  "txhash+-+logIndex"
+  id: ID!
+  txHash: Bytes!
+  blockInfo: BlockInfo!
+  order: Order!
+  newStatus: Status!
+}
+
+enum Status {
+  Placed
+  Claimed
+  Cancelled
+}
+
+type User @entity {
+  id: ID!
+  address: Bytes!
+  createdAuctions: [AuctionDetail!]!
+  participatedAuctions: [AuctionDetail!]!
+  orders: [Order!]! @derivedFrom(field: "user")
+}
+
+type AuctionDetail @entity {
+  id: ID!
+  auctionId: BigInt!
+
+  exactOrder: Order!
+  "order with highest price"
+  highestPriceBidOrder: Order
+  "order with lowest price"
+  lowestPriceBidOrder: Order
+  "orders which are not cancelled or claimed"
+  activeOrders: [Order!]
+  auctioningToken: Token!
+  biddingToken: Token!
+  auctionEndDate: BigInt!
+  orderCancellationEndDate: BigInt!
+  startingTimeStamp: BigInt!
+  minimumBiddingAmountPerOrder: BigInt!
+  minFundingThreshold: BigInt!
+  minBuyAmount: BigInt!
+  auctionSupply: BigInt!
+  allowListManager: Bytes!
+  allowListSigner: Bytes!
+  currentVolume: BigDecimal!
+  volumeClearingPriceOrder: BigInt!
+  currentClearingOrderSellAmount: BigInt!
+  currentClearingOrderBuyAmount: BigInt!
+  currentClearingOrderUserId: BigDecimal!
+  "price of auctioningToken in terms of bidding token"
+  currentClearingPrice: BigDecimal!
+  "Total sell amount of all orders in the auction"
+  currentBiddingAmount: BigInt!
+  "Total subjectTokens bid for in the auction by active orders"
+  currentSubjectTokenBidAmount: BigInt!
+  isAtomicClosureAllowed: Boolean!
+  isPrivateAuction: Boolean!
+  interestScore: BigDecimal! # need to understand
+  "number of unique users who have placed orders in the auction"
+  uniqueBidders: BigInt!
+  "set true when AuctionCleared is emitted"
+  isCleared: Boolean!
+  "totalOrders involved in the auction cancelled or claimed or active"
+  totalOrders: BigInt!
+  "number of active bids"
+  activeOrderCount: BigInt!
+
+  "transaction hash of the auction creation"
+  txHash: Bytes!
+  "block information of auction creation"
+  blockInfo: BlockInfo!
+  "minimum price in moxie to purchase one subject token"
+  minimumPriceInMoxie: BigDecimal!
+}
+
+type Token @entity {
+  id: ID! #address
+  symbol: String!
+  decimals: BigInt!
+  auctionsAsAuctioningToken: [AuctionDetail!]! @derivedFrom(field: "auctioningToken")
+  auctionsAsBiddingToken: [AuctionDetail!]! @derivedFrom(field: "biddingToken")
+}
+
+type AuctionCleared @entity {
+  "txhash+-+logIndex"
+  id: ID!
+  blockInfo: BlockInfo!
+  auctionId: BigInt!
+  soldAuctioningTokens: BigInt!
+  soldBiddingTokens: BigInt!
+  clearingPriceOrder: Bytes!
+}
+# event CancellationSellOrder(
+#       uint256 indexed auctionId,
+#       uint64 indexed userId,
+#       uint96 buyAmount,
+#       uint96 sellAmount
+# );
+type CancellationSellOrder @entity {
+  "txhash+-+logIndex"
+  id: ID!
+  blockInfo: BlockInfo!
+  auctionId: BigInt!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+}
+# event ClaimedFromOrder(
+#     uint256 indexed auctionId,
+#     uint64 indexed userId,
+#     uint96 buyAmount,
+#     uint96 sellAmount
+# );
+
+type ClaimedFromOrder @entity {
+  "txhash+-+logIndex"
+  id: ID!
+  blockInfo: BlockInfo!
+  auctionId: BigInt!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+}
+# event NewAuction(
+#     uint256 indexed auctionId,
+#     IERC20 indexed _auctioningToken,
+#     IERC20 indexed _biddingToken,
+#     uint256 orderCancellationEndDate,
+#     uint256 auctionEndDate,
+#     uint64 userId,
+#     uint96 _auctionedSellAmount,
+#     uint96 _minBuyAmount,
+#     uint256 minimumBiddingAmountPerOrder,
+#     uint256 minFundingThreshold,
+#     address allowListContract,
+#     bytes allowListData
+# );
+type NewAuction @entity {
+  "txhash+-+logIndex"
+  id: ID!
+  blockInfo: BlockInfo!
+  auctionId: BigInt!
+  auctioningToken: Bytes!
+  biddingToken: Bytes!
+  orderCancellationEndDate: BigInt!
+  auctionEndDate: BigInt!
+  userId: BigInt!
+  auctionedSellAmount: BigInt!
+  minBuyAmount: BigInt!
+  minimumBiddingAmountPerOrder: BigInt!
+  minFundingThreshold: BigInt!
+  allowListContract: Bytes!
+  allowListData: Bytes!
+}
+
+# event NewSellOrder(
+#     uint256 indexed auctionId,
+#     uint64 indexed userId,
+#     uint96 buyAmount,
+#     uint96 sellAmount
+# );
+type NewSellOrder @entity {
+  "txhash+-+logIndex"
+  id: ID!
+  blockInfo: BlockInfo!
+  auctionId: BigInt!
+  userId: BigInt!
+  buyAmount: BigInt!
+  sellAmount: BigInt!
+}
+# event NewUser(uint64 indexed userId, address indexed userAddress);
+type NewUser @entity {
+  "txhash+-+logIndex"
+  id: ID!
+  blockInfo: BlockInfo!
+  userId: BigInt!
+  userAddress: Bytes!
+}
+# event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+type OwnershipTransferred @entity {
+  "txhash+-+logIndex"
+  id: ID!
+  blockInfo: BlockInfo!
+  previousOwner: Bytes!
+  newOwner: Bytes!
+}
+# event UserRegistration(address indexed user, uint64 userId);
+type UserRegistration @entity {
+  "txhash+-+logIndex"
+  id: ID!
+  blockInfo: BlockInfo!
+  user: Bytes!
+  userId: BigInt!
+}
+
+type OrderCounter @entity {
+  id: ID!
+  counter: BigInt!
+}
