@@ -7,12 +7,21 @@
 
 This repository contains the official source code for the Moxie subgraphs. Currently, there are 3 subgraphs:
 
-- Protocol
-  - Studio: https://api.studio.thegraph.com/query/27864/protocol/v5.1.6/graphql
-- Auction
-  - Studio: https://api.studio.thegraph.com/proxy/82737/auction/v.4.0.6
-- Vesting
-  - Studio: https://api.studio.thegraph.com/query/82737/vesting/v4.2
+- Protocol Stats Subgraph
+  - Subgraph Studio: https://api.studio.thegraph.com/query/23537/moxie_protocol_stats_mainnet/version/latest
+  - Network Subgraph: https://thegraph.com/explorer/subgraphs/7zS29h4BDSujQq8R3TFF37JfpjtPQsRUpoC9p4vo4scx?view=Query&chain=arbitrum-one
+- Protocol Minimal Subgraph
+  - Subgraph Studio: https://api.studio.thegraph.com/query/23537/moxie_protocol_minimal_mainnet/version/latest
+  - Network Subgraph: https://thegraph.com/explorer/subgraphs/EXRKnsoBNwWk134nV5aezpZCPwcD6RWRCWMM2S7KXJXe?view=Query&chain=arbitrum-one
+- Auction Stats Subgraph
+  - Subgraph Studio: https://api.studio.thegraph.com/query/23537/moxie_auction_stats_mainnet/version/latest
+  - Network Subgraph: https://thegraph.com/explorer/subgraphs/BDAX81dfjwhDu71Dhe7qETves9ptQ9xsstFSsuVu1NXn?view=Query&chain=arbitrum-one
+- Auction Minimal Subgraph
+  - Subgraph Studio: https://api.studio.thegraph.com/query/23537/moxie_auction_minimal_mainnet/version/latest
+  - Network Subgraph: https://thegraph.com/explorer/subgraphs/HMuQ6NQNRcuK8PrbVD8HEzUxdsAixcwdANLRyvJegR3a?view=Query&chain=arbitrum-one
+- Vesting Subgraph
+  - Subgraph Studio: https://api.studio.thegraph.com/query/23537/moxie_vesting_mainnet/version/latest
+  - Network Subgraph: https://thegraph.com/explorer/subgraphs/BuR6zAj2GSVZz6smGbJZkgQx8S6GUS881R493ZYZKSk3?view=Query&chain=arbitrum-one
 
 Keep in mind that the Graph Studio APIs are rate-limited, thus if you need higher limit, it's best that you [deploy](#deployment) to your own Graph Indexer Node.
 
