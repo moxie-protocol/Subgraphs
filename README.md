@@ -12,7 +12,7 @@ This repository contains the official source code for the Moxie subgraphs. Curre
 - Auction
   - Studio: https://api.studio.thegraph.com/proxy/82737/auction/v.4.0.6
 - Vesting
-  - Stuido: https://api.studio.thegraph.com/query/82737/vesting/v4.2
+  - Studio: https://api.studio.thegraph.com/query/82737/vesting/v4.2
 
 Keep in mind that the Graph Studio APIs are rate-limited, thus if you need higher limit, it's best that you [deploy](#deployment) to your own Graph Indexer Node.
 
@@ -21,7 +21,7 @@ Keep in mind that the Graph Studio APIs are rate-limited, thus if you need highe
 - [Pre-requisites](#pre-requisites)
 - [Local Setup](#local-setup)
 - [Deployment](#deployment)
-- [License](#License)
+- [License](#license)
 
 ## Pre-requisites
 
@@ -47,6 +47,13 @@ First, enter the folder of subgraph you would like to deploy:
 
 ```sh
 cd <SUBGRAPH_FOLDER>
+```
+
+Once you are in one of the subgraph folder, run the preparation script:
+
+```sh
+# `npm run prepare:base-sepolia` for indexing Base Sepolia Testnet
+npm run prepare:base
 ```
 
 Then, create a subgraph on your Graph Indexer Node:
