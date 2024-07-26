@@ -10,7 +10,7 @@
     "cb": "graph codegen && graph build",
     "cbd:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build && graph deploy --studio vesting",
     "create":"",
-    "cbd:base": "yarn prepare:base && graph codegen && graph build && graph deploy --node http://graph-indexer-prod.airstack.xyz/ moxie_vesting_subgraph",
+    "cbd:base": "yarn prepare:base && graph codegen && graph build && graph deploy --studio moxie_vesting_mainnet",
     "test": "graph test -d"
   },
   "dependencies": {
