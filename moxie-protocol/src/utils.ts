@@ -155,7 +155,7 @@ function loadClosestSubjectTokenHourlySnapshotInPreviousDailySnapshot(subjectTok
     if (!dayBeforeDailySnapshot) {
       throw new Error("Previous daily snapshot not loading for subject token: " + subjectToken.id + " and timestamp: " + timestamp.toString())
     }
-    snapshotTimestamp = findClosest(dayBeforeDailySnapshot.hourlySnapshotEndTimestamps, timestamp)
+    snapshotTimestamp = dayBeforeDailySnapshot.hourlySnapshotEndTimestamps[dayBeforeDailySnapshot.hourlySnapshotEndTimestamps.length - 1]
     log.warning("previousDailySnapshot.lastSubjectTokenDailySnapshot {} timestamp {} snapshotTimestamp {}", [previousDailySnapshot.lastSubjectTokenDailySnapshot!, timestamp.toString(), snapshotTimestamp.toString()])
   } else {
     // means the timestamp is after the first hourly snapshot in the daily snapshot
