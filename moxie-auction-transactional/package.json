@@ -1,0 +1,24 @@
+{
+  "name": "moxie-auction",
+  "license": "UNLICENSED",
+  "scripts": {
+    "prepare:base-sepolia": "mustache ./config/base-sepolia.json subgraph.template.yaml > subgraph.yaml",
+    "prepare:testing": "mustache ./config/testing.json subgraph.template.yaml > subgraph.yaml",
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --studio auction",
+    "cbd:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph deploy --node https://api.graph-ams.p2pify.com/b9578660ff7d4c8e5a876e1730515d9f/deploy --ipfs https://api.graph-ams.p2pify.com/b9578660ff7d4c8e5a876e1730515d9f/ipfs sgr-872-925-936",
+    "cbd:testing": "yarn prepare:testing && graph codegen && graph build && graph deploy --studio auction",
+    "cbt": "graph codegen && graph build && graph test -d",
+    "cb": "graph codegen && graph build",
+    "test": "graph test -d"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.73.0",
+    "@graphprotocol/graph-ts": "0.35.1",
+    "mustache": "^4.2.0"
+  },
+  "devDependencies": {
+    "matchstick-as": "0.6.0"
+  }
+}
