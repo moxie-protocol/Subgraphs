@@ -6,9 +6,9 @@
     "prepare:testing": "mustache ./config/testing.json subgraph.template.yaml > subgraph.yaml",
     "codegen": "graph codegen",
     "build": "graph build",
-    "deploy": "graph deploy --studio auction",
-    "cbd:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph deploy --node https://api.graph-ams.p2pify.com/b9578660ff7d4c8e5a876e1730515d9f/deploy --ipfs https://api.graph-ams.p2pify.com/b9578660ff7d4c8e5a876e1730515d9f/ipfs sgr-872-925-936",
-    "cbd:testing": "yarn prepare:testing && graph codegen && graph build && graph deploy --studio auction",
+    "deploy": "graph deploy --studio moxie_auction_minimal_mainnet",
+    "cbd:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph deploy --studio moxie_auction_minimal_mainnet",
+    "cbd:testing": "yarn prepare:testing && graph codegen && graph build && graph deploy --studio moxie_auction_minimal_mainnet",
     "cbt": "graph codegen && graph build && graph test -d",
     "cb": "graph codegen && graph build",
     "test": "graph test -d"
