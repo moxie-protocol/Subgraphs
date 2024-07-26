@@ -1,0 +1,155 @@
+specVersion: 0.0.4
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: TokenManager
+    network: {{network}}
+    source:
+      address: "{{TokenManager}}"
+      abi: TokenManager
+      startBlock: {{TokenManagerStartBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Subject
+        - User
+      abis:
+        - name: TokenManager
+          file: ./abis/TokenManager.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: TokenDeployed(indexed address,indexed address,uint256)
+          handler: handleTokenDeployed
+      file: ./src/token-manager.ts
+  - kind: ethereum
+    name: SubjectFactory
+    network: {{network}}
+    source:
+      address: "{{SubjectFactory}}"
+      abi: SubjectFactory
+      startBlock: {{SubjectFactoryStartBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Auction
+      abis:
+        - name: SubjectFactory
+          file: ./abis/SubjectFactory.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: SubjectOnboardingInitiated(indexed address,indexed address,uint256,address,uint256,uint256)
+          handler: handleSubjectOnboardingInitiated
+        - event: SubjectOnboardingFinished(indexed address,indexed address,uint256,uint256,uint256,uint256,uint256,uint256)
+          handler: handleSubjectOnboardingFinished
+      file: ./src/subject-factory.ts
+  - kind: ethereum
+    name: Vault
+    network: {{network}}
+    source:
+      address: "{{Vault}}"
+      abi: Vault
+      startBlock: {{VaultStartBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Subject
+        - Summary
+      abis:
+        - name: Vault
+          file: ./abis/Vault.json
+      eventHandlers:
+        - event: VaultDeposit(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleVaultDeposit
+        - event: VaultTransfer(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleVaultTransfer
+      file: ./src/vault.ts
+  - kind: ethereum
+    name: MoxieBondingCurve
+    network: {{network}}
+    source:
+      address: "{{MoxieBondingCurve}}"
+      abi: MoxieBondingCurve
+      startBlock: {{MoxieBondingCurveStartBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Subject
+        - Portfolio
+        - Order
+      abis:
+        - name: MoxieBondingCurve
+          file: ./abis/MoxieBondingCurve.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: BondingCurveInitialized(indexed address,indexed address,uint256,uint256,uint32)
+          handler: handleBondingCurveInitialized
+        - event: SubjectSharePurchased(indexed address,indexed address,uint256,address,address,uint256,indexed address)
+          handler: handleSubjectSharePurchased
+        - event: SubjectShareSold(indexed address,indexed address,uint256,address,address,uint256,indexed address)
+          handler: handleSubjectShareSold
+        - event: UpdateBeneficiary(address)
+          handler: handleUpdateBeneficiary
+        - event: UpdateFees(uint256,uint256,uint256,uint256)
+          handler: handleUpdateFees
+        - event: Initialized(uint64)
+          handler: handleInitialized
+      file: ./src/moxie-bonding-curve.ts
+  - kind: ethereum
+    name: EasyAuction
+    network: {{network}}
+    source:
+      address: "{{EasyAuction}}"
+      abi: EasyAuction
+      startBlock: {{EasyAuctionStartBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - AuctioningToken
+      abis:
+        - name: EasyAuction
+          file: ./abis/EasyAuction.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: ClaimedFromOrder(indexed uint256,indexed uint64,uint96,uint96)
+          handler: handleClaimedFromOrder
+        - event: NewAuction(indexed uint256,indexed address,indexed address,uint256,uint256,uint64,uint96,uint96,uint256,uint256,address,bytes)
+          handler: handleNewAuction
+        - event: AuctionCleared(indexed uint256,uint96,uint96,bytes32)
+          handler: handleAuctionCleared
+        - event: UserRegistration(indexed address,uint64)
+          handler: handleUserRegistration
+      file: ./src/auction.ts
+templates:
+  - kind: ethereum/contract
+    name: SubjectTokenContract
+    network: {{network}}
+    source:
+      abi: ERC20
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/subject-token.ts
+      entities:
+        - Subject
+      abis:
+        - name: ERC20
+          file: ./abis/ERC20.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer

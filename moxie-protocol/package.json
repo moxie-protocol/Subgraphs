@@ -1,0 +1,23 @@
+{
+  "name": "protocol",
+  "license": "UNLICENSED",
+  "scripts": {
+    "prepare:base-sepolia": "mustache ./config/base-sepolia.json subgraph.template.yaml > subgraph.yaml",
+    "prepare:base-mainnet": "mustache ./config/base-mainnet.json subgraph.template.yaml > subgraph.yaml",
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "cb:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build",
+    "cb:base-mainnet": "yarn prepare:base-mainnet && graph codegen && graph build",
+    "test": "graph test -d",
+    "cbt": "graph codegen && graph build && graph test -d",
+    "clean": "rm -rf generated/ build/"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.73.0",
+    "@graphprotocol/graph-ts": "0.35.1",
+    "mustache": "^4.2.0"
+  },
+  "devDependencies": {
+    "matchstick-as": "0.6.0"
+  }
+}
