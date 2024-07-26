@@ -8,8 +8,6 @@
   "VaultStartBlock": "12934204",
   "MoxieBondingCurve": "0x56147e70A57012ade3003fe93a394BFC35d747e3",
   "MoxieBondingCurveStartBlock": "12934212",
-  "MoxieToken": "0x5D7cb10515D07a1726A30AffFFEDBE3cc048C412",
-  "MoxieTokenStartBlock": "12933750",
   "SubjectFactory": "0x9cE6e0c6282ac0050B1888656C5c5716a4Ef4BE8",
   "SubjectFactoryStartBlock": "12934191"
 }
