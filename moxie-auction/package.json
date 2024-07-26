@@ -3,12 +3,16 @@
   "license": "UNLICENSED",
   "scripts": {
     "prepare:base-sepolia": "mustache ./config/base-sepolia.json subgraph.template.yaml > subgraph.yaml",
+    "prepare:base": "mustache ./config/base.json subgraph.template.yaml > subgraph.yaml",
     "prepare:testing": "mustache ./config/testing.json subgraph.template.yaml > subgraph.yaml",
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy": "graph deploy --studio auction",
-    "cbd:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build && graph deploy --studio auction",
-    "cbd:testing": "yarn prepare:testing && graph codegen && graph build && graph deploy --studio auction",
+    "cb:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build",
+    "cb:base": "yarn prepare:base && graph codegen && graph build",
+    "cbd:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build && graph deploy --studio moxie_auction_stats_mainnet",
+    "cbd:base": "yarn prepare:base && graph codegen && graph build && graph deploy --studio moxie_auction_stats_mainnet",
+    "cbd:testing": "yarn prepare:testing && graph codegen && graph build && graph deploy --studio moxie_auction_stats_mainnet",
     "cbt": "graph codegen && graph build && graph test -d",
     "cb": "graph codegen && graph build",
     "test": "graph test -d"
