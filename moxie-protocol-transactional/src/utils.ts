@@ -161,3 +161,14 @@ export function decodeOrder(encodedOrderId: Bytes): AuctionOrderClass {
   let sellAmount = BigInt.fromString(BigDecimal.fromString(parseInt(sellAmountHex).toString()).toString())
   return new AuctionOrderClass(userId, buyAmount, sellAmount)
 }
+
+export function calculateSellSideProtocolAmountAddingBackFees(_buyAmount: BigInt): BigInt {
+  let summary = getOrCreateSummary()
+  return _calculateSellSideProtocolAmountAddingBackFees(summary.protocolSellFeePct, summary.subjectSellFeePct, _buyAmount)
+}
+
+export function _calculateSellSideProtocolAmountAddingBackFees(protocolSellFeePct: BigInt, subjectSellFeePct: BigInt, _buyAmount: BigInt): BigInt {
+  let totalFeePCT = protocolSellFeePct.plus(subjectSellFeePct)
+  // moxieAmount_ = (estimatedAmount * PCT_BASE) / (PCT_BASE - totalFeePCT);
+  return _buyAmount.times(PCT_BASE).div(PCT_BASE.minus(totalFeePCT))
+}
