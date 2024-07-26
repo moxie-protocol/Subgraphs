@@ -8,6 +8,8 @@
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy": "graph deploy --studio auction",
+    "cb:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build",
+    "cb:base": "yarn prepare:base && graph codegen && graph build",
     "cbd:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build && graph deploy --studio moxie_auction_stats_mainnet",
     "cbd:base": "yarn prepare:base && graph codegen && graph build && graph deploy --studio moxie_auction_stats_mainnet",
     "cbd:testing": "yarn prepare:testing && graph codegen && graph build && graph deploy --studio moxie_auction_stats_mainnet",
