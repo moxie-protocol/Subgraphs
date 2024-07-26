@@ -147,8 +147,21 @@ function loadClosestSubjectTokenHourlySnapshotInPreviousDailySnapshot(subjectTok
   if (!previousDailySnapshot) {
     throw new Error("Previous daily snapshot not loading for subject token: " + subjectToken.id + " and timestamp: " + timestamp.toString())
   }
-  let snapshotTimestamp = findClosest(previousDailySnapshot.hourlySnapshotEndTimestamps, timestamp)
-
+  let snapshotTimestamp = BigInt.zero()
+  if (isEveryElementGreaterThanTarget(previousDailySnapshot.hourlySnapshotEndTimestamps, timestamp) && previousDailySnapshot.lastSubjectTokenDailySnapshot) {
+    // means the timestamp is before the first hourly snapshot in the daily snapshot
+    // and there is a previous daily snapshot
+    let dayBeforeDailySnapshot = SubjectTokenDailySnapshot.load(previousDailySnapshot.lastSubjectTokenDailySnapshot!)
+    if (!dayBeforeDailySnapshot) {
+      throw new Error("Previous daily snapshot not loading for subject token: " + subjectToken.id + " and timestamp: " + timestamp.toString())
+    }
+    snapshotTimestamp = findClosest(dayBeforeDailySnapshot.hourlySnapshotEndTimestamps, timestamp)
+    log.warning("previousDailySnapshot.lastSubjectTokenDailySnapshot {} timestamp {} snapshotTimestamp {}", [previousDailySnapshot.lastSubjectTokenDailySnapshot!, timestamp.toString(), snapshotTimestamp.toString()])
+  } else {
+    // means the timestamp is after the first hourly snapshot in the daily snapshot
+    // or there is no previous daily snapshot before it
+    snapshotTimestamp = findClosest(previousDailySnapshot.hourlySnapshotEndTimestamps, timestamp)
+  }
   let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
   let snapshot = SubjectTokenHourlySnapshot.load(snapshotId)
   if (!snapshot) {
@@ -214,6 +227,9 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
     } else {
       // setting previous daily snapshot to the latest daily from subjectToken, since we are creating a new daily snapshot
       subjectToken.previousDailySnapshot = subjectToken.latestDailySnapshot
+      // setting connecting with the previous daily snapshot
+      snapshot.lastSubjectTokenDailySnapshot = subjectToken.latestDailySnapshot
+      snapshot.save()
     }
     subjectToken.latestDailySnapshot = snapshotId
     subjectToken.save()
@@ -411,6 +427,15 @@ export function createSubjectFeeTransfer(event: ethereum.Event, blockInfo: Block
 
   order.subjectFeeTransfer = subjectFeeTransfer.id
   order.save()
+}
+
+export function isEveryElementGreaterThanTarget(arr: Array<BigInt>, target: BigInt): bool {
+  if (arr.length == 0) {
+    throw new Error("Array is empty")
+  }
+  let sortedArray = arr.sort() // sorts array in ascending order
+  // if smallest element in array greater than target, then every element is greater than target
+  return sortedArray[0].gt(target)
 }
 
 export function findClosest(arr: Array<BigInt>, target: BigInt): BigInt {
