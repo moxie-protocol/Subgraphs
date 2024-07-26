@@ -20,7 +20,7 @@ Keep in mind that the Graph Studio APIs are rate-limited, thus if you need highe
 - [Pre-requisites](#pre-requisites)
 - [Local Setup](#local-setup)
 - [Deployment](#deployment)
-- [License](#License)
+- [License](#license)
 
 ## Pre-requisites
 
@@ -48,16 +48,29 @@ First, enter the folder of subgraph you would like to deploy:
 cd <SUBGRAPH_FOLDER>
 ```
 
+Once you are in one of the subgraph folder, run the preparation script:
+
+```sh
+# `npm run prepare:base-sepolia` for indexing Base Sepolia Testnet
+npm run prepare:base
+```
+
 Then, create a subgraph on your Graph Indexer Node:
 
 ```sh
 graph create --node <GRAPH_NODE_URL> <SUBGRAPH_NAME>
 ```
 
-Once the subgraph is created, run a script to deploy the subgraph:
+Once the subgraph is created, generate an AssemblyScript types for the smart contract ABIs and the subgraph schema and compiles the subgraph to WebAssembly:
 
 ```sh
-npm run cbd:base
+graph codegen && graph build
+```
+
+Once the process is executed successfully, simply run the following command to deploy to your Graph Indexer Node:
+
+```sh
+graph deploy --node <GRAPH_NODE_URL> <SUBGRAPH_NAME>
 ```
 
 ## Contributing
