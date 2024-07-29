@@ -305,6 +305,8 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   }
   user.save()
   auctionDetails.currentSubjectTokenBidAmount = auctionDetails.currentSubjectTokenBidAmount.plus(order.buyAmount)
+  auctionDetails.currentBiddingAmount = auctionDetails.currentBiddingAmount.plus(order.sellAmount)
+  auctionDetails.currentSubjectTokenBidAmount = auctionDetails.currentSubjectTokenBidAmount.plus(order.buyAmount)
   auctionDetails.totalOrders = auctionDetails.totalOrders.plus(ONE)
   auctionDetails.save()
 
