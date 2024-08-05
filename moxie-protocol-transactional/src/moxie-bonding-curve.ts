@@ -93,7 +93,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   saveUser(user, event.block)
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._sellToken, event.transaction.hash, event.block)
   // volume uses amount with fees
   portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
   savePortfolio(portfolio, event.block)
