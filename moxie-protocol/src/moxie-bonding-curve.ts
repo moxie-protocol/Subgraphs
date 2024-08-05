@@ -189,7 +189,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.blockInfo = blockInfo.id
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(event.transaction.from, event.params._sellToken, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._sellToken, event.transaction.hash, event.block)
   // volume calculation is using amount+fees
   portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
 
