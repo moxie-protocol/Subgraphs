@@ -479,14 +479,24 @@ export class AuctionOrderClass {
   }
 }
 
+export function convertHexStringToBigInt(hexString: string): BigInt {
+  let paddedHexString = hexZeroPad(hexString)
+  const bytes = ByteArray.fromHexString(paddedHexString).reverse()
+  return BigInt.fromByteArray(changetype<ByteArray>(bytes))
+}
+
+function hexZeroPad(hexstring: string, length: i32 = 32): string {
+  return hexstring.substr(0, 2) + hexstring.substr(2).padStart(length * 2, "0")
+}
+
 export function decodeOrder(encodedOrderId: Bytes): AuctionOrderClass {
   let clearingPriceOrder = encodedOrderId.toHexString()
   let userIdHex = "0x" + clearingPriceOrder.substring(2, 18)
   let buyAmountHex = "0x" + clearingPriceOrder.substring(19, 42)
   let sellAmountHex = "0x" + clearingPriceOrder.substring(43, 66)
-  let userId = BigInt.fromString(BigDecimal.fromString(parseInt(userIdHex).toString()).toString())
-  let buyAmount = BigInt.fromString(BigDecimal.fromString(parseInt(buyAmountHex).toString()).toString())
-  let sellAmount = BigInt.fromString(BigDecimal.fromString(parseInt(sellAmountHex).toString()).toString())
+  let userId = convertHexStringToBigInt(userIdHex)
+  let buyAmount = convertHexStringToBigInt(buyAmountHex)
+  let sellAmount = convertHexStringToBigInt(sellAmountHex)
   return new AuctionOrderClass(userId, buyAmount, sellAmount)
 }
 export class CalculatePrice {
