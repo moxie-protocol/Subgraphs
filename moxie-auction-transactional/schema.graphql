@@ -63,6 +63,7 @@ type User @entity {
   createdAuctions: [AuctionDetail!]!
   participatedAuctions: [AuctionDetail!]!
   orders: [Order!]! @derivedFrom(field: "user")
+  totalMoxieBid: BigInt!
 }
 
 type AuctionDetail @entity {
