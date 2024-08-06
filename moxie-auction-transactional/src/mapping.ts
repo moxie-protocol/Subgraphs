@@ -10,7 +10,7 @@ import { AuctionDetail, User } from "../generated/schema"
 import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, NewAuction, NewSellOrder, NewUser, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Order } from "../generated/schema"
 
-import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadOrder, getTokenDetails, getOrCreateBlockInfo, getEncodedOrderId, updateOrderCounter, getClaimedAmounts, increaseTotalBiddingValueAndOrdersCount, decreaseTotalBiddingValueAndOrdersCount } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadOrder, getTokenDetails, getOrCreateBlockInfo, getEncodedOrderId, updateOrderCounter, getClaimedAmounts, increaseTotalBiddingValueAndOrdersCount, decreaseTotalBiddingValueAndOrdersCount, convertHexStringToBigInt } from "./utils"
 import { ORDER_STATUS_CANCELLED, ORDER_STATUS_CLAIMED, ORDER_STATUS_PLACED } from "./constants"
 
 const ZERO = BigInt.zero()
@@ -42,8 +42,10 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   auctionDetails.currentClearingOrderUserId = BigDecimal.fromString(parseInt(userId).toString())
   let buyAmount = "0x" + clearingPriceOrderString.substring(19, 42)
   let sellAmount = "0x" + clearingPriceOrderString.substring(43, 66)
-  let sellAmountBigDec = BigDecimal.fromString(parseInt(sellAmount).toString())
-  let buyAmountBigDec = BigDecimal.fromString(parseInt(buyAmount).toString())
+  let sellAmountBigDec = convertHexStringToBigInt(sellAmount).toBigDecimal()
+  let buyAmountBigDec = convertHexStringToBigInt(buyAmount).toBigDecimal()
+
+  auctionDetails.currentClearingOrderId = auctionId.toString() + "-" + convertHexStringToBigInt(sellAmount).toString() + "-" + convertHexStringToBigInt(buyAmount).toString() + "-" + convertHexStringToBigInt(userId).toString()
   let clearingPriceFromContract = sellAmountBigDec.div(buyAmountBigDec)
   //If there is no active order don't update the price
   if (auctionDetails.activeOrderCount != ZERO) {
@@ -203,6 +205,7 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.isAtomicClosureAllowed = isAtomicClosureAllowed
   auctionDetails.isPrivateAuction = isPrivateAuction
   auctionDetails.interestScore = new BigDecimal(new BigInt(0))
+  auctionDetails.currentClearingOrderId = ""
   auctionDetails.currentVolume = BigDecimal.fromString("0")
   auctionDetails.currentClearingOrderSellAmount = new BigInt(0)
   auctionDetails.currentClearingOrderBuyAmount = new BigInt(0)

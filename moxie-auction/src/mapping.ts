@@ -11,7 +11,7 @@ import { EasyAuction, AuctionCleared, CancellationSellOrder, ClaimedFromOrder, N
 import { Order } from "../generated/schema"
 import { handleAuctionClearedTx, handleCancellationSellOrderTx, handleClaimedFromOrderTx, handleNewAuctionTx, handleNewSellOrderTx, handleNewUserTx, handleOwnershipTransferredTx, handleUserRegistrationTx } from "./transactions"
 
-import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId, getEncodedOrderId, createOrderTxn, getClaimedAmounts, updateOrderCounter } from "./utils"
+import { convertToPricePoint, updateAuctionStats, getOrderEntityId, loadUser, loadAuctionDetail, loadOrder, getTokenDetails, decreaseTotalBiddingValueAndOrdersCount, increaseTotalBiddingValueAndOrdersCount, getOrCreateBlockInfo, loadSummary, getTxEntityId, getEncodedOrderId, createOrderTxn, getClaimedAmounts, updateOrderCounter, convertHexStringToBigInt } from "./utils"
 import { ORDER_STATUS_CANCELLED, ORDER_STATUS_CLAIMED, ORDER_STATUS_PLACED } from "./constants"
 
 const ZERO = BigInt.zero()
@@ -40,9 +40,11 @@ export function handleAuctionCleared(event: AuctionCleared): void {
   auctionDetails.currentClearingOrderUserId = BigDecimal.fromString(parseInt(userId).toString())
   let buyAmount = "0x" + clearingPriceOrderString.substring(19, 42)
   let sellAmount = "0x" + clearingPriceOrderString.substring(43, 66)
+  let sellAmountBigDec = convertHexStringToBigInt(sellAmount).toBigDecimal()
+  let buyAmountBigDec = convertHexStringToBigInt(buyAmount).toBigDecimal()
 
-  let sellAmountBigDec = BigDecimal.fromString(parseInt(sellAmount).toString())
-  let buyAmountBigDec = BigDecimal.fromString(parseInt(buyAmount).toString())
+  auctionDetails.currentClearingOrderId = auctionId.toString() + "-" + convertHexStringToBigInt(sellAmount).toString() + "-" + convertHexStringToBigInt(buyAmount).toString() + "-" + convertHexStringToBigInt(userId).toString()
+
   let clearingPriceFromContract = sellAmountBigDec.div(buyAmountBigDec)
   if (calculatedCurrentClearingPrice != clearingPriceFromContract) {
     log.error("Mismatch in clearing price. Calculated: {}, from contract: {} getTxEntityId(event) {}", [calculatedCurrentClearingPrice.toString(), clearingPriceFromContract.toString(), getTxEntityId(event)])
@@ -73,6 +75,8 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
   let order = loadOrder(orderId)
   if (order) {
     order.status = ORDER_STATUS_CANCELLED
+    order.finalTxHash = event.transaction.hash
+    order.lastUpdatedIndex = updateOrderCounter()
     order.save()
   }
 
@@ -209,6 +213,7 @@ export function handleNewAuction(event: NewAuction): void {
   auctionDetails.isAtomicClosureAllowed = isAtomicClosureAllowed
   auctionDetails.isPrivateAuction = isPrivateAuction
   auctionDetails.interestScore = new BigDecimal(new BigInt(0))
+  auctionDetails.currentClearingOrderId = ""
   auctionDetails.currentVolume = BigDecimal.fromString("0")
   auctionDetails.currentClearingOrderSellAmount = new BigInt(0)
   auctionDetails.currentClearingOrderBuyAmount = new BigInt(0)
