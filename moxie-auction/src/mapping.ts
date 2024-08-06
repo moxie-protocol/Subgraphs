@@ -65,6 +65,9 @@ export function handleCancellationSellOrder(event: CancellationSellOrder): void 
   let sellAmount = event.params.sellAmount
   let buyAmount = event.params.buyAmount
   let userId = event.params.userId
+  let user = loadUser(userId.toString())
+  user.totalMoxieBid = user.totalMoxieBid.minus(sellAmount)
+  user.save()
 
   let auctionDetails = loadAuctionDetail(auctionId.toString())
 
@@ -104,6 +107,10 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   let sellAmount = event.params.sellAmount
   let buyAmount = event.params.buyAmount
   let userId = event.params.userId
+
+  let user = loadUser(userId.toString())
+  user.totalMoxieBid = user.totalMoxieBid.minus(sellAmount)
+  user.save()
 
   let auctionDetails = loadAuctionDetail(auctionId.toString())
 
@@ -255,11 +262,9 @@ export function handleNewSellOrder(event: NewSellOrder): void {
   increaseTotalBiddingValueAndOrdersCount(sellAmount, false)
 
   // let user = loadUser(userId.toString()) TODO: revisit after sync
-  let user = User.load(userId.toString())
-  if (!user) {
-    log.error("User not found, userId: {}  - this txn is not taken into account(TODO:validate)", [userId.toString()])
-    return
-  }
+  let user = loadUser(userId.toString())
+
+  user.totalMoxieBid = user.totalMoxieBid.plus(sellAmount)
 
   let auctionDetails = loadAuctionDetail(auctionId.toString())
 
@@ -324,6 +329,7 @@ export function handleNewUser(event: NewUser): void {
     user.address = userAddress
     user.createdAuctions = new Array()
     user.participatedAuctions = new Array()
+    user.totalMoxieBid = new BigInt(0)
     user.save()
   }
 }
@@ -341,6 +347,7 @@ export function handleUserRegistration(event: UserRegistration): void {
     user.address = userAddress
     user.createdAuctions = new Array()
     user.participatedAuctions = new Array()
+    user.totalMoxieBid = new BigInt(0)
     user.save()
   }
 }
