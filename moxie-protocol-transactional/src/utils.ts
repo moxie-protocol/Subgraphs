@@ -186,7 +186,12 @@ export class CalculatePrice {
   price: BigDecimal
   priceInWei: BigDecimal
   constructor(protocolTokenAmount: BigInt, subjectTokenAmount: BigInt) {
-    this.price = protocolTokenAmount.divDecimal(subjectTokenAmount.toBigDecimal())
-    this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
+    if (subjectTokenAmount.isZero()) {
+      this.price = BigDecimal.zero()
+      this.priceInWei = BigDecimal.zero()
+    } else {
+      this.price = protocolTokenAmount.divDecimal(subjectTokenAmount.toBigDecimal())
+      this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
+    }
   }
 }
