@@ -1,4 +1,4 @@
-import { Address, BigInt, BigDecimal, ethereum } from "@graphprotocol/graph-ts"
+import { Address, BigInt, BigDecimal, ethereum, ByteArray } from "@graphprotocol/graph-ts"
 import { Order, AuctionDetail, Token, User, BlockInfo, OrderCounter, Summary, OrderTxn } from "../generated/schema"
 import { ERC20Contract } from "../generated/EasyAuction/ERC20Contract"
 
@@ -231,24 +231,25 @@ function getBidInformation(orders: string[], auctionId: BigInt): BidDetails {
 export function getClaimedAmounts(order: Order, auctionDetails: AuctionDetail): BigInt[] {
   let sumBiddingTokenAmount = BigInt.zero()
   let sumAuctioningTokenAmount = BigInt.zero()
-  let priceNumerator =  auctionDetails.currentClearingOrderBuyAmount
-  let priceDenominator =  auctionDetails.currentClearingOrderSellAmount
-  let userId = BigInt.fromString(auctionDetails.currentClearingOrderUserId.toString())
+  let orderArr = auctionDetails.currentClearingOrderId.split("-")
+  let priceDenominator =  BigInt.fromString(orderArr[1])
+  let priceNumerator =  BigInt.fromString(orderArr[2])
+  let userId =  BigInt.fromString(orderArr[3])
 
   //This means that the moxie funding the auction asked for is not met so all moxie is refunded
   if(auctionDetails.minFundingThreshold.gt(auctionDetails.currentClearingOrderSellAmount)){
     sumBiddingTokenAmount = order.sellAmount
   } else {
     //Checking if the order is the clearing price order
-    if(auctionDetails.currentClearingOrderBuyAmount.equals(order.buyAmount) 
-      && auctionDetails.currentClearingOrderSellAmount.equals(order.sellAmount) 
+    if(priceNumerator.equals(order.buyAmount) 
+      && priceDenominator.equals(order.sellAmount)
       && userId.equals(BigInt.fromString(order.user))){
       let diff = auctionDetails.volumeClearingPriceOrder.times(priceNumerator).div(priceDenominator)
       sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(diff)
       sumBiddingTokenAmount = sumBiddingTokenAmount.plus(order.sellAmount.minus(auctionDetails.volumeClearingPriceOrder))
     } else {
-        if(smallerThan(order, auctionDetails.currentClearingOrderSellAmount, auctionDetails.currentClearingOrderBuyAmount, userId)){
-          sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(order.sellAmount).times(priceNumerator).div(priceDenominator)
+      if(smallerThan(order, priceDenominator, priceNumerator, userId)){
+        sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(order.sellAmount).times(priceNumerator).div(priceDenominator)
         } else {
           sumBiddingTokenAmount = sumBiddingTokenAmount.plus(order.sellAmount)
         }
@@ -282,4 +283,14 @@ export function decreaseTotalBiddingValueAndOrdersCount(value: BigInt): void {
   summary.totalBiddingValue = summary.totalBiddingValue.minus(value)
   summary.totalOrders = summary.totalOrders.minus(BigInt.fromI32(1))
   summary.save()
+}
+
+export function convertHexStringToBigInt(hexString: string): BigInt {
+  let paddedHexString = hexZeroPad(hexString)
+  const bytes = ByteArray.fromHexString(paddedHexString).reverse()
+  return BigInt.fromByteArray(changetype<ByteArray>(bytes))
+}
+
+function hexZeroPad(hexstring: string, length: i32 = 32): string {
+  return hexstring.substr(0, 2) + hexstring.substr(2).padStart(length * 2, "0")
 }
