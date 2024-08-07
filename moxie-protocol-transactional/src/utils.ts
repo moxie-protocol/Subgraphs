@@ -75,13 +75,12 @@ export function saveUser(user: User, block: ethereum.Block): void {
   user.save()
 }
 
-function getSnapshotId(subjectToken: SubjectToken, timestamp: BigInt): string {
-  return subjectToken.id.concat("-").concat(timestamp.toString())
-}
-
-export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block): void {
-  subject.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
-  subject.save()
+export function saveSubjectToken(subjectToken: SubjectToken, block: ethereum.Block): void {
+  let price = new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply)
+  subjectToken.currentPriceInMoxie = price.price
+  subjectToken.currentPriceInWeiInMoxie = price.priceInWei
+  subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  subjectToken.save()
 }
 
 export function getOrCreateBlockInfo(block: ethereum.Block): BlockInfo {
@@ -181,4 +180,13 @@ export function _calculateSellSideProtocolAmountAddingBackFees(protocolSellFeePc
   let totalFeePCT = protocolSellFeePct.plus(subjectSellFeePct)
   // moxieAmount_ = (estimatedAmount * PCT_BASE) / (PCT_BASE - totalFeePCT);
   return _buyAmount.times(PCT_BASE).div(PCT_BASE.minus(totalFeePCT))
+}
+
+export class CalculatePrice {
+  price: BigDecimal
+  priceInWei: BigDecimal
+  constructor(protocolTokenAmount: BigInt, subjectTokenAmount: BigInt) {
+    this.price = protocolTokenAmount.divDecimal(subjectTokenAmount.toBigDecimal())
+    this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
+  }
 }

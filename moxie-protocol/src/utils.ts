@@ -296,13 +296,16 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
   subjectToken.save()
 }
 
-export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block, saveSnapshot: boolean = false): void {
-  subject.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
-  subject.save()
+export function saveSubjectToken(subjectToken: SubjectToken, block: ethereum.Block, saveSnapshot: boolean = false): void {
+  let price = new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply)
+  subjectToken.currentPriceInMoxie = price.price
+  subjectToken.currentPriceInWeiInMoxie = price.priceInWei
+  subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  subjectToken.save()
   if (saveSnapshot) {
-    let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subject, block.timestamp)
-    createSubjectTokenDailySnapshot(subject, block.timestamp, lastHourylSnapshotEndTimestamp)
-    createSubjectTokenRollingDailySnapshot(subject, block.timestamp)
+    let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subjectToken, block.timestamp)
+    createSubjectTokenDailySnapshot(subjectToken, block.timestamp, lastHourylSnapshotEndTimestamp)
+    createSubjectTokenRollingDailySnapshot(subjectToken, block.timestamp)
   }
 }
 

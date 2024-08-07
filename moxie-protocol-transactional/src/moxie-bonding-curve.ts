@@ -34,7 +34,6 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   //   );
 
   const fees = calculateBuySideFee(event.params._sellAmount)
-  let protocolTokenSpentAfterFees = event.params._sellAmount.minus(fees.protocolFee).minus(fees.subjectFee)
 
   let user = getOrCreateUser(event.params._beneficiary, event.block)
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
@@ -43,9 +42,6 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params._sellAmount)
   // calculating price here the sell amount will be in protocol token and buy amount is protocol token since it's a buy
-  let price = protocolTokenSpentAfterFees.divDecimal(new BigDecimal(event.params._buyAmount))
-  subjectToken.currentPriceInMoxie = price
-  subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._sellAmount)
   saveSubjectToken(subjectToken, event.block)
 
@@ -78,9 +74,6 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   let protocolTokenAmount = calculateSellSideProtocolAmountAddingBackFees(protocolTokenAmountReducingFees)
 
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
-  let price = protocolTokenAmountReducingFees.divDecimal(new BigDecimal(event.params._sellAmount))
-  subjectToken.currentPriceInMoxie = price
-  subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
   // volume uses amount with fees
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   // volume uses amount with fees
