@@ -80,6 +80,8 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(subjectAmount)
   savePortfolio(portfolio, event.block)
 
+  let user = getOrCreateUser(userAddress, event.block)
+
   let order = new Order(getTxEntityId(event))
   order.protocolToken = auctionAndOrder.auction.protocolToken
   order.protocolTokenAmount = protocolTokenAmount
@@ -87,7 +89,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   order.subjectToken = auctionAndOrder.auction.subjectToken!
   order.subjectAmount = subjectAmount
   order.orderType = ORDER_TYPE_AUCTION
-  order.user = auctionAndOrder.user.id
+  order.user = user.id
   order.subjectFee = BigInt.zero()
   order.protocolFee = BigInt.zero()
   order.price = calculatedPrice.price
@@ -95,7 +97,6 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   order.portfolio = portfolio.id
   order.save()
 
-  let user = getOrCreateUser(userAddress, event.block)
   user.buyVolume = user.buyVolume.plus(protocolTokenAmount)
   user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   saveUser(user, event.block)
