@@ -72,7 +72,8 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
     log.warning("Subject amount is zero, txHash: {}", [event.transaction.hash.toHexString()])
     return
   }
-  let calculatedPrice = new CalculatePrice(protocolTokenAmount, subjectAmount)
+  let subjectToken = getOrCreateSubjectToken(subjectTokenAddress, event.block)
+  let calculatedPrice = new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply, subjectToken.reserveRatio)
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(userAddress, subjectTokenAddress, event.transaction.hash, event.block)
   portfolio.buyVolume = portfolio.buyVolume.plus(protocolTokenAmount)
@@ -107,7 +108,6 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   summary.totalBuyVolume = summary.totalBuyVolume.plus(protocolTokenAmount)
   summary.save()
 
-  let subjectToken = getOrCreateSubjectToken(subjectTokenAddress, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(protocolTokenAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)

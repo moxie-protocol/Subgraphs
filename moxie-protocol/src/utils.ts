@@ -502,12 +502,20 @@ export function decodeOrder(encodedOrderId: Bytes): AuctionOrderClass {
 export class CalculatePrice {
   price: BigDecimal
   priceInWei: BigDecimal
-  constructor(protocolTokenAmount: BigInt, subjectTokenAmount: BigInt) {
-    this.price = protocolTokenAmount.divDecimal(subjectTokenAmount.toBigDecimal())
-    this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
+  //Price = Reserve/TotalSupply * ReserveRatio
+  constructor(reserve: BigInt, totalSupply: BigInt, reserveRatio: BigInt) {
+    if (reserveRatio.equals(BigInt.zero())) {
+      this.price = BigDecimal.zero()
+      this.priceInWei = BigDecimal.zero()
+    } else {
+      //Converting it from 800000 to 0.8
+      let reserveRatioDecimal = reserveRatio.divDecimal(BigInt.fromI32(10).pow(6).toBigDecimal())
+      this.price = reserve.divDecimal(totalSupply.toBigDecimal().times(reserveRatioDecimal))
+      this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
+    }
   }
 }
-
+ 
 export function loadAuction(auctionId: BigInt): Auction {
   let auction = Auction.load(auctionId.toString())
   if (!auction) {
