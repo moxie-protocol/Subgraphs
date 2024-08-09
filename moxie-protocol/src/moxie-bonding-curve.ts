@@ -200,10 +200,11 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   let updatedBalance = portfolio.balance.minus(event.params._sellAmount)
   // buyVolume / subjectTokenBuyVolume = protocolTokenInvested / balance
   if (portfolio.subjectTokenBuyVolume.gt(BigInt.zero())) {
+    let oldPortfolioProtocolTokenInvested = portfolio.protocolTokenInvested
     portfolio.protocolTokenInvested = new BigDecimal(portfolio.buyVolume).times(new BigDecimal(updatedBalance)).div(new BigDecimal(portfolio.subjectTokenBuyVolume))
-    // portfolio.buyVolume is the amount user spent to get the subject token(buy + auction)
-    // portfolio.protocolTokenInvested is the amount user spent for the current balance of given subject token
-    user.protocolTokenInvested = user.protocolTokenInvested.minus(new BigDecimal(portfolio.buyVolume)).plus(portfolio.protocolTokenInvested)
+    // user protocol token invested is total protocol token invested by user(sum of all portfolio protocol token invested)
+    // user.protocolTokenInvested is reduced same amount as  portfolio.protocolTokenInvested is reduced
+    user.protocolTokenInvested = user.protocolTokenInvested.minus(oldPortfolioProtocolTokenInvested.minus(portfolio.protocolTokenInvested))
   }
   order.portfolio = portfolio.id
   order.save()
