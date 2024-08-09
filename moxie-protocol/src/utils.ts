@@ -506,12 +506,12 @@ export class CalculatePrice {
     if (reserveRatio.equals(BigInt.zero())) {
       this.price = BigDecimal.zero()
       this.priceInWei = BigDecimal.zero()
-      return
+    } else {
+      //Converting it from 800000 to 0.8
+      let reserveRatioDecimal = reserveRatio.divDecimal(BigInt.fromI32(10).pow(6).toBigDecimal())
+      this.price = reserve.divDecimal(totalSupply.toBigDecimal().times(reserveRatioDecimal))
+      this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
     }
-    //Converting it from 800000 to 0.8
-    let reserveRatioDecimal = reserveRatio.divDecimal(BigInt.fromI32(10).pow(6).toBigDecimal())
-    this.price = reserve.divDecimal(totalSupply.toBigDecimal().times(reserveRatioDecimal))
-    this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
   }
 }
  
