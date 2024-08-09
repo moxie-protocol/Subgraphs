@@ -296,13 +296,16 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
   subjectToken.save()
 }
 
-export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block, saveSnapshot: boolean = false): void {
-  subject.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
-  subject.save()
+export function saveSubjectToken(subjectToken: SubjectToken, block: ethereum.Block, saveSnapshot: boolean = false): void {
+  let price = new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply)
+  subjectToken.currentPriceInMoxie = price.price
+  subjectToken.currentPriceInWeiInMoxie = price.priceInWei
+  subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  subjectToken.save()
   if (saveSnapshot) {
-    let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subject, block.timestamp)
-    createSubjectTokenDailySnapshot(subject, block.timestamp, lastHourylSnapshotEndTimestamp)
-    createSubjectTokenRollingDailySnapshot(subject, block.timestamp)
+    let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subjectToken, block.timestamp)
+    createSubjectTokenDailySnapshot(subjectToken, block.timestamp, lastHourylSnapshotEndTimestamp)
+    createSubjectTokenRollingDailySnapshot(subjectToken, block.timestamp)
   }
 }
 
@@ -503,8 +506,13 @@ export class CalculatePrice {
   price: BigDecimal
   priceInWei: BigDecimal
   constructor(protocolTokenAmount: BigInt, subjectTokenAmount: BigInt) {
-    this.price = protocolTokenAmount.divDecimal(subjectTokenAmount.toBigDecimal())
-    this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
+    if (subjectTokenAmount.isZero()) {
+      this.price = BigDecimal.zero()
+      this.priceInWei = BigDecimal.zero()
+    } else {
+      this.price = protocolTokenAmount.divDecimal(subjectTokenAmount.toBigDecimal())
+      this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
+    }
   }
 }
 

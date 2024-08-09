@@ -56,8 +56,6 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params._sellAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
-  subjectToken.currentPriceInMoxie = calculatedPrice.price
-  subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._sellAmount)
   // Saving order entity
   let order = new Order(getTxEntityId(event))
@@ -165,8 +163,6 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // calculating price here the sell amount will be subject token and buy amount is protocol token since it's a sell
   let price = new CalculatePrice(protocolTokenAmountReducingFees, event.params._sellAmount)
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
-  subjectToken.currentPriceInMoxie = price.price
-  subjectToken.currentPriceInWeiInMoxie = price.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   if (event.params._spender != event.params._beneficiary) {
     // TODO: need to fix for spender
