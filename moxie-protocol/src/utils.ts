@@ -502,6 +502,7 @@ export function decodeOrder(encodedOrderId: Bytes): AuctionOrderClass {
 export class CalculatePrice {
   price: BigDecimal
   priceInWei: BigDecimal
+  //Price = Reserve/TotalSupply * ReserveRatio
   constructor(reserve: BigInt, totalSupply: BigInt, reserveRatio: BigInt) {
     if (reserveRatio.equals(BigInt.zero())) {
       this.price = BigDecimal.zero()
