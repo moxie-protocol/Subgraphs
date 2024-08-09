@@ -163,7 +163,11 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   const blockInfo = getOrCreateBlockInfo(event.block)
   // calculating price here the sell amount will be subject token and buy amount is protocol token since it's a sell
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
-  let price = new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply, subjectToken.reserveRatio)
+  
+  //Since HandleSellOrder is called before the vault transfer we need to predict final state of reserve and supply when calculating price
+  let predictedReserve = subjectToken.reserve.minus(event.params._buyAmount.plus(fees.protocolFee).plus(fees.subjectFee))
+  let predictedTotalSupply = subjectToken.totalSupply.minus(event.params._sellAmount)
+  let price = new CalculatePrice(predictedReserve, predictedTotalSupply, subjectToken.reserveRatio)
   subjectToken.currentPriceInMoxie = price.price
   subjectToken.currentPriceInWeiInMoxie = price.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
