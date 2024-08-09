@@ -2,14 +2,14 @@ import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { User } from "../generated/schema"
 
-import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser } from "./utils"
+import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideFee } from "./utils"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
   subjectToken.reserveRatio = event.params._reserveRatio
   subjectToken.initialSupply = event.params._initialSupply
-  let price = event.params._reserve.divDecimal(new BigDecimal(event.params._initialSupply))
-  subjectToken.currentPriceInMoxie = price
-  subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
+  let calculatedPrice = new CalculatePrice(event.params._reserve, subjectToken.initialSupply, subjectToken.reserveRatio)
+  subjectToken.currentPriceInMoxie = calculatedPrice.price
+  subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   saveSubjectToken(subjectToken, event.block)
 }
 
@@ -43,9 +43,9 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params._sellAmount)
   // calculating price here the sell amount will be in protocol token and buy amount is protocol token since it's a buy
-  let price = protocolTokenSpentAfterFees.divDecimal(new BigDecimal(event.params._buyAmount))
-  subjectToken.currentPriceInMoxie = price
-  subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
+  let calculatedPrice =  new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply, subjectToken.reserveRatio)
+  subjectToken.currentPriceInMoxie = calculatedPrice.price
+  subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._sellAmount)
   saveSubjectToken(subjectToken, event.block)
 
@@ -76,11 +76,14 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // SubjectShareSold event is in perspective of user, so _buyAmount is the amount user gets back(fees already deducted)
   let protocolTokenAmountReducingFees = event.params._buyAmount
   let protocolTokenAmount = calculateSellSideProtocolAmountAddingBackFees(protocolTokenAmountReducingFees)
+  const fees = calculateSellSideFee(protocolTokenAmount)
 
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
-  let price = protocolTokenAmountReducingFees.divDecimal(new BigDecimal(event.params._sellAmount))
-  subjectToken.currentPriceInMoxie = price
-  subjectToken.currentPriceInWeiInMoxie = price.times(BigDecimal.fromString("1000000000000000000"))
+  let predictedReserve = subjectToken.reserve.minus(event.params._buyAmount.plus(fees.protocolFee).plus(fees.subjectFee))
+  let predictedTotalSupply = subjectToken.totalSupply.minus(event.params._sellAmount)
+  let calculatedPrice = new CalculatePrice(predictedReserve, predictedTotalSupply, subjectToken.reserveRatio) 
+  subjectToken.currentPriceInMoxie = calculatedPrice.price
+  subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   // volume uses amount with fees
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   // volume uses amount with fees

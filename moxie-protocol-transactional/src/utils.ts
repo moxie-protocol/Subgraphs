@@ -182,3 +182,20 @@ export function _calculateSellSideProtocolAmountAddingBackFees(protocolSellFeePc
   // moxieAmount_ = (estimatedAmount * PCT_BASE) / (PCT_BASE - totalFeePCT);
   return _buyAmount.times(PCT_BASE).div(PCT_BASE.minus(totalFeePCT))
 }
+
+export class CalculatePrice {
+  price: BigDecimal
+  priceInWei: BigDecimal
+  //Price = Reserve/TotalSupply * ReserveRatio
+  constructor(reserve: BigInt, totalSupply: BigInt, reserveRatio: BigInt) {
+    if (reserveRatio.equals(BigInt.zero())) {
+      this.price = BigDecimal.zero()
+      this.priceInWei = BigDecimal.zero()
+    } else {
+      //Converting it from 800000 to 0.8
+      let reserveRatioDecimal = reserveRatio.divDecimal(BigInt.fromI32(10).pow(6).toBigDecimal())
+      this.price = reserve.divDecimal(totalSupply.toBigDecimal().times(reserveRatioDecimal))
+      this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
+    }
+  }
+}
