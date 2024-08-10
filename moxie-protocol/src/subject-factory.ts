@@ -1,14 +1,14 @@
 import { BigInt } from "@graphprotocol/graph-ts"
 import { Auction } from "../generated/schema"
 import { SubjectOnboardingInitiated, SubjectOnboardingFinished } from "../generated/SubjectFactory/SubjectFactory"
-import { getOrCreateBlockInfo, getOrCreateSubjectToken, getOrCreateSummary, isBlacklistedAuction, isBlacklistedSubjectAddress, loadAuction, saveSubjectToken } from "./utils"
+import { getOrCreateBlockInfo, getOrCreateSubjectToken, getOrCreateSummary, isBlacklistedAuction, isBlacklistedSubjectTokenAddress, loadAuction, saveSubjectToken } from "./utils"
 import { ONBOARDING_STATUS_ONBOARDING_FINISHED } from "./constants"
 
 export function handleSubjectOnboardingInitiated(event: SubjectOnboardingInitiated): void {
   if (isBlacklistedAuction(event.params._auctionId.toString())) {
     return
   }
-  if (isBlacklistedSubjectAddress(event.params._subjectToken)) {
+  if (isBlacklistedSubjectTokenAddress(event.params._subjectToken)) {
     return
   }
   let auction = loadAuction(event.params._auctionId)

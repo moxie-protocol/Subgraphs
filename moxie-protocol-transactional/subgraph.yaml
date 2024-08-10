@@ -4,11 +4,11 @@ schema:
 dataSources:
   - kind: ethereum
     name: TokenManager
-    network: base-sepolia
+    network: base
     source:
-      address: "0xFd990aF1c711cC0fc46E66B22877B028aF7eF59C"
+      address: "0xFfeACE4541276aC65c4e433B7fC63cdA32b30470"
       abi: TokenManager
-      startBlock: 12934201
+      startBlock: 17569889
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -27,11 +27,11 @@ dataSources:
       file: ./src/token-manager.ts
   - kind: ethereum
     name: Vault
-    network: base-sepolia
+    network: base
     source:
-      address: "0x3C1Fd0E625765A40fFd58adc4784603A07f5D05f"
+      address: "0x58708f65BacdF5040eac739cf01299fA756a1154"
       abi: Vault
-      startBlock: 12934204
+      startBlock: 17569892
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -52,11 +52,11 @@ dataSources:
       file: ./src/vault.ts
   - kind: ethereum
     name: MoxieBondingCurve
-    network: base-sepolia
+    network: base
     source:
-      address: "0x56147e70A57012ade3003fe93a394BFC35d747e3"
+      address: "0x373065e66B32a1C428aa14698dFa99BA7199B55E"
       abi: MoxieBondingCurve
-      startBlock: 12934212
+      startBlock: 17569899
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -84,11 +84,11 @@ dataSources:
       file: ./src/moxie-bonding-curve.ts
   - kind: ethereum
     name: EasyAuction
-    network: base-sepolia
+    network: base
     source:
-      address: "0x8EB6A9275637358Fea56D8431e85B6BB6F260853"
+      address: "0xE9D8b7e7d5d8ACF98E5152cC5C91AA4B6Ee1fBf0"
       abi: EasyAuction
-      startBlock: 12934136
+      startBlock: 17568858
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -113,7 +113,7 @@ dataSources:
 templates:
   - kind: ethereum/contract
     name: SubjectTokenContract
-    network: base-sepolia
+    network: base
     source:
       abi: ERC20
     mapping:

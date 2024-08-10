@@ -1,7 +1,7 @@
 import { Address, BigDecimal, BigInt, ByteArray, Bytes, ethereum, log, store } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Portfolio, SubjectToken, User, Summary } from "../generated/schema"
-import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_ADDRESS, PCT_BASE, SUMMARY_ID } from "./constants"
+import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, PCT_BASE, SUMMARY_ID } from "./constants"
 
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
@@ -199,11 +199,10 @@ export class CalculatePrice {
     }
   }
 }
-
-export function isBlacklistedSubjectAddress(subjectAddress: Address): bool {
-  return BLACKLISTED_SUBJECT_ADDRESS.get(subjectAddress.toHexString()) != null
+export function isBlacklistedSubjectTokenAddress(subjectAddress: Address): bool {
+  return BLACKLISTED_SUBJECT_TOKEN_ADDRESS.isSet(subjectAddress.toHexString())
 }
 
 export function isBlacklistedAuction(auctionId: string): bool {
-  return BLACKLISTED_AUCTION.get(auctionId) != null
+  return BLACKLISTED_AUCTION.isSet(auctionId)
 }

@@ -2,9 +2,9 @@ import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { User } from "../generated/schema"
 
-import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideFee, isBlacklistedSubjectAddress } from "./utils"
+import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideFee, isBlacklistedSubjectTokenAddress } from "./utils"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
-  if (isBlacklistedSubjectAddress(event.params._subjectToken)) {
+  if (isBlacklistedSubjectTokenAddress(event.params._subjectToken)) {
     return
   }
   let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
@@ -17,7 +17,7 @@ export function handleBondingCurveInitialized(event: BondingCurveInitialized): v
 }
 
 export function handleSubjectSharePurchased(event: SubjectSharePurchased): void {
-  if (isBlacklistedSubjectAddress(event.params._buyToken)) {
+  if (isBlacklistedSubjectTokenAddress(event.params._buyToken)) {
     return
   }
   // BUY - BUY fan tokens
@@ -63,7 +63,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 }
 
 export function handleSubjectShareSold(event: SubjectShareSold): void {
-  if (isBlacklistedSubjectAddress(event.params._sellToken)) {
+  if (isBlacklistedSubjectTokenAddress(event.params._sellToken)) {
     return
   }
   // SELL - SELL fan tokens to bonding curve

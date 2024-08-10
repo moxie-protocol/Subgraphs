@@ -1,7 +1,7 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction } from "../generated/schema"
-import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS } from "./constants"
+import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS } from "./constants"
 
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
@@ -524,10 +524,10 @@ export function loadAuction(auctionId: BigInt): Auction {
   return auction
 }
 
-export function isBlacklistedSubjectAddress(subjectAddress: Address): bool {
-  return BLACKLISTED_SUBJECT_ADDRESS.get(subjectAddress.toHexString()) != null
+export function isBlacklistedSubjectTokenAddress(subjectAddress: Address): bool {
+  return BLACKLISTED_SUBJECT_TOKEN_ADDRESS.isSet(subjectAddress.toHexString())
 }
 
 export function isBlacklistedAuction(auctionId: string): bool {
-  return BLACKLISTED_AUCTION.get(auctionId) != null
+  return BLACKLISTED_AUCTION.isSet(auctionId)
 }

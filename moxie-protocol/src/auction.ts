@@ -1,7 +1,7 @@
 import { BigInt, BigDecimal, Bytes, Address, log } from "@graphprotocol/graph-ts"
 import { NewAuction, ClaimedFromOrder, AuctionCleared, EasyAuction, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Auction, AuctionUser, Order } from "../generated/schema"
-import { getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, CalculatePrice, loadAuction, saveSubjectToken, isBlacklistedAuction, isBlacklistedSubjectAddress } from "./utils"
+import { getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, CalculatePrice, loadAuction, saveSubjectToken, isBlacklistedAuction, isBlacklistedSubjectTokenAddress } from "./utils"
 import { ORDER_TYPE_AUCTION } from "./constants"
 
 class AuctionAndOrder {

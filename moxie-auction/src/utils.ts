@@ -2,20 +2,20 @@ import { Address, BigInt, BigDecimal, ethereum, ByteArray } from "@graphprotocol
 import { Order, AuctionDetail, Token, User, BlockInfo, OrderCounter, Summary, OrderTxn } from "../generated/schema"
 import { ERC20Contract } from "../generated/EasyAuction/ERC20Contract"
 
-import { ORDER_ENTITY_COUNTER_ID } from "./constants"
+import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ORDER_ENTITY_COUNTER_ID } from "./constants"
 
 const ZERO = BigInt.zero()
 const TEN = BigInt.fromString("10")
 
 class BidDetails {
-  lowestPriceBidOrder: string;
-  highestPriceBidOrder: string;
-  uniqueHoldersCount: BigInt;
+  lowestPriceBidOrder: string
+  highestPriceBidOrder: string
+  uniqueHoldersCount: BigInt
   constructor() {
-    this.lowestPriceBidOrder = "";
-    this.highestPriceBidOrder = "";
-    this.uniqueHoldersCount = BigInt.fromI32(0);
- }
+    this.lowestPriceBidOrder = ""
+    this.highestPriceBidOrder = ""
+    this.uniqueHoldersCount = BigInt.fromI32(0)
+  }
 }
 
 export function convertToPricePoint(sellAmount: BigInt, buyAmount: BigInt, decimalsBuyToken: number, decimalsSellToken: number): Map<string, BigDecimal> {
@@ -147,7 +147,6 @@ export function createOrderTxn(event: ethereum.Event, orderId: string, status: s
   orderTxn.save()
 }
 
-
 export function updateOrderCounter(): BigInt {
   let orderEntityCounter = OrderCounter.load(ORDER_ENTITY_COUNTER_ID)
   if (!orderEntityCounter) {
@@ -161,7 +160,7 @@ export function updateOrderCounter(): BigInt {
 
 function getBidInformation(orders: string[], auctionId: BigInt): BidDetails {
   let bidDetails = new BidDetails()
-  if(orders.length == 0) {
+  if (orders.length == 0) {
     return bidDetails
   }
 
@@ -223,7 +222,7 @@ function getBidInformation(orders: string[], auctionId: BigInt): BidDetails {
   }
   bidDetails.lowestPriceBidOrder = getOrderEntityId(auctionId, initialLowestBiddingTokenAmount, initialLowestAuctioningTokenAmount, initialLowestUserId)
   bidDetails.highestPriceBidOrder = getOrderEntityId(auctionId, initialHighestBiddingTokenAmount, initialHighestAuctioningTokenAmount, initialHighestUserId)
-  bidDetails.uniqueHoldersCount =  BigInt.fromI32(uniqueBidders.size)
+  bidDetails.uniqueHoldersCount = BigInt.fromI32(uniqueBidders.size)
 
   return bidDetails
 }
@@ -232,27 +231,25 @@ export function getClaimedAmounts(order: Order, auctionDetails: AuctionDetail): 
   let sumBiddingTokenAmount = BigInt.zero()
   let sumAuctioningTokenAmount = BigInt.zero()
   let orderArr = auctionDetails.currentClearingOrderId.split("-")
-  let priceDenominator =  BigInt.fromString(orderArr[1])
-  let priceNumerator =  BigInt.fromString(orderArr[2])
-  let userId =  BigInt.fromString(orderArr[3])
+  let priceDenominator = BigInt.fromString(orderArr[1])
+  let priceNumerator = BigInt.fromString(orderArr[2])
+  let userId = BigInt.fromString(orderArr[3])
 
   //This means that the moxie funding the auction asked for is not met so all moxie is refunded
-  if(auctionDetails.minFundingThreshold.gt(auctionDetails.currentClearingOrderSellAmount)){
+  if (auctionDetails.minFundingThreshold.gt(auctionDetails.currentClearingOrderSellAmount)) {
     sumBiddingTokenAmount = order.sellAmount
   } else {
     //Checking if the order is the clearing price order
-    if(priceNumerator.equals(order.buyAmount) 
-      && priceDenominator.equals(order.sellAmount)
-      && userId.equals(BigInt.fromString(order.user))){
+    if (priceNumerator.equals(order.buyAmount) && priceDenominator.equals(order.sellAmount) && userId.equals(BigInt.fromString(order.user))) {
       let diff = auctionDetails.volumeClearingPriceOrder.times(priceNumerator).div(priceDenominator)
       sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(diff)
       sumBiddingTokenAmount = sumBiddingTokenAmount.plus(order.sellAmount.minus(auctionDetails.volumeClearingPriceOrder))
     } else {
-      if(smallerThan(order, priceDenominator, priceNumerator, userId)){
+      if (smallerThan(order, priceDenominator, priceNumerator, userId)) {
         sumAuctioningTokenAmount = sumAuctioningTokenAmount.plus(order.sellAmount).times(priceNumerator).div(priceDenominator)
-        } else {
-          sumBiddingTokenAmount = sumBiddingTokenAmount.plus(order.sellAmount)
-        }
+      } else {
+        sumBiddingTokenAmount = sumBiddingTokenAmount.plus(order.sellAmount)
+      }
     }
   }
   //refund, subjectTokenPurchased, moxie spent
@@ -293,4 +290,12 @@ export function convertHexStringToBigInt(hexString: string): BigInt {
 
 function hexZeroPad(hexstring: string, length: i32 = 32): string {
   return hexstring.substr(0, 2) + hexstring.substr(2).padStart(length * 2, "0")
+}
+
+export function isBlacklistedSubjectTokenAddress(subjectAddress: Address): bool {
+  return BLACKLISTED_SUBJECT_TOKEN_ADDRESS.get(subjectAddress.toHexString()) != null
+}
+
+export function isBlacklistedAuction(auctionId: string): bool {
+  return BLACKLISTED_AUCTION.get(auctionId) != null
 }
