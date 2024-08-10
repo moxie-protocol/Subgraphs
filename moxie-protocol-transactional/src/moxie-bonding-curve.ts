@@ -2,8 +2,11 @@ import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { User } from "../generated/schema"
 
-import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideFee } from "./utils"
+import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideFee, isBlacklistedSubjectAddress } from "./utils"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
+  if (isBlacklistedSubjectAddress(event.params._subjectToken)) {
+    return
+  }
   let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
   subjectToken.reserveRatio = event.params._reserveRatio
   subjectToken.initialSupply = event.params._initialSupply
@@ -14,6 +17,9 @@ export function handleBondingCurveInitialized(event: BondingCurveInitialized): v
 }
 
 export function handleSubjectSharePurchased(event: SubjectSharePurchased): void {
+  if (isBlacklistedSubjectAddress(event.params._buyToken)) {
+    return
+  }
   // BUY - BUY fan tokens
   // mint subjectToken of shares_ to _onBehalfOf
   // _spender Transfer deposit amount (MOXIE) from subject to bonding curve
@@ -43,7 +49,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params._sellAmount)
   // calculating price here the sell amount will be in protocol token and buy amount is protocol token since it's a buy
-  let calculatedPrice =  new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply, subjectToken.reserveRatio)
+  let calculatedPrice = new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply, subjectToken.reserveRatio)
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._sellAmount)
@@ -57,6 +63,9 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 }
 
 export function handleSubjectShareSold(event: SubjectShareSold): void {
+  if (isBlacklistedSubjectAddress(event.params._sellToken)) {
+    return
+  }
   // SELL - SELL fan tokens to bonding curve
   // 1. transfer _sellAmount shares (subjectToken) from _subject to bonding curve
   // 2. burns shares (subjectToken) of amount _sellAmount
@@ -81,7 +90,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
   let predictedReserve = subjectToken.reserve.minus(event.params._buyAmount.plus(fees.protocolFee).plus(fees.subjectFee))
   let predictedTotalSupply = subjectToken.totalSupply.minus(event.params._sellAmount)
-  let calculatedPrice = new CalculatePrice(predictedReserve, predictedTotalSupply, subjectToken.reserveRatio) 
+  let calculatedPrice = new CalculatePrice(predictedReserve, predictedTotalSupply, subjectToken.reserveRatio)
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   // volume uses amount with fees

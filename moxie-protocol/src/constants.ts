@@ -18,3 +18,9 @@ export const ONBOARDING_STATUS_ONBOARDING_INITIALIZED = "OnboardingInitialized"
 export const ONBOARDING_STATUS_ONBOARDING_FINISHED = "OnboardingFinished"
 
 export const TOKEN_DECIMALS = BigInt.fromI32(18)
+
+export const BLACKLISTED_SUBJECT_ADDRESS = new Map<string, bool>()
+BLACKLISTED_SUBJECT_ADDRESS.set("0x7412b5b7a7498f7b2a663b5c708a98f3092847f8", true)
+
+export const BLACKLISTED_AUCTION = new Map<string, bool>()
+BLACKLISTED_AUCTION.set("228", true)

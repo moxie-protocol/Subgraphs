@@ -1,10 +1,13 @@
 import { Address, BigDecimal, BigInt, store } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/templates/SubjectTokenContract/ERC20"
-import { getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, savePortfolio, saveSubjectToken } from "./utils"
+import { getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, isBlacklistedSubjectAddress, savePortfolio, saveSubjectToken } from "./utils"
 import { AUCTION_ORDER_CLAIMED as CLAIMED } from "./constants"
 
 export function handleTransfer(event: Transfer): void {
   let contractAddress = event.address
+  if (isBlacklistedSubjectAddress(contractAddress)) {
+    return
+  }
   let from = event.params.from
   let to = event.params.to
   let value = event.params.value

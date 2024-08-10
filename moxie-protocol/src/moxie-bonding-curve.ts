@@ -2,9 +2,12 @@ import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { Order, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectFeeTransfer, Summary, User } from "../generated/schema"
 
-import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideProtocolAmountAddingBackFees } from "./utils"
+import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideProtocolAmountAddingBackFees, isBlacklistedSubjectAddress } from "./utils"
 import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL, SUMMARY_ID } from "./constants"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
+  if (isBlacklistedSubjectAddress(event.params._subjectToken)) {
+    return
+  }
   let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
   subjectToken.reserveRatio = event.params._reserveRatio
   subjectToken.initialSupply = event.params._initialSupply // initial supply of subject token
@@ -15,6 +18,9 @@ export function handleBondingCurveInitialized(event: BondingCurveInitialized): v
 }
 
 export function handleSubjectSharePurchased(event: SubjectSharePurchased): void {
+  if (isBlacklistedSubjectAddress(event.params._buyToken)) {
+    return
+  }
   // BUY - BUY fan tokens
   // mint subjectToken of shares_ to _onBehalfOf
   // msg.sender Transfer deposit amount (MOXIE) from subject to bonding curve
@@ -130,6 +136,9 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 }
 
 export function handleSubjectShareSold(event: SubjectShareSold): void {
+  if (isBlacklistedSubjectAddress(event.params._sellToken)) {
+    return
+  }
   // SELL - SELL fan tokens to bonding curve
   // 1. transfer _sellAmount shares (subjectToken) from _subject to bonding curve
   // 2. burns shares (subjectToken) of amount _sellAmount
@@ -163,7 +172,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   const blockInfo = getOrCreateBlockInfo(event.block)
   // calculating price here the sell amount will be subject token and buy amount is protocol token since it's a sell
   let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
-  
+
   //Since HandleSellOrder is called before the vault transfer we need to predict final state of reserve and supply when calculating price
   let predictedReserve = subjectToken.reserve.minus(event.params._buyAmount.plus(fees.protocolFee).plus(fees.subjectFee))
   let predictedTotalSupply = subjectToken.totalSupply.minus(event.params._sellAmount)
