@@ -293,9 +293,9 @@ function hexZeroPad(hexstring: string, length: i32 = 32): string {
 }
 
 export function isBlacklistedSubjectTokenAddress(subjectAddress: Address): bool {
-  return BLACKLISTED_SUBJECT_TOKEN_ADDRESS.get(subjectAddress.toHexString()) != null
+  return BLACKLISTED_SUBJECT_TOKEN_ADDRESS.isSet(subjectAddress.toHexString())
 }
 
 export function isBlacklistedAuction(auctionId: string): bool {
-  return BLACKLISTED_AUCTION.get(auctionId) != null
+  return BLACKLISTED_AUCTION.isSet(auctionId)
 }
