@@ -1,7 +1,7 @@
 import { BigInt, BigDecimal, Bytes, Address, log } from "@graphprotocol/graph-ts"
 import { NewAuction, ClaimedFromOrder, AuctionCleared, EasyAuction, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Auction, AuctionUser, Order } from "../generated/schema"
-import { getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, CalculatePrice, loadAuction, saveSubjectToken } from "./utils"
+import { getOrCreateSubjectToken, getTxEntityId, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, CalculatePrice, loadAuction, saveSubjectToken, isBlacklistedAuction, isBlacklistedSubjectTokenAddress } from "./utils"
 import { ORDER_TYPE_AUCTION } from "./constants"
 
 class AuctionAndOrder {
@@ -59,6 +59,9 @@ export function enrichAuctionOrderWithRewardAndRefund(event: ClaimedFromOrder): 
 }
 
 export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
+  if (isBlacklistedAuction(event.params.auctionId.toString())) {
+    return
+  }
   let blockInfo = getOrCreateBlockInfo(event.block)
   let auctionAndOrder = enrichAuctionOrderWithRewardAndRefund(event)
   if (!auctionAndOrder.auction.subjectToken) {
@@ -115,6 +118,10 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
 }
 
 export function handleNewAuction(event: NewAuction): void {
+  if (isBlacklistedAuction(event.params.auctionId.toString())) {
+    return
+  }
+
   let subjectToken = getOrCreateSubjectToken(event.params._auctioningToken, event.block)
   let auction = new Auction(event.params.auctionId.toString())
   auction.minFundingThreshold = event.params.minFundingThreshold
@@ -138,6 +145,10 @@ export function handleNewAuction(event: NewAuction): void {
 }
 
 export function handleAuctionCleared(event: AuctionCleared): void {
+  if (isBlacklistedAuction(event.params.auctionId.toString())) {
+    return
+  }
+
   let easyAuction = EasyAuction.bind(event.address)
 
   let auctionDetails = easyAuction.auctionData(event.params.auctionId)

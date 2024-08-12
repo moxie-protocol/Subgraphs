@@ -1,7 +1,7 @@
-import { BigInt, log } from "@graphprotocol/graph-ts"
+import { Address, BigInt, log } from "@graphprotocol/graph-ts"
 import { assert, beforeEach, clearStore, describe, test } from "matchstick-as"
 import { Bytes } from "@graphprotocol/graph-ts"
-import { _calculateSellSideProtocolAmountAddingBackFees, _calculateSellSideFee, decodeOrder, findClosest, isEveryElementGreaterThanTarget } from "../src/utils"
+import { _calculateSellSideProtocolAmountAddingBackFees, _calculateSellSideFee, decodeOrder, findClosest, isEveryElementGreaterThanTarget, isBlacklistedSubjectTokenAddress } from "../src/utils"
 describe("Decode Order", () => {
   test("test isEveryElementGreaterThanTarget, there are elements less than target", () => {
     let arr: Array<BigInt> = [BigInt.fromI32(2), BigInt.fromI32(1), BigInt.fromI32(3), BigInt.fromI32(5), BigInt.fromI32(4)]
@@ -42,5 +42,15 @@ describe("Decode Order", () => {
     assert.stringEquals("315111197908226856", fees.protocolFee.toString())
     assert.stringEquals("630222395816453713", fees.subjectFee.toString())
     assert.stringEquals("14810226301686662275", buyAmount.minus(fees.protocolFee).minus(fees.subjectFee).toString())
+  })
+
+  test("test isBlacklistedSubjectTokenAddress", () => {
+    let blacklisted = isBlacklistedSubjectTokenAddress(Address.fromString("0x7412b5b7a7498f7b2a663b5c708a98f3092847f8"))
+    assert.assertTrue(blacklisted)
+  })
+
+  test("test isBlacklistedSubjectTokenAddress is fail", () => {
+    let blacklisted = isBlacklistedSubjectTokenAddress(Address.zero())
+    assert.assertTrue(!blacklisted)
   })
 })

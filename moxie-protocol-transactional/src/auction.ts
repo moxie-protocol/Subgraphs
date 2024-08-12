@@ -1,7 +1,7 @@
 import { BigInt, BigDecimal, Bytes, Address, log } from "@graphprotocol/graph-ts"
 import { NewAuction, ClaimedFromOrder, AuctionCleared, EasyAuction, UserRegistration } from "../generated/EasyAuction/EasyAuction"
 import { Auction, AuctionUser } from "../generated/schema"
-import { getOrCreateSubjectToken, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, saveSubjectToken } from "./utils"
+import { getOrCreateSubjectToken, getOrCreateSummary, getOrCreateBlockInfo, decodeOrder, AuctionOrderClass, getOrCreatePortfolio, savePortfolio, getOrCreateUser, saveUser, saveSubjectToken, isBlacklistedAuction } from "./utils"
 
 class AuctionAndUser {
   auction: Auction
@@ -56,6 +56,9 @@ export function enrichAuctionOrderWithRewardAndRefund(event: ClaimedFromOrder): 
   return new AuctionAndUser(auction, user, reward, refund)
 }
 export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
+  if (isBlacklistedAuction(event.params.auctionId.toString())) {
+    return
+  }
   let buyAmount = event.params.buyAmount
   let sellAmount = event.params.sellAmount
   let blockInfo = getOrCreateBlockInfo(event.block)
@@ -100,6 +103,9 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
 }
 
 export function handleNewAuction(event: NewAuction): void {
+  if (isBlacklistedAuction(event.params.auctionId.toString())) {
+    return
+  }
   // minFundingThresholdNotReached = event.params.minFundingThresholdNotReached need to see
   let auction = new Auction(event.params.auctionId.toString())
   auction.minFundingThreshold = event.params.minFundingThreshold
@@ -120,6 +126,9 @@ export function handleNewAuction(event: NewAuction): void {
 }
 
 export function handleAuctionCleared(event: AuctionCleared): void {
+  if (isBlacklistedAuction(event.params.auctionId.toString())) {
+    return
+  }
   let easyAuction = EasyAuction.bind(event.address)
 
   let auctionDetails = easyAuction.auctionData(event.params.auctionId)
