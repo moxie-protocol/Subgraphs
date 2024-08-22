@@ -16,6 +16,7 @@ import {
 } from "../../generated/templates/MoxieTokenLockWallet/MoxieTokenLockWallet"
 
 import { TokenLockWallet, TokenLockManager, SubjectToken } from "../../generated/schema"
+import { reduceSummaryBalance } from "./utils"
 export function handleTokensReleased(event: TokensReleased): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
   tokenLockWallet.tokensReleased = tokenLockWallet.tokensReleased.plus(
@@ -23,6 +24,8 @@ export function handleTokensReleased(event: TokensReleased): void {
   )
   tokenLockWallet.balance = tokenLockWallet.balance.minus(event.params.amount)
   tokenLockWallet.save()
+
+  reduceSummaryBalance(event.params.amount)
 }
 
 export function handleTokensWithdrawn(event: TokensWithdrawn): void {
@@ -32,6 +35,8 @@ export function handleTokensWithdrawn(event: TokensWithdrawn): void {
   )
   tokenLockWallet.balance = tokenLockWallet.balance.minus(event.params.amount)
   tokenLockWallet.save()
+
+  reduceSummaryBalance(event.params.amount)
 }
 
 export function handleTokensRevoked(event: TokensRevoked): void {
@@ -41,6 +46,8 @@ export function handleTokensRevoked(event: TokensRevoked): void {
   )
   tokenLockWallet.balance = tokenLockWallet.balance.minus(event.params.amount)
   tokenLockWallet.save()
+
+  reduceSummaryBalance(event.params.amount)
 }
 
 export function handleManagerUpdated(event: ManagerUpdated): void {
@@ -101,6 +108,7 @@ export function handleLockCanceled(event: LockCanceled): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
   let manager = TokenLockManager.load(tokenLockWallet.manager)!
   manager.tokens = manager.tokens.plus(tokenLockWallet.balance)
+  reduceSummaryBalance(tokenLockWallet.balance)
   tokenLockWallet.balance = BigInt.fromI32(0)
   tokenLockWallet.save()
 }

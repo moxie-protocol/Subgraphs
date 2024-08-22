@@ -105,3 +105,9 @@ enum Revocability {
   Enabled
   Disabled
 }
+
+type Summary @entity {
+  "hardcoded id: SUMMARY"
+  id: ID!
+  totalBalance: BigInt!
+}
