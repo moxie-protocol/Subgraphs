@@ -18,6 +18,7 @@ import {
   TokenLockWallet,
   AuthorizedFunction,
 } from "../../generated/schema"
+import { increaseSummaryBalance } from "./utils"
 
 export function handleMasterCopyUpdated(event: MasterCopyUpdated): void {
   // Creates the manager
@@ -82,6 +83,7 @@ export function handleTokenLockCreated(event: TokenLockCreated): void {
   }
   tokenLock.save()
   log.warning("[TOKEN LOCK CREATED] entity saved with id: {}", [id])
+  increaseSummaryBalance(event.params.managedAmount)
   MoxieTokenLockWallet.create(event.params.contractAddress)
 }
 
