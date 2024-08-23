@@ -109,5 +109,5 @@ enum Revocability {
 type Summary @entity {
   "hardcoded id: SUMMARY"
   id: ID!
-  totalBalance: BigInt!
+  totalLockedBalance: BigInt!
 }
