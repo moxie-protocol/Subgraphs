@@ -109,6 +109,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   summary.totalProtocolTokenInvested = summary.totalProtocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   summary.numberOfBuyOrders = summary.numberOfBuyOrders.plus(BigInt.fromI32(1))
   summary.totalBuyVolume = summary.totalBuyVolume.plus(protocolTokenAmount)
+  summary.numberOfAuctionOrders = summary.numberOfAuctionOrders.plus(BigInt.fromI32(1))
   summary.save()
 
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(protocolTokenAmount)
