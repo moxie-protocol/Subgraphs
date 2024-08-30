@@ -2,7 +2,7 @@ import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { User } from "../generated/schema"
 
-import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideFee, isBlacklistedSubjectTokenAddress } from "./utils"
+import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideFee, isBlacklistedSubjectTokenAddress, isWhiteListedRouter } from "./utils"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   if (isBlacklistedSubjectTokenAddress(event.params._subjectToken)) {
     return
@@ -39,10 +39,12 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   //       address indexed _beneficiary
   //   );
 
-  const fees = calculateBuySideFee(event.params._sellAmount)
-  let protocolTokenSpentAfterFees = event.params._sellAmount.minus(fees.protocolFee).minus(fees.subjectFee)
-
-  let user = getOrCreateUser(event.params._beneficiary, event.block)
+  let userAddress = event.params._beneficiary
+  if (isWhiteListedRouter(userAddress)) {
+    // when the beneficiary is a router, we need to use the actual user address
+    userAddress = event.transaction.from
+  }
+  let user = getOrCreateUser(userAddress, event.block)
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
   saveUser(user, event.block)
 
@@ -56,7 +58,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   saveSubjectToken(subjectToken, event.block)
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(userAddress, event.params._buyToken, event.transaction.hash, event.block)
   portfolio.buyVolume = portfolio.buyVolume.plus(event.params._sellAmount)
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(event.params._buyAmount)
   savePortfolio(portfolio, event.block)
@@ -98,14 +100,18 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // volume uses amount with fees
   subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(protocolTokenAmount)
   saveSubjectToken(subjectToken, event.block)
-
-  let user = getOrCreateUser(event.params._beneficiary, event.block)
+  let userAddress = event.params._beneficiary
+  if (isWhiteListedRouter(userAddress)) {
+    // when the beneficiary is a router, we need to use the actual user address
+    userAddress = event.transaction.from
+  }
+  let user = getOrCreateUser(userAddress, event.block)
   // volume uses amount with fees
   user.sellVolume = user.sellVolume.plus(protocolTokenAmount)
   saveUser(user, event.block)
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._sellToken, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(userAddress, event.params._sellToken, event.transaction.hash, event.block)
   // volume uses amount with fees
   portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
   savePortfolio(portfolio, event.block)

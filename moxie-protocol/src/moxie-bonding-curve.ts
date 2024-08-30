@@ -2,7 +2,7 @@ import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { Order, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectFeeTransfer, Summary, User } from "../generated/schema"
 
-import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideProtocolAmountAddingBackFees, isBlacklistedSubjectTokenAddress } from "./utils"
+import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideProtocolAmountAddingBackFees, isBlacklistedSubjectTokenAddress, isWhiteListedRouter } from "./utils"
 import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL, SUMMARY_ID } from "./constants"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   if (isBlacklistedSubjectTokenAddress(event.params._subjectToken)) {
@@ -52,11 +52,15 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   // _beneficiary.portfolio.protocolTokenInvested += 0
 
   const fees = calculateBuySideFee(event.params._sellAmount)
-  let protocolTokenSpentAfterFees = event.params._sellAmount.minus(fees.protocolFee).minus(fees.subjectFee)
 
   const blockInfo = getOrCreateBlockInfo(event.block)
   // TODO: need to fix for spender
-  let user = getOrCreateUser(event.params._beneficiary, event.block)
+  let userAddress = event.params._beneficiary
+  if (isWhiteListedRouter(userAddress)) {
+    // when the beneficiary is a router, we need to use the actual user address
+    userAddress = event.transaction.from
+  }
+  let user = getOrCreateUser(userAddress, event.block)
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block)
   let calculatedPrice = new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply, subjectToken.reserveRatio)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params._sellAmount)
@@ -80,7 +84,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   order.blockInfo = blockInfo.id
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(userAddress, event.params._buyToken, event.transaction.hash, event.block)
   portfolio.buyVolume = portfolio.buyVolume.plus(event.params._sellAmount)
   portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(event.params._buyAmount)
@@ -94,6 +98,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
   // increasing user investment
   user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+  user.protocolOrdersCount = user.protocolOrdersCount.plus(BigInt.fromI32(1))
   saveUser(user, event.block)
 
   const summary = getOrCreateSummary()
@@ -183,7 +188,12 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   if (event.params._spender != event.params._beneficiary) {
     // TODO: need to fix for spender
   }
-  let user = getOrCreateUser(event.params._beneficiary, event.block)
+  let userAddress = event.params._beneficiary
+  if (isWhiteListedRouter(userAddress)) {
+    // when the beneficiary is a router, we need to use the actual user address
+    userAddress = event.transaction.from
+  }
+  let user = getOrCreateUser(userAddress, event.block)
 
   // Saving order entity
   let order = new Order(getTxEntityId(event))
@@ -201,10 +211,10 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.blockInfo = blockInfo.id
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._sellToken, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(userAddress, event.params._sellToken, event.transaction.hash, event.block)
   // volume calculation is using amount+fees
   portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
-  
+
   // buyVolume / subjectTokenBuyVolume = protocolTokenInvested / balance
   if (portfolio.subjectTokenBuyVolume.gt(BigInt.zero())) {
     let oldPortfolioProtocolTokenInvested = portfolio.protocolTokenInvested
@@ -236,6 +246,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   summary.totalProtocolFee = summary.totalProtocolFee.plus(fees.protocolFee)
   summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
+  user.protocolOrdersCount = user.protocolOrdersCount.plus(BigInt.fromI32(1))
   saveUser(user, event.block)
   savePortfolio(portfolio, event.block)
   createProtocolFeeTransfer(event, blockInfo, order, subjectToken, activeFeeBeneficiary, fees.protocolFee)
