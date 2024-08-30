@@ -98,6 +98,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
   // increasing user investment
   user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+  user.protocolOrdersCount = user.protocolOrdersCount.plus(BigInt.fromI32(1))
   saveUser(user, event.block)
 
   const summary = getOrCreateSummary()
@@ -245,6 +246,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   summary.totalProtocolFee = summary.totalProtocolFee.plus(fees.protocolFee)
   summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
+  user.protocolOrdersCount = user.protocolOrdersCount.plus(BigInt.fromI32(1))
   saveUser(user, event.block)
   savePortfolio(portfolio, event.block)
   createProtocolFeeTransfer(event, blockInfo, order, subjectToken, activeFeeBeneficiary, fees.protocolFee)
