@@ -1,0 +1,37 @@
+type BlockInfo @entity {
+  id: ID!
+  hash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type User @entity {
+  #address of the user
+  id: ID!
+  createdAt: BlockInfo!
+}
+
+#Describes a liquidity pool
+type Pool @entity {
+  #address of the Liquidity Pool
+  id: ID!
+  moxieReserve: BigInt!
+  nonMoxieReserve: BigInt!
+  totalSupply: BigInt!
+  latestTransactionHash: Bytes
+  createdAt: BlockInfo!
+  updatedAt: BlockInfo!
+}
+
+#Combined User and Pool entity
+type UserPool @entity {
+  id: ID!
+  user: User!
+  pool: Pool!
+  unstakedLpAmount: BigInt!
+  stakedLPAmount: BigInt!
+  latestTransactionHash: Bytes
+  latestStakeTransactionHash: Bytes
+  createdAt: BlockInfo!
+  updatedAt: BlockInfo!
+}

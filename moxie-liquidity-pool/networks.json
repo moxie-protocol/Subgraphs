@@ -1,0 +1,16 @@
+{
+  "base": {
+    "UniswapV2Pair": {
+      "address": "0x493AD7E1c509dE7c89e1963fe9005EaD49FdD19c",
+      "startBlock": 18697674
+    },
+    "AerodromePair": {
+      "address": "0xc02Dc3a9b6eaD739C56CDEa716D8fEC4Ffe4C799",
+      "startBlock": 17736464
+    },
+    "AerodromeGauge": {
+      "address": "0xea2c1c05c17eed888d0027f17ee23637dff66feb",
+      "startBlock": 18093199
+    }
+  }
+}
