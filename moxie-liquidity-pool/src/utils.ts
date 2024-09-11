@@ -47,6 +47,7 @@ export function getOrCreateUserPoolEntity(event: ethereum.Event, userAddress: st
     userPool.updatedAt = userPool.createdAt
     userPool.unstakedLpAmount = BigInt.zero()
     userPool.stakedLPAmount = BigInt.zero()
+    userPool.totalLPAmount = BigInt.zero()
   }
   return userPool
 }
@@ -62,29 +63,48 @@ export function handleSyncEvents(event: ethereum.Event, reserve0: BigInt, reserv
 
 export function handleTransferEvents(event: ethereum.Event, from: Address, to: Address, amount: BigInt): void {
   let pool = getOrCreatePoolEntity(event, event.address.toHexString())
-  let sender = getOrCreateUserEntity(event, from.toHexString()) 
-  let receiver = getOrCreateUserEntity(event, to.toHexString()) 
-
-  let senderUserPool = getOrCreateUserPoolEntity(event, sender.id, pool.id)
-  let receiverUserPool = getOrCreateUserPoolEntity(event, receiver.id, pool.id)
   if (from == Address.zero()) {
     // Mint: increase total supply
     pool.totalSupply = pool.totalSupply.plus(amount)
+    let receiver = getOrCreateUserEntity(event, to.toHexString()) 
+    let receiverUserPool = getOrCreateUserPoolEntity(event, receiver.id, pool.id)
+    receiverUserPool.unstakedLpAmount = receiverUserPool.unstakedLpAmount.plus(amount)
+    receiverUserPool.totalLPAmount = receiverUserPool.stakedLPAmount.plus(receiverUserPool.unstakedLpAmount)
+    receiverUserPool.updatedAt = getOrCreateBlockInfo(event).id
+    receiverUserPool.latestTransactionHash = event.transaction.hash
+    pool.save()
+    receiverUserPool.save()
+
+
   } else if (to == Address.zero()) {
     // Burn: decrease total supply
     pool.totalSupply = pool.totalSupply.minus(amount)
+    let sender = getOrCreateUserEntity(event, from.toHexString())
+    let senderUserPool = getOrCreateUserPoolEntity(event, sender.id, pool.id) 
+    senderUserPool.updatedAt = getOrCreateBlockInfo(event).id
+    senderUserPool.latestTransactionHash = event.transaction.hash
+    pool.save()
+    senderUserPool.save()
+
+  } else {
+    
+    let sender = getOrCreateUserEntity(event, from.toHexString()) 
+    let receiver = getOrCreateUserEntity(event, to.toHexString()) 
+  
+    let senderUserPool = getOrCreateUserPoolEntity(event, sender.id, pool.id)
+    let receiverUserPool = getOrCreateUserPoolEntity(event, receiver.id, pool.id)
+    senderUserPool.unstakedLpAmount = senderUserPool.unstakedLpAmount.minus(amount)
+    receiverUserPool.unstakedLpAmount = receiverUserPool.unstakedLpAmount.plus(amount)
+    senderUserPool.totalLPAmount = senderUserPool.stakedLPAmount.plus(senderUserPool.unstakedLpAmount)
+    receiverUserPool.totalLPAmount = receiverUserPool.stakedLPAmount.plus(receiverUserPool.unstakedLpAmount)
+    senderUserPool.updatedAt = getOrCreateBlockInfo(event).id
+    receiverUserPool.updatedAt = getOrCreateBlockInfo(event).id
+    senderUserPool.latestTransactionHash = event.transaction.hash
+    receiverUserPool.latestTransactionHash = event.transaction.hash
+  
+    pool.save()
+    senderUserPool.save()
+    receiverUserPool.save()
   }
-
-  senderUserPool.unstakedLpAmount = senderUserPool.unstakedLpAmount.minus(amount)
-  receiverUserPool.unstakedLpAmount = receiverUserPool.unstakedLpAmount.plus(amount)
-  senderUserPool.updatedAt = getOrCreateBlockInfo(event).id
-  receiverUserPool.updatedAt = getOrCreateBlockInfo(event).id
-  senderUserPool.latestTransactionHash = event.transaction.hash
-  receiverUserPool.latestTransactionHash = event.transaction.hash
-
-  pool.save()
-  senderUserPool.save()
-  receiverUserPool.save()
-
 
 }

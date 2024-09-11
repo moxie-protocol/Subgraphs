@@ -30,6 +30,7 @@ type UserPool @entity {
   pool: Pool!
   unstakedLpAmount: BigInt!
   stakedLPAmount: BigInt!
+  totalLPAmount: BigInt!
   latestTransactionHash: Bytes
   latestStakeTransactionHash: Bytes
   createdAt: BlockInfo!

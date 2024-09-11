@@ -43,6 +43,7 @@ export function handleDeposit(event: Deposit): void {
     //Third fetch and update staking balance of the userpool with amount
     let userPool = getOrCreateUserPoolEntity(event, user.id, pool.id)
     userPool.stakedLPAmount = userPool.stakedLPAmount.plus(event.params.amount)
+    userPool.totalLPAmount = userPool.stakedLPAmount.plus(userPool.unstakedLpAmount)
     userPool.latestStakeTransactionHash = event.transaction.hash
     userPool.updatedAt = getOrCreateBlockInfo(event).id
     userPool.save()
