@@ -1,0 +1,8 @@
+{
+  "base-sepolia": {
+    "MoxieToken": {
+      "address": "0xE2b904272D0A1A6c3aFfc0348b2D20349bf04Cbf",
+      "startBlock": 12108858
+    }
+  }
+}
