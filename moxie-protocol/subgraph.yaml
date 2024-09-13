@@ -134,6 +134,30 @@ dataSources:
         - event: UserRegistration(indexed address,uint64)
           handler: handleUserRegistration
       file: ./src/auction.ts
+  - kind: ethereum
+    name: Staking
+    network: base-sepolia
+    source:
+      address: "0x5aa86F3ADb6DEc48bcA2774057F5455c4B8E3361"
+      abi: Staking
+      startBlock: 15235065
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - AuctioningToken
+      abis:
+        - name: Staking
+          file: ./abis/Staking.json
+      eventHandlers:
+        - event: Lock(indexed address,indexed address,indexed address,uint256,uint256,uint256,uint256)
+          handler: handleLock
+        - event: LockExtended(indexed address,indexed address,indexed address,uint256[],uint256)
+          handler: handleLockExtended
+        - event: Withdraw(indexed address,indexed address,indexed address,uint256[],uint256)
+          handler: handleWithdraw
+      file: ./src/staking.ts
 templates:
   - kind: ethereum/contract
     name: SubjectTokenContract

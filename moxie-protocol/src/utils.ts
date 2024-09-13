@@ -12,6 +12,7 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
     subjectToken.symbol = token.symbol()
     subjectToken.decimals = TOKEN_DECIMALS
     // setting default values for now
+    subjectToken.totalStaked = BigInt.zero()
     subjectToken.reserve = BigInt.zero()
     subjectToken.reserveRatio = BigInt.zero()
     subjectToken.currentPriceInMoxie = BigDecimal.zero()
@@ -48,6 +49,8 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.balance = BigInt.zero()
     portfolio.buyVolume = BigInt.zero()
     portfolio.sellVolume = BigInt.zero()
+    portfolio.stakedBalance = BigInt.zero()
+    portfolio.unstakedBalance = BigInt.zero()
     portfolio.protocolTokenInvested = BigDecimal.zero()
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     portfolio.subjectTokenBuyVolume = BigInt.zero()

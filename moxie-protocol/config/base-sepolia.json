@@ -9,5 +9,7 @@
   "MoxieBondingCurve": "0x56147e70A57012ade3003fe93a394BFC35d747e3",
   "MoxieBondingCurveStartBlock": "12934212",
   "SubjectFactory": "0x9cE6e0c6282ac0050B1888656C5c5716a4Ef4BE8",
-  "SubjectFactoryStartBlock": "12934191"
+  "SubjectFactoryStartBlock": "12934191",
+  "Staking": "0x5aa86F3ADb6DEc48bcA2774057F5455c4B8E3361",
+  "StakingStartBlock": "15235065"
 }

@@ -199,9 +199,12 @@ type SubjectToken @entity {
   reserveRatio: BigInt!
   "Total supply of the token"
   totalSupply: BigInt!
+  "total locked In staking"
+  totalStaked: BigInt!
   "initial supply when bonding curve is initialized"
   initialSupply: BigInt!
-
+  "all the lockInfos"
+  lockInfos: [LockInfo!]! @derivedFrom(field: "subjectToken")
   "total number of unique holders"
   uniqueHolders: BigInt!
   "amount of moxie used to buy or sell or auction this subject token"
@@ -279,8 +282,14 @@ type Portfolio @entity {
   user: User!
   "Subject's token address"
   subjectToken: SubjectToken!
+  "lockInfos"
+  lockInfos: [LockInfo!]! @derivedFrom(field: "portfolio")
   "Net quantity of the subject token by the user"
   balance: BigInt!
+  "staked quantity of the subject token by the user"
+  stakedBalance: BigInt!
+  "unstaked quantity of the subject token by the user"
+  unstakedBalance: BigInt!
   "Moxie spent by user to buy the subject token(buyShare + auctionOrders)"
   buyVolume: BigInt!
   "total subject token bought by user"
@@ -295,6 +304,31 @@ type Portfolio @entity {
   createdAtBlockInfo: BlockInfo!
   "updated at block information"
   updatedAtBlockInfo: BlockInfo!
+}
+
+type LockInfo @entity {
+  "index"
+  id: ID!
+  "txHash of the transaction"
+  txHash: Bytes!
+  "logIndex of the transaction"
+  logIndex: BigInt!
+  "User's address"
+  user: User!
+  "Subject's token address"
+  subjectToken: SubjectToken!
+  "portfolio"
+  portfolio: Portfolio!
+  "Subject's address"
+  subject: User!
+  "Unlock time in seconds"
+  unlockTimeInSec: BigInt!
+  "Amount locked"
+  amount: BigInt!
+  "Lock period"
+  lockPeriodInSec: BigInt!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
 }
 
 type User @entity {
