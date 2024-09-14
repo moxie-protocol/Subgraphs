@@ -325,6 +325,8 @@ type LockInfo @entity {
   unlockTimeInSec: BigInt!
   "Amount locked"
   amount: BigInt!
+  "isBuy"
+  isBuy: Boolean!
   "Lock period"
   lockPeriodInSec: BigInt!
   "created at block information"

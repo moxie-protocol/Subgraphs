@@ -5,7 +5,9 @@ import { LockInfo, Portfolio } from '../generated/schema'
 import { getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, savePortfolio } from './utils'
 export function handleLock(event: Lock): void {
  let lockInfo = new LockInfo(event.params._index.toString())
+ const isBuy = event.params._isBuy
  lockInfo.txHash = event.transaction.hash
+ lockInfo.isBuy = isBuy
  lockInfo.logIndex = event.logIndex
  lockInfo.user = getOrCreateUser(event.params._user, event.block).id
  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
@@ -15,9 +17,17 @@ export function handleLock(event: Lock): void {
  lockInfo.subjectToken = subjectToken.id
 
  let portfolio = getOrCreatePortfolio(event.params._user, event.params._subject, event.transaction.hash, event.block)
- portfolio.stakedBalance = portfolio.stakedBalance.plus(event.params._amount)
- portfolio.unstakedBalance = portfolio.unstakedBalance.minus(event.params._amount)
- savePortfolio(portfolio, event.block)
+ if (isBuy) {
+  // during buy, unstaked balance remains same, balance increases as balance = staked + unstaked
+  portfolio.stakedBalance = portfolio.stakedBalance.plus(event.params._amount)
+  portfolio.balance = portfolio.balance.plus(event.params._amount)
+  savePortfolio(portfolio, event.block)
+ } else {
+  // during deposit, staked increased , unstaked decreases & balance stays same
+  portfolio.stakedBalance = portfolio.stakedBalance.plus(event.params._amount)
+  portfolio.unstakedBalance = portfolio.unstakedBalance.minus(event.params._amount)
+  savePortfolio(portfolio, event.block)
+ }
 
  lockInfo.portfolio = portfolio.id
  lockInfo.subject = getOrCreateUser(event.params._subject, event.block).id

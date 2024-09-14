@@ -1,6 +1,6 @@
 import { Address, BigDecimal, BigInt, store } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/templates/SubjectTokenContract/ERC20"
-import { getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, isBlacklistedSubjectTokenAddress, savePortfolio, saveSubjectToken } from "./utils"
+import { getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, isBlacklistedSubjectTokenAddress, isFromOrToStakingContract, savePortfolio, saveSubjectToken } from "./utils"
 import { AUCTION_ORDER_CLAIMED as CLAIMED } from "./constants"
 
 export function handleTransfer(event: Transfer): void {
@@ -31,24 +31,26 @@ export function handleTransfer(event: Transfer): void {
   subjectToken.totalSupply = totalSupply
 
   // updating portfolios
-  if (!mint) {
+  if (!mint && !isFromOrToStakingContract(from, to)) {
     let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
     let updatedBalance = fromAddressPortfolio.balance.minus(value)
     if (updatedBalance.equals(BigInt.fromI32(0))) {
       subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(BigInt.fromI32(1))
       store.remove("Portfolio", fromAddressPortfolio.id)
     } else {
+      fromAddressPortfolio.unstakedBalance = fromAddressPortfolio.unstakedBalance.minus(value)
       fromAddressPortfolio.balance = updatedBalance
       savePortfolio(fromAddressPortfolio, event.block)
     }
   }
-  if (!burn) {
+  if (!burn && !isFromOrToStakingContract(from, to)) {
     let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
     // adding unique holders when a new portfolio is created
     if (toAddressPortfolio.balance.equals(BigInt.fromI32(0))) {
       subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(BigInt.fromI32(1))
     }
     toAddressPortfolio.balance = toAddressPortfolio.balance.plus(value)
+    toAddressPortfolio.unstakedBalance = toAddressPortfolio.unstakedBalance.plus(value)
     savePortfolio(toAddressPortfolio, event.block)
   }
   saveSubjectToken(subjectToken, event.block)
