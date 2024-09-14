@@ -43,6 +43,11 @@ export function handleLockExtended(event: LockExtended): void {
  portfolio.stakedBalance = portfolio.stakedBalance.minus(event.params._amount)
  portfolio.unstakedBalance = portfolio.unstakedBalance.plus(event.params._amount)
  savePortfolio(portfolio, event.block)
+
+ // reduce total staked amount from subject token
+ let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
+ subjectToken.totalStaked = subjectToken.totalStaked.minus(event.params._amount)
+ subjectToken.save()
  // loop over the array of lock indexes and delete the lock info
  let lockIndexes = event.params._indexes
  for (let i = 0; i < lockIndexes.length; i++) {
