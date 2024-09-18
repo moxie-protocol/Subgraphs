@@ -1,0 +1,24 @@
+{
+  "name": "staking",
+  "license": "UNLICENSED",
+  "scripts": {
+    "prepare:base-sepolia": "mustache ./config/base-sepolia.json subgraph.template.yaml > subgraph.yaml",
+    "prepare:base": "mustache ./config/base.json subgraph.template.yaml > subgraph.yaml",
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "cb:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build",
+    "cb:base": "yarn prepare:base && graph codegen && graph build",
+    "test": "graph test -d",
+    "cbt": "graph codegen && graph build && graph test -d",
+    "clean": "rm -rf generated/ build/",
+    "cbd:base-sepolia": "yarn cb:base-sepolia && graph deploy --studio staking -l v0.0.1"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.73.0",
+    "@graphprotocol/graph-ts": "0.35.1",
+    "mustache": "^4.2.0"
+  },
+  "devDependencies": {
+    "matchstick-as": "0.6.0"
+  }
+}

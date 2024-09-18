@@ -1,0 +1,26 @@
+type LockInfo @entity {
+  "index"
+  id: ID!
+  "txHash of the transaction"
+  txHash: Bytes!
+  "logIndex of the transaction"
+  logIndex: BigInt!
+  "User's address"
+  user: Bytes!
+  "Subject's token address"
+  subjectToken: Bytes!
+  "Subject's address"
+  subject: Bytes!
+  "Unlock time in seconds"
+  unlockTimeInSec: BigInt!
+  "Amount locked"
+  amount: BigInt!
+  "isBuy"
+  isBuy: Boolean!
+  "Lock period"
+  lockPeriodInSec: BigInt!
+  "created at block Number"
+  createdAtBlockNumber: BigInt!
+  "created at block Timestamp"
+  createdAtBlockTimestamp: BigInt!
+}
