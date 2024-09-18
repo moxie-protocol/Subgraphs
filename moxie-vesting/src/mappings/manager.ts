@@ -18,15 +18,19 @@ import {
   TokenLockWallet,
   AuthorizedFunction,
 } from "../../generated/schema"
-import { increaseSummaryBalance } from "./utils"
+import {
+  getOrCreateTokenDestination,
+  increaseSummaryBalance,
+  saveTokenDestination,
+} from "./utils"
 
 export function handleMasterCopyUpdated(event: MasterCopyUpdated): void {
   // Creates the manager
   let manager = TokenLockManager.load(event.address.toHexString())
   if (manager == null) {
     manager = new TokenLockManager(event.address.toHexString())
-    manager.tokens = BigInt.fromI32(0)
-    manager.tokenLockCount = BigInt.fromI32(0)
+    manager.tokens = BigInt.zero()
+    manager.tokenLockCount = BigInt.zero()
   }
   manager.masterCopy = event.params.masterCopy
   manager.save()
@@ -68,9 +72,10 @@ export function handleTokenLockCreated(event: TokenLockCreated): void {
   tokenLock.releaseStartTime = event.params.releaseStartTime
   tokenLock.vestingCliffTime = event.params.vestingCliffTime
   tokenLock.tokenDestinationsApproved = false
-  tokenLock.tokensWithdrawn = BigInt.fromI32(0)
-  tokenLock.tokensRevoked = BigInt.fromI32(0)
-  tokenLock.tokensReleased = BigInt.fromI32(0)
+  tokenLock.tokensWithdrawn = BigInt.zero()
+  tokenLock.tokensRevoked = BigInt.zero()
+  tokenLock.tokensReleased = BigInt.zero()
+  tokenLock.tokenDestinationApprovalBlockNumber = BigInt.zero()
   tokenLock.blockNumberCreated = event.block.number
   tokenLock.txHash = event.transaction.hash
   tokenLock.lockAccepted = false
@@ -128,30 +133,13 @@ export function handleTokenDestinationAllowed(
   // Get manager
   let manager = TokenLockManager.load(event.address.toHexString())!
 
-  // Update destinations
-  let destinations = manager.tokenDestinations
-  if (destinations == null) {
-    destinations = []
-  }
-  let index = destinations.indexOf(event.params.dst)
-
-  // It was not there before
-  if (index == -1) {
-    // Lets add it in
-    if (event.params.allowed) {
-      destinations.push(event.params.dst)
-    }
-    // If false was passed, we do nothing
-    // It was there before
-  } else {
-    // We are revoking access
-    if (!event.params.allowed) {
-      destinations.splice(index, 1)
-    }
-    // Otherwise do nothing
-  }
-  manager.tokenDestinations = destinations
-  manager.save()
+  let tokenDestination = getOrCreateTokenDestination(
+    event.params.dst,
+    manager,
+    event.block.number
+  )
+  tokenDestination.tokenDestinationAllowed = event.params.allowed
+  saveTokenDestination(tokenDestination, event.block.number)
 }
 
 export function handleMoxiePassTokenUpdated(
@@ -165,36 +153,19 @@ export function handleMoxiePassTokenUpdated(
 export function handleSubjectTokenDestinationAllowed(
   event: SubjectTokenDestinationAllowed
 ): void {
+  // Get manager
   let manager = TokenLockManager.load(event.address.toHexString())!
- // Update destinations
- let destinations = manager.subjectTokenDestinations
- if (destinations == null) {
-   destinations = []
- }
- let index = destinations.indexOf(event.params.dst)
 
- // It was not there before
- if (index == -1) {
-   // Lets add it in
-   if (event.params.allowed) {
-     destinations.push(event.params.dst)
-   }
-   // If false was passed, we do nothing
-   // It was there before
- } else {
-   // We are revoking access
-   if (index != -1 && !event.params.allowed) {
-     destinations.splice(index, 1)
-   }
-   // Otherwise do nothing
- }
- manager.subjectTokenDestinations = destinations
- manager.save()
+  let tokenDestination = getOrCreateTokenDestination(
+    event.params.dst,
+    manager,
+    event.block.number
+  )
+  tokenDestination.subjectTokenDestinationAllowed = event.params.allowed
+  saveTokenDestination(tokenDestination, event.block.number)
 }
 
-export function handleTokenManagerUpdated(
-  event: TokenManagerUpdated,
-): void {
+export function handleTokenManagerUpdated(event: TokenManagerUpdated): void {
   let manager = TokenLockManager.load(event.params.tokenManager.toHexString())!
   manager.tokenManager = event.params.tokenManager
   manager.save()

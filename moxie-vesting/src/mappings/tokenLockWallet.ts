@@ -82,6 +82,7 @@ export function handleTokenDestinationsApproved(
 ): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
   tokenLockWallet.tokenDestinationsApproved = true
+  tokenLockWallet.tokenDestinationApprovalBlockNumber = event.block.number
   tokenLockWallet.save()
 }
 
@@ -90,6 +91,7 @@ export function handleTokenDestinationsRevoked(
 ): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
   tokenLockWallet.tokenDestinationsApproved = false
+  tokenLockWallet.tokenDestinationApprovalBlockNumber = BigInt.zero()
   tokenLockWallet.save()
 }
 
