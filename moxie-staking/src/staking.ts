@@ -1,8 +1,6 @@
-import { store } from "@graphprotocol/graph-ts"
 
 import { Lock } from "../generated/Staking/Staking"
 import { LockInfo } from "../generated/schema"
-import { getOrCreateBlockInfo } from "./utils"
 export function handleLock(event: Lock): void {
   let lockInfo = new LockInfo(event.params._index.toString())
   lockInfo.txHash = event.transaction.hash
@@ -14,6 +12,6 @@ export function handleLock(event: Lock): void {
   lockInfo.amount = event.params._amount
   lockInfo.isBuy = event.params._isBuy
   lockInfo.lockPeriodInSec = event.params._lockPeriodInSec
-  lockInfo.createdAtBlockInfo = getOrCreateBlockInfo(event.block).id
+  lockInfo.createdAtBlockNumber = event.block.number
   lockInfo.save()
 }

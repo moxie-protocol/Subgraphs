@@ -1,9 +1,3 @@
-type BlockInfo @entity {
-  id: ID!
-  hash: Bytes!
-  blockNumber: BigInt!
-  timestamp: BigInt!
-}
 type LockInfo @entity {
   "index"
   id: ID!
@@ -25,6 +19,6 @@ type LockInfo @entity {
   isBuy: Boolean!
   "Lock period"
   lockPeriodInSec: BigInt!
-  "created at block information"
-  createdAtBlockInfo: BlockInfo!
+  "created at block Number"
+  createdAtBlockNumber: BigInt!
 }
