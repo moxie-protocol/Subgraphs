@@ -31,25 +31,20 @@ export function handleTransfer(event: Transfer): void {
   subjectToken.totalSupply = totalSupply
 
   // updating portfolios
-  if (!mint && !isFromOrToStakingContract(from, to)) {
+  // if (!mint && !isFromOrToStakingContract(from, to)) {
+  if (!mint ) {
     let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
-    let unstakedBalance = fromAddressPortfolio.balance.minus(value)
-    if (unstakedBalance.equals(BigInt.fromI32(0))) {
-      subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(
-        BigInt.fromI32(1)
-      )
-      store.remove("Portfolio", fromAddressPortfolio.id)
-    } else {
-      fromAddressPortfolio.unstakedBalance =
-        fromAddressPortfolio.unstakedBalance.minus(value)
-      savePortfolio(fromAddressPortfolio, event.block)
-    }
+    fromAddressPortfolio.unstakedBalance = fromAddressPortfolio.unstakedBalance.minus(value)
+    savePortfolio(fromAddressPortfolio, event.block)
   }
-  if (!burn && !isFromOrToStakingContract(from, to)) {
+  // if (!burn && !isFromOrToStakingContract(from, to)) {
+  if (!burn ) {
     let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
     // adding unique holders when a new portfolio is created
-    if (toAddressPortfolio.balance.equals(BigInt.fromI32(0))) {
-      subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(BigInt.fromI32(1))
+    if (toAddressPortfolio.unstakedBalance.equals(BigInt.fromI32(0))) {
+      subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
+        BigInt.fromI32(1)
+      )
     }
     toAddressPortfolio.unstakedBalance = toAddressPortfolio.unstakedBalance.plus(value)
     savePortfolio(toAddressPortfolio, event.block)

@@ -28,6 +28,7 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
     subjectToken.sellSideVolume = BigInt.zero()
     subjectToken.protocolTokenInvested = BigDecimal.zero()
     subjectToken.status = ONBOARDING_STATUS_ONBOARDING_INITIALIZED
+    subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
     saveSubjectToken(subjectToken, block)
   }
   return subjectToken
@@ -64,6 +65,9 @@ export function savePortfolio(portfolio: Portfolio, block: ethereum.Block): void
   portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
   if (portfolio.balance.equals(BigInt.zero())) {
     store.remove("Portfolio", portfolio.id)
+    let subjectToken = SubjectToken.load(portfolio.subjectToken)!
+    subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(BigInt.fromI32(1))
+    saveSubjectToken(subjectToken, block)
     return
   }
   portfolio.save()
@@ -305,6 +309,7 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
 }
 
 export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block, saveSnapshot: boolean = false): void {
+  subject.lastUpdatedAtBlockInfo = subject.updatedAtBlockInfo 
   subject.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   subject.save()
   if (saveSnapshot) {

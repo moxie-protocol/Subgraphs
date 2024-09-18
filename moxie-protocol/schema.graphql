@@ -229,7 +229,8 @@ type SubjectToken @entity {
   createdAtBlockInfo: BlockInfo!
   "updated at block information"
   updatedAtBlockInfo: BlockInfo!
-
+  "updated at block information"
+  lastUpdatedAtBlockInfo: BlockInfo!
   "Moxie spent by all users buy this subject token"
   buySideVolume: BigInt!
   "Moxie earned by all user to sell the subject token"
