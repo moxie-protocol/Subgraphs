@@ -10,7 +10,8 @@
     "cb:base": "yarn prepare:base && graph codegen && graph build",
     "test": "graph test -d",
     "cbt": "graph codegen && graph build && graph test -d",
-    "clean": "rm -rf generated/ build/"
+    "clean": "rm -rf generated/ build/",
+    "cbd:base-sepolia": "yarn cb:base-sepolia && graph deploy --studio staking -l v0.0.1"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.73.0",

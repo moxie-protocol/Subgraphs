@@ -21,4 +21,6 @@ type LockInfo @entity {
   lockPeriodInSec: BigInt!
   "created at block Number"
   createdAtBlockNumber: BigInt!
+  "created at block Timestamp"
+  createdAtBlockTimestamp: BigInt!
 }

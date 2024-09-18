@@ -13,5 +13,6 @@ export function handleLock(event: Lock): void {
   lockInfo.isBuy = event.params._isBuy
   lockInfo.lockPeriodInSec = event.params._lockPeriodInSec
   lockInfo.createdAtBlockNumber = event.block.number
+  lockInfo.createdAtBlockTimestamp = event.block.timestamp
   lockInfo.save()
 }
