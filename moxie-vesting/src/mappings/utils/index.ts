@@ -1,5 +1,6 @@
 import { Address, BigInt } from "@graphprotocol/graph-ts"
 import {
+  SubjectTokenDestination,
   Summary,
   TokenDestination,
   TokenLockManager,
@@ -36,10 +37,8 @@ export function getOrCreateTokenDestination(
   let td = TokenDestination.load(tokenDestinationId)
   if (td == null) {
     td = new TokenDestination(tokenDestinationId)
-    td.tokenDestination = tokenDestination
     td.manager = manager.id
     td.tokenDestinationAllowed = false
-    td.subjectTokenDestinationAllowed = false
     td.createdAtBlockNumber = blockNumber
     td.blockNumberUpdated = blockNumber
   }
@@ -52,4 +51,31 @@ export function saveTokenDestination(
 ): void {
   tokenDestination.blockNumberUpdated = blockNumber
   tokenDestination.save()
+}
+
+
+
+export function getOrCreateSubjectTokenDestination(
+  subjectTokenDestination: Address,
+  manager: TokenLockManager,
+  blockNumber: BigInt
+): SubjectTokenDestination {
+  let tokenDestinationId = subjectTokenDestination.toHexString()
+  let td = SubjectTokenDestination.load(tokenDestinationId)
+  if (td == null) {
+    td = new SubjectTokenDestination(tokenDestinationId)
+    td.manager = manager.id
+    td.subjectTokenDestinationAllowed = false
+    td.createdAtBlockNumber = blockNumber
+    td.blockNumberUpdated = blockNumber
+  }
+  return td
+}
+
+export function saveSubjectTokenDestination(
+  subjectTokenDestination: SubjectTokenDestination,
+  blockNumber: BigInt
+): void {
+  subjectTokenDestination.blockNumberUpdated = blockNumber
+  subjectTokenDestination.save()
 }

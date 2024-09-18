@@ -2,11 +2,20 @@ type TokenDestination @entity {
   "The address of the token destination"
   id: ID!
   tokenDestinationAllowed: Boolean!
+  "The manager address"
+  manager: TokenLockManager!
+
+  createdAtBlockNumber: BigInt!
+  "The block number of the last update"
+  blockNumberUpdated: BigInt!
+}
+
+type SubjectTokenDestination @entity {
+  "The address of the token destination"
+  id: ID!
   subjectTokenDestinationAllowed: Boolean!
   "The manager address"
   manager: TokenLockManager!
-  "The token destination address"
-  tokenDestination: Bytes!
 
   createdAtBlockNumber: BigInt!
   "The block number of the last update"
@@ -23,7 +32,17 @@ type TokenLockManager @entity {
   "Tokens stored in manger through deposit or withdraw"
   tokens: BigInt!
   "List of addresses that are allowed to pull funds"
-  tokenDestinations: [TokenDestination!] @derivedFrom(field: "manager")
+  tokenDestinations: [Bytes!]
+  "List of subject addresses that are allowed to pull funds"
+  subjectTokenDestinations: [Bytes!]
+  "List of addresses that are allowed to pull funds"
+  tokenDestinationsEntity: [TokenDestination!]! @derivedFrom(field: "manager")
+  "List of subject addresses that are allowed to pull funds"
+  subjectTokenDestinationsEntity: [SubjectTokenDestination!]! @derivedFrom(field: "manager")
+  
+  lastSubjectTokenDestinationApprovalBlockNumber: BigInt!
+
+  lastTokenDestinationApprovalBlockNumber: BigInt!
   "List of function call authorizations"
   authorizedFunctions: [AuthorizedFunction!] @derivedFrom(field: "manager")
   "Token lock count of contracts created"

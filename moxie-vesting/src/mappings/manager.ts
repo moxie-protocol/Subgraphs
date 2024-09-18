@@ -19,8 +19,10 @@ import {
   AuthorizedFunction,
 } from "../../generated/schema"
 import {
+  getOrCreateSubjectTokenDestination,
   getOrCreateTokenDestination,
   increaseSummaryBalance,
+  saveSubjectTokenDestination,
   saveTokenDestination,
 } from "./utils"
 
@@ -31,6 +33,8 @@ export function handleMasterCopyUpdated(event: MasterCopyUpdated): void {
     manager = new TokenLockManager(event.address.toHexString())
     manager.tokens = BigInt.zero()
     manager.tokenLockCount = BigInt.zero()
+    manager.lastSubjectTokenDestinationApprovalBlockNumber = BigInt.zero()
+    manager.lastTokenDestinationApprovalBlockNumber = BigInt.zero()
   }
   manager.masterCopy = event.params.masterCopy
   manager.save()
@@ -140,6 +144,33 @@ export function handleTokenDestinationAllowed(
   )
   tokenDestination.tokenDestinationAllowed = event.params.allowed
   saveTokenDestination(tokenDestination, event.block.number)
+
+  // Update destinations
+  let destinations = manager.tokenDestinations
+  if (destinations == null) {
+    destinations = []
+  }
+  let index = destinations.indexOf(event.params.dst)
+
+  // It was not there before
+  if (index == -1) {
+    // Lets add it in
+    if (event.params.allowed) {
+      manager.lastTokenDestinationApprovalBlockNumber = event.block.number
+      destinations.push(event.params.dst)
+    }
+    // If false was passed, we do nothing
+    // It was there before
+  } else {
+    // We are revoking access
+    if (!event.params.allowed) {
+      manager.lastTokenDestinationApprovalBlockNumber = BigInt.zero()
+      destinations.splice(index, 1)
+    }
+    // Otherwise do nothing
+  }
+  manager.tokenDestinations = destinations
+  manager.save()
 }
 
 export function handleMoxiePassTokenUpdated(
@@ -156,13 +187,40 @@ export function handleSubjectTokenDestinationAllowed(
   // Get manager
   let manager = TokenLockManager.load(event.address.toHexString())!
 
-  let tokenDestination = getOrCreateTokenDestination(
+  let tokenDestination = getOrCreateSubjectTokenDestination(
     event.params.dst,
     manager,
     event.block.number
   )
   tokenDestination.subjectTokenDestinationAllowed = event.params.allowed
-  saveTokenDestination(tokenDestination, event.block.number)
+  saveSubjectTokenDestination(tokenDestination, event.block.number)
+
+  // Update destinations
+  let destinations = manager.subjectTokenDestinations
+  if (destinations == null) {
+    destinations = []
+  }
+  let index = destinations.indexOf(event.params.dst)
+
+  // It was not there before
+  if (index == -1) {
+    // Lets add it in
+    if (event.params.allowed) {
+      manager.lastSubjectTokenDestinationApprovalBlockNumber = event.block.number
+      destinations.push(event.params.dst)
+    }
+    // If false was passed, we do nothing
+    // It was there before
+  } else {
+    // We are revoking access
+    if (index != -1 && !event.params.allowed) {
+      manager.lastSubjectTokenDestinationApprovalBlockNumber = BigInt.zero()
+      destinations.splice(index, 1)
+    }
+    // Otherwise do nothing
+  }
+  manager.subjectTokenDestinations = destinations
+  manager.save()
 }
 
 export function handleTokenManagerUpdated(event: TokenManagerUpdated): void {
