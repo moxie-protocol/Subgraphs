@@ -20,7 +20,6 @@ export function handleLock(event: Lock): void {
  if (isBuy) {
   // during buy, unstaked balance remains same, balance increases as balance = staked + unstaked
   portfolio.stakedBalance = portfolio.stakedBalance.plus(event.params._amount)
-  portfolio.balance = portfolio.balance.plus(event.params._amount)
   savePortfolio(portfolio, event.block)
  } else {
   // during deposit, staked increased , unstaked decreases & balance stays same

@@ -61,6 +61,11 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
 
 export function savePortfolio(portfolio: Portfolio, block: ethereum.Block): void {
   portfolio.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
+  if (portfolio.balance.equals(BigInt.zero())) {
+    store.remove("Portfolio", portfolio.id)
+    return
+  }
   portfolio.save()
 }
 
