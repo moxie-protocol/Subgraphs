@@ -31,14 +31,12 @@ export function handleTransfer(event: Transfer): void {
   subjectToken.totalSupply = totalSupply
 
   // updating portfolios
-  // if (!mint && !isFromOrToStakingContract(from, to)) {
-  if (!mint ) {
+  if (!mint && !isFromOrToStakingContract(from, to)) {
     let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
     fromAddressPortfolio.unstakedBalance = fromAddressPortfolio.unstakedBalance.minus(value)
     savePortfolio(fromAddressPortfolio, event.block)
   }
-  // if (!burn && !isFromOrToStakingContract(from, to)) {
-  if (!burn ) {
+  if (!burn && !isFromOrToStakingContract(from, to)) {
     let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
     // adding unique holders when a new portfolio is created
     if (toAddressPortfolio.unstakedBalance.equals(BigInt.fromI32(0))) {
