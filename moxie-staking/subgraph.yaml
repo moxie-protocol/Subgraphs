@@ -1,0 +1,24 @@
+specVersion: 0.0.4
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: Staking
+    network: base-sepolia
+    source:
+      address: "0x6c0470779762b643aca41ba1e8845693756e905e"
+      abi: Staking
+      startBlock: 15262872
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - AuctioningToken
+      abis:
+        - name: Staking
+          file: ./abis/Staking.json
+      eventHandlers:
+        - event: Lock(indexed address,indexed address,indexed address,uint256,uint256,uint256,uint256,bool)
+          handler: handleLock
+      file: ./src/staking.ts

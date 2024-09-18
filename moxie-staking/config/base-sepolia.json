@@ -1,0 +1,5 @@
+{
+  "network": "base-sepolia",
+  "Staking": "0x6c0470779762b643aca41ba1e8845693756e905e",
+  "StakingStartBlock": "15262872"
+}
