@@ -20,12 +20,12 @@ export function handleLock(event: Lock): void {
  if (isBuy) {
   // during buy, unstaked balance remains same, balance increases as balance = staked + unstaked
   portfolio.stakedBalance = portfolio.stakedBalance.plus(event.params._amount)
-  savePortfolio(portfolio, event.block,true)
+  savePortfolio(portfolio, event.block)
  } else {
   // during deposit, staked increased , unstaked decreases & balance stays same
   portfolio.stakedBalance = portfolio.stakedBalance.plus(event.params._amount)
   portfolio.unstakedBalance = portfolio.unstakedBalance.minus(event.params._amount)
-  savePortfolio(portfolio, event.block,true)
+  savePortfolio(portfolio, event.block)
  }
 
  lockInfo.portfolio = portfolio.id
@@ -41,7 +41,7 @@ export function handleLockExtended(event: LockExtended): void {
  let portfolio = getOrCreatePortfolio(event.params._user, event.params._subjectToken, event.transaction.hash, event.block)
  portfolio.stakedBalance = portfolio.stakedBalance.minus(event.params._amount)
  portfolio.unstakedBalance = portfolio.unstakedBalance.plus(event.params._amount)
- savePortfolio(portfolio, event.block,true)
+ savePortfolio(portfolio, event.block)
 
  // reduce total staked amount from subject token
  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
@@ -59,7 +59,7 @@ export function handleWithdraw(event: Withdraw): void {
  let portfolio = getOrCreatePortfolio(event.params._user, event.params._subjectToken, event.transaction.hash, event.block)
  portfolio.stakedBalance = portfolio.stakedBalance.minus(event.params._amount)
  portfolio.unstakedBalance = portfolio.unstakedBalance.plus(event.params._amount)
- savePortfolio(portfolio, event.block,true)
+ savePortfolio(portfolio, event.block)
 
  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
  subjectToken.totalStaked = subjectToken.totalStaked.minus(event.params._amount)
