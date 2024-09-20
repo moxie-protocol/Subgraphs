@@ -29,4 +29,4 @@ export const BLACKLISTED_AUCTION = new TypedMap<string, bool>()
 BLACKLISTED_AUCTION.set("228", true)
 
 // TODO: change it for production
-export const STAKING_CONTRACT_ADDRESS = "0x0d12413bac7545640d7e714bb0f564ffed1da620"
+export const STAKING_CONTRACT_ADDRESS = "0xf55bdc4c6820ce670185ede0f3f4fb3adc972266"

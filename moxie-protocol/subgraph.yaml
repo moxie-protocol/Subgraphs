@@ -138,9 +138,9 @@ dataSources:
     name: Staking
     network: base-sepolia
     source:
-      address: "0x0D12413Bac7545640d7e714BB0F564fFeD1Da620"
+      address: "0xf55bdC4c6820Ce670185edE0f3F4FB3aDc972266"
       abi: Staking
-      startBlock: 15369385
+      startBlock: 15481647
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
