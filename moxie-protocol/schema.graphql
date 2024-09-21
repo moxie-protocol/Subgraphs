@@ -285,6 +285,8 @@ type Portfolio @entity {
   subjectToken: SubjectToken!
   "lockInfos"
   lockInfos: [LockInfo!]! @derivedFrom(field: "portfolio")
+  "lockInfos as spender"
+  spenderLockInfos: [LockInfo!]! @derivedFrom(field: "spenderPortfolio")
   "Net quantity of the subject token by the user"
   balance: BigInt!
   "staked quantity of the subject token by the user"
