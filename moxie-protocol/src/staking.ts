@@ -9,26 +9,31 @@ export function handleLock(event: Lock): void {
  lockInfo.txHash = event.transaction.hash
  lockInfo.isBuy = isBuy
  lockInfo.logIndex = event.logIndex
- lockInfo.user = getOrCreateUser(event.params._user, event.block).id
+ let user = getOrCreateUser(event.params._user, event.block).id
+ lockInfo.user = user
  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
  subjectToken.totalStaked = subjectToken.totalStaked.plus(event.params._amount)
  subjectToken.save()
 
  lockInfo.subjectToken = subjectToken.id
 
- let portfolio = getOrCreatePortfolio(event.params._user, event.params._subjectToken, event.transaction.hash, event.block)
- if (isBuy) {
-  // during buy, unstaked balance remains same, balance increases as balance = staked + unstaked
-  portfolio.stakedBalance = portfolio.stakedBalance.plus(event.params._amount)
-  savePortfolio(portfolio, event.block)
- } else {
-  // during deposit, staked increased , unstaked decreases & balance stays same
-  portfolio.stakedBalance = portfolio.stakedBalance.plus(event.params._amount)
-  portfolio.unstakedBalance = portfolio.unstakedBalance.minus(event.params._amount)
-  savePortfolio(portfolio, event.block)
+ let beneficiary = getOrCreatePortfolio(event.params._user, event.params._subjectToken, event.transaction.hash, event.block)
+ let spenderPortfolio = beneficiary
+ let spender = user
+ if(event.params._user!=event.transaction.from){
+  spenderPortfolio = getOrCreatePortfolio(event.transaction.from, event.params._subjectToken, event.transaction.hash, event.block)
+  spender = getOrCreateUser(event.transaction.from, event.block).id
  }
 
- lockInfo.portfolio = portfolio.id
+ beneficiary.stakedBalance = beneficiary.stakedBalance.plus(
+   event.params._amount
+ )
+ savePortfolio(beneficiary, event.block)
+
+
+ lockInfo.portfolio = beneficiary.id
+ lockInfo.spenderPortfolio = spenderPortfolio.id
+ lockInfo.spender = spender
  lockInfo.subject = getOrCreateUser(event.params._subject, event.block).id
  lockInfo.unlockTimeInSec = event.params._unlockTimeInSec
  lockInfo.amount = event.params._amount
@@ -40,7 +45,6 @@ export function handleLock(event: Lock): void {
 export function handleLockExtended(event: LockExtended): void {
  let portfolio = getOrCreatePortfolio(event.params._user, event.params._subjectToken, event.transaction.hash, event.block)
  portfolio.stakedBalance = portfolio.stakedBalance.minus(event.params._amount)
- portfolio.unstakedBalance = portfolio.unstakedBalance.plus(event.params._amount)
  savePortfolio(portfolio, event.block)
 
  // reduce total staked amount from subject token
@@ -58,7 +62,6 @@ export function handleWithdraw(event: Withdraw): void {
  // address indexed _user, address indexed _subject, address indexed _subjectToken, uint256[] _indexes, uint256 _amount
  let portfolio = getOrCreatePortfolio(event.params._user, event.params._subjectToken, event.transaction.hash, event.block)
  portfolio.stakedBalance = portfolio.stakedBalance.minus(event.params._amount)
- portfolio.unstakedBalance = portfolio.unstakedBalance.plus(event.params._amount)
  savePortfolio(portfolio, event.block)
 
  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
