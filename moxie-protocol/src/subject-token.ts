@@ -1,6 +1,6 @@
 import { Address, BigDecimal, BigInt, store } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/templates/SubjectTokenContract/ERC20"
-import { getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, isBlacklistedSubjectTokenAddress, isFromOrToStakingContract, savePortfolio, saveSubjectToken } from "./utils"
+import { getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, isBlacklistedSubjectTokenAddress, savePortfolio, saveSubjectToken } from "./utils"
 import { AUCTION_ORDER_CLAIMED as CLAIMED } from "./constants"
 
 export function handleTransfer(event: Transfer): void {
