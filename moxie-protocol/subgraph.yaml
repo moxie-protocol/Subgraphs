@@ -146,12 +146,10 @@ dataSources:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
       entities:
-        - AuctioningToken
+        - LockInfo
       abis:
         - name: Staking
           file: ./abis/Staking.json
-        - name: ERC20
-          file: ./abis/ERC20.json
       eventHandlers:
         - event: Lock(indexed address,indexed address,indexed address,uint256,uint256,uint256,uint256,bool)
           handler: handleLock
