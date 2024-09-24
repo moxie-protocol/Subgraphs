@@ -1,13 +1,12 @@
-import { store } from "@graphprotocol/graph-ts"
+import { BigInt, store } from "@graphprotocol/graph-ts"
 
 import { Lock, LockExtended, Withdraw } from '../generated/Staking/Staking'
 import { LockInfo, Portfolio } from '../generated/schema'
 import { getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, savePortfolio } from './utils'
 export function handleLock(event: Lock): void {
  let lockInfo = new LockInfo(event.params._index.toString())
- const isBuy = event.params._isBuy
  lockInfo.txHash = event.transaction.hash
- lockInfo.isBuy = isBuy
+ lockInfo.isBuy = event.params._moxieDepositAmount.notEqual(BigInt.fromI32(0))
  lockInfo.logIndex = event.logIndex
  let user = getOrCreateUser(event.params._user, event.block).id
  lockInfo.user = user
@@ -39,6 +38,7 @@ export function handleLock(event: Lock): void {
  lockInfo.amount = event.params._amount
  lockInfo.lockPeriodInSec = event.params._lockPeriodInSec
  lockInfo.createdAtBlockInfo = getOrCreateBlockInfo(event.block).id
+ lockInfo.moxieDepositAmount = event.params._moxieDepositAmount
  lockInfo.save()
 }
 

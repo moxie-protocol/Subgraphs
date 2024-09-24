@@ -336,6 +336,8 @@ type LockInfo @entity {
   isBuy: Boolean!
   "Lock period"
   lockPeriodInSec: BigInt!
+  "moxie spent to buy the subject token & lock"
+  moxieDepositAmount: BigInt!
   "created at block information"
   createdAtBlockInfo: BlockInfo!
 }

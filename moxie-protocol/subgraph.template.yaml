@@ -151,7 +151,7 @@ dataSources:
         - name: Staking
           file: ./abis/Staking.json
       eventHandlers:
-        - event: Lock(indexed address,indexed address,indexed address,uint256,uint256,uint256,uint256,bool)
+        - event: Lock(indexed address,indexed address,indexed address,uint256,uint256,uint256,uint256,address,uint256)
           handler: handleLock
         - event: LockExtended(indexed address,indexed address,indexed address,uint256[],uint256)
           handler: handleLockExtended
