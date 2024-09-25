@@ -33,12 +33,12 @@ export function handleTransfer(event: Transfer): void {
   if (!mint) {
     let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
     fromAddressPortfolio.unstakedBalance = fromAddressPortfolio.unstakedBalance.minus(value)
-    savePortfolio(fromAddressPortfolio, event.block)
+    savePortfolio(fromAddressPortfolio, event.block,true)
   }
   if (!burn) {
     let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
     toAddressPortfolio.unstakedBalance = toAddressPortfolio.unstakedBalance.plus(value)
-    savePortfolio(toAddressPortfolio, event.block)
+    savePortfolio(toAddressPortfolio, event.block,true)
   }
   saveSubjectToken(subjectToken, event.block)
 }

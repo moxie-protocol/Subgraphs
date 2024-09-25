@@ -69,12 +69,13 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
  * Saves portfolio entity and updates the subject token unique holders count
  * @param portfolio Portfolio entity which needs to be saved
  * @param block ethereum.Block
+ * @param deleteZeroBalancePortfolio boolean flag to check balance and delete portfolio if balance is zero
  * @returns 
  */
-export function savePortfolio(portfolio: Portfolio, block: ethereum.Block): void {
+export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, deleteZeroBalancePortfolio: bool = false): void {
   portfolio.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
-  if (portfolio.balance.equals(BigInt.zero())) {
+  if (deleteZeroBalancePortfolio && portfolio.balance.equals(BigInt.zero())) {
     let subjectToken = SubjectToken.load(portfolio.subjectToken)!
     subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(
       BigInt.fromI32(1)
