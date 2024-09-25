@@ -285,8 +285,8 @@ type Portfolio @entity {
   subjectToken: SubjectToken!
   "lockInfos"
   lockInfos: [LockInfo!]! @derivedFrom(field: "portfolio")
-  "lockInfos as spender"
-  spenderLockInfos: [LockInfo!]! @derivedFrom(field: "spenderPortfolio")
+  "lockInfos as buyer"
+  buyerLockInfos: [LockInfo!]! @derivedFrom(field: "buyerPortfolio")
   "Net quantity of the subject token by the user"
   balance: BigInt!
   "staked quantity of the subject token by the user"
@@ -318,14 +318,14 @@ type LockInfo @entity {
   logIndex: BigInt!
   "User's address"
   user: User!
-  "Spender's address"
-  spender: User!
+  "Buyer's address, if the lock is a buy and lock"
+  buyer: User
   "Subject's token address"
   subjectToken: SubjectToken!
   "portfolio"
   portfolio: Portfolio!
-  "portfolio"
-  spenderPortfolio: Portfolio!
+  "Buyer's portfolio , if the lock is a buy and lock" 
+  buyerPortfolio: Portfolio
   "Subject's address"
   subject: User!
   "Unlock time in seconds"

@@ -75,7 +75,6 @@ export function savePortfolio(portfolio: Portfolio, block: ethereum.Block): void
   portfolio.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
   if (portfolio.balance.equals(BigInt.zero())) {
-    store.remove("Portfolio", portfolio.id)
     let subjectToken = SubjectToken.load(portfolio.subjectToken)!
     subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(
       BigInt.fromI32(1)

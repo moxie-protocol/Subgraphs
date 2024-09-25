@@ -1,4 +1,4 @@
-import { BigInt, store } from "@graphprotocol/graph-ts"
+import { Address, BigInt, log, store } from "@graphprotocol/graph-ts"
 
 import { Lock, LockExtended, Withdraw } from '../generated/Staking/Staking'
 import { LockInfo, Portfolio } from '../generated/schema'
@@ -8,31 +8,29 @@ export function handleLock(event: Lock): void {
  lockInfo.txHash = event.transaction.hash
  lockInfo.isBuy = event.params._moxieDepositAmount.notEqual(BigInt.fromI32(0))
  lockInfo.logIndex = event.logIndex
- let user = getOrCreateUser(event.params._user, event.block).id
- lockInfo.user = user
+ 
  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
  subjectToken.totalStaked = subjectToken.totalStaked.plus(event.params._amount)
  subjectToken.save()
 
- lockInfo.subjectToken = subjectToken.id
-
- let beneficiary = getOrCreatePortfolio(event.params._user, event.params._subjectToken, event.transaction.hash, event.block)
- let spenderPortfolio = beneficiary
- let spender = user
- if(event.params._user!=event.transaction.from){
-  spenderPortfolio = getOrCreatePortfolio(event.transaction.from, event.params._subjectToken, event.transaction.hash, event.block)
-  spender = getOrCreateUser(event.transaction.from, event.block).id
- }
-
- beneficiary.stakedBalance = beneficiary.stakedBalance.plus(
-   event.params._amount
+ let user = getOrCreateUser(event.params._user, event.block).id
+  
+ let beneficiaryPortfolio = getOrCreatePortfolio(event.params._user, event.params._subjectToken, event.transaction.hash, event.block)
+ 
+ beneficiaryPortfolio.stakedBalance = beneficiaryPortfolio.stakedBalance.plus(
+  event.params._amount
  )
- savePortfolio(beneficiary, event.block)
+ savePortfolio(beneficiaryPortfolio, event.block)
 
-
- lockInfo.portfolio = beneficiary.id
- lockInfo.spenderPortfolio = spenderPortfolio.id
- lockInfo.spender = spender
+ if(event.params._buyer != Address.zero()) {
+   lockInfo.buyer = getOrCreateUser(event.params._buyer, event.block).id
+   let buyerPortfolio = getOrCreatePortfolio(event.params._buyer, event.params._subjectToken, event.transaction.hash, event.block)
+   lockInfo.buyerPortfolio = buyerPortfolio.id
+   savePortfolio(buyerPortfolio, event.block)
+ }
+ lockInfo.user = user
+ lockInfo.portfolio = beneficiaryPortfolio.id
+ lockInfo.subjectToken = subjectToken.id
  lockInfo.subject = getOrCreateUser(event.params._subject, event.block).id
  lockInfo.unlockTimeInSec = event.params._unlockTimeInSec
  lockInfo.amount = event.params._amount
