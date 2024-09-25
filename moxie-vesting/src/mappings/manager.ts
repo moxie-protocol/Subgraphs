@@ -214,7 +214,6 @@ export function handleSubjectTokenDestinationAllowed(
   } else {
     // We are revoking access
     if (index != -1 && !event.params.allowed) {
-      manager.lastSubjectTokenDestinationApprovalBlockNumber = BigInt.zero()
       destinations.splice(index, 1)
     }
     // Otherwise do nothing
