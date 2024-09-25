@@ -1,3 +1,26 @@
+type TokenDestination @entity {
+  "The address of the token destination"
+  id: ID!
+  tokenDestinationAllowed: Boolean!
+  "The manager address"
+  manager: TokenLockManager!
+
+  createdAtBlockNumber: BigInt!
+  "The block number of the last update"
+  blockNumberUpdated: BigInt!
+}
+
+type SubjectTokenDestination @entity {
+  "The address of the token destination"
+  id: ID!
+  subjectTokenDestinationAllowed: Boolean!
+  "The manager address"
+  manager: TokenLockManager!
+
+  createdAtBlockNumber: BigInt!
+  "The block number of the last update"
+  blockNumberUpdated: BigInt!
+}
 """
 The Token manager data
 """
@@ -12,6 +35,14 @@ type TokenLockManager @entity {
   tokenDestinations: [Bytes!]
   "List of subject addresses that are allowed to pull funds"
   subjectTokenDestinations: [Bytes!]
+  "List of addresses that are allowed to pull funds"
+  tokenDestinationsEntity: [TokenDestination!]! @derivedFrom(field: "manager")
+  "List of subject addresses that are allowed to pull funds"
+  subjectTokenDestinationsEntity: [SubjectTokenDestination!]! @derivedFrom(field: "manager")
+  
+  lastSubjectTokenDestinationApprovalBlockNumber: BigInt!
+
+  lastTokenDestinationApprovalBlockNumber: BigInt!
   "List of function call authorizations"
   authorizedFunctions: [AuthorizedFunction!] @derivedFrom(field: "manager")
   "Token lock count of contracts created"
@@ -69,6 +100,8 @@ type TokenLockWallet @entity {
   revocable: Revocability
   "True if the beneficiary has approved addresses that the manager has approved"
   tokenDestinationsApproved: Boolean!
+  "block number of the last approval"
+  tokenDestinationApprovalBlockNumber: BigInt!
   "The amount of tokens that have been resleased"
   tokensReleased: BigInt!
   "The amount of tokens that have been withdrawn"

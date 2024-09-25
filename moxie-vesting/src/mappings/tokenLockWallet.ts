@@ -82,6 +82,7 @@ export function handleTokenDestinationsApproved(
 ): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
   tokenLockWallet.tokenDestinationsApproved = true
+  tokenLockWallet.tokenDestinationApprovalBlockNumber = event.block.number
   tokenLockWallet.save()
 }
 
@@ -90,6 +91,7 @@ export function handleTokenDestinationsRevoked(
 ): void {
   let tokenLockWallet = TokenLockWallet.load(event.address.toHexString())!
   tokenLockWallet.tokenDestinationsApproved = false
+  tokenLockWallet.tokenDestinationApprovalBlockNumber = BigInt.zero()
   tokenLockWallet.save()
 }
 
@@ -121,7 +123,6 @@ export function handleSubjectTokenDestinationsApproved(event: SubjectTokenDestin
   }
   subjectToken.vestingContractAddress = event.address.toHexString()
   subjectToken.subjectToken = event.params._subjectToken
-  subjectToken.tokenDestinationsApproved = true
   subjectToken.blockNumberUpdated = event.block.number
   subjectToken.save()
 }
@@ -132,7 +133,6 @@ export function handleSubjectTokenDestinationsRevoked(event: SubjectTokenDestina
   if(subjectToken == null) {
     subjectToken = new SubjectToken(event.params._subjectToken.toHexString())
   }
-  subjectToken.tokenDestinationsApproved = false
   subjectToken.vestingContractAddress = event.address.toHexString().toLowerCase()
   subjectToken.subjectToken = event.params._subjectToken
   subjectToken.blockNumberUpdated = event.block.number
