@@ -80,6 +80,8 @@ export function savePortfolio(portfolio: Portfolio, block: ethereum.Block): void
       BigInt.fromI32(1)
     )
     saveSubjectToken(subjectToken, block)
+    // delete portfolio if balance gets zero
+    store.remove("Portfolio", portfolio.id)
     return
   }
   portfolio.save()
