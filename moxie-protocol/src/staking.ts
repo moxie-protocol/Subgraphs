@@ -2,7 +2,7 @@ import { BigInt, store } from "@graphprotocol/graph-ts"
 
 import { Lock, LockExtended, Withdraw } from '../generated/Staking/Staking'
 import { LockInfo, Portfolio } from '../generated/schema'
-import { getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, savePortfolio } from './utils'
+import { getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio } from './utils'
 export function handleLock(event: Lock): void {
  let lockInfo = new LockInfo(event.params._index.toString())
  lockInfo.txHash = event.transaction.hash
@@ -40,6 +40,10 @@ export function handleLock(event: Lock): void {
  lockInfo.createdAtBlockInfo = getOrCreateBlockInfo(event.block).id
  lockInfo.moxieDepositAmount = event.params._moxieDepositAmount
  lockInfo.save()
+
+  let summary = getOrCreateSummary()
+  summary.totalStakedSubjectTokens = summary.totalStakedSubjectTokens.plus(event.params._amount)
+  summary.save()
 }
 
 export function handleLockExtended(event: LockExtended): void {
@@ -56,6 +60,10 @@ export function handleLockExtended(event: LockExtended): void {
  for (let i = 0; i < lockIndexes.length; i++) {
   store.remove("LockInfo", lockIndexes[i].toString())
  }
+
+  let summary = getOrCreateSummary()
+  summary.totalStakedSubjectTokens = summary.totalStakedSubjectTokens.minus(event.params._amount)
+  summary.save()
 }
 
 export function handleWithdraw(event: Withdraw): void {
@@ -72,4 +80,8 @@ export function handleWithdraw(event: Withdraw): void {
  for (let i = 0; i < lockIndexes.length; i++) {
   store.remove("LockInfo", lockIndexes[i].toString())
  }
+
+  let summary = getOrCreateSummary()
+  summary.totalStakedSubjectTokens = summary.totalStakedSubjectTokens.minus(event.params._amount)
+  summary.save()
 }

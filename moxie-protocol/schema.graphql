@@ -457,6 +457,8 @@ type Summary @entity {
   totalReserve: BigInt!
   "total protocol token spent by all users - after reducing when user sells the token"
   totalProtocolTokenInvested: BigDecimal!
+  "total subject tokens staked"
+  totalStakedSubjectTokens: BigInt!
   activeProtocolFeeBeneficiary: ProtocolFeeBeneficiary
   protocolBuyFeePct: BigInt!
   protocolSellFeePct: BigInt!

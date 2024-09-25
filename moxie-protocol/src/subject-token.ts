@@ -1,7 +1,6 @@
 import { Address, BigDecimal, BigInt, store } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/templates/SubjectTokenContract/ERC20"
 import { getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, isBlacklistedSubjectTokenAddress, savePortfolio, saveSubjectToken } from "./utils"
-import { AUCTION_ORDER_CLAIMED as CLAIMED } from "./constants"
 
 export function handleTransfer(event: Transfer): void {
   let contractAddress = event.address
@@ -34,18 +33,12 @@ export function handleTransfer(event: Transfer): void {
   if (!mint) {
     let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
     fromAddressPortfolio.unstakedBalance = fromAddressPortfolio.unstakedBalance.minus(value)
-    savePortfolio(fromAddressPortfolio, event.block,true)
+    savePortfolio(fromAddressPortfolio, event.block)
   }
   if (!burn) {
     let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
-    // adding unique holders when a new portfolio is created
-    if (toAddressPortfolio.unstakedBalance.equals(BigInt.fromI32(0))) {
-      subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
-        BigInt.fromI32(1)
-      )
-    }
     toAddressPortfolio.unstakedBalance = toAddressPortfolio.unstakedBalance.plus(value)
-    savePortfolio(toAddressPortfolio, event.block,true)
+    savePortfolio(toAddressPortfolio, event.block)
   }
   saveSubjectToken(subjectToken, event.block)
 }

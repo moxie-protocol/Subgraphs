@@ -45,6 +45,11 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
   if (!portfolio) {
     portfolio = new Portfolio(portfolioId)
     let subjectToken = getOrCreateSubjectToken(subjectAddress, block)
+    // new holder
+    subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
+      BigInt.fromI32(1)
+    )
+    saveSubjectToken(subjectToken, block)
     portfolio.user = user.id
     portfolio.subjectToken = subjectToken.id
     portfolio.balance = BigInt.zero()
@@ -60,10 +65,16 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
   return portfolio
 }
 
-export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, allowDelete:bool = false): void {
+/**
+ * Saves portfolio entity and updates the subject token unique holders count
+ * @param portfolio Portfolio entity which needs to be saved
+ * @param block ethereum.Block
+ * @returns 
+ */
+export function savePortfolio(portfolio: Portfolio, block: ethereum.Block): void {
   portfolio.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
-  if (allowDelete && portfolio.balance.equals(BigInt.zero())) {
+  if (portfolio.balance.equals(BigInt.zero())) {
     store.remove("Portfolio", portfolio.id)
     let subjectToken = SubjectToken.load(portfolio.subjectToken)!
     subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(
@@ -311,7 +322,7 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
 }
 
 export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block, saveSnapshot: boolean = false): void {
-  subject.lastUpdatedAtBlockInfo = subject.updatedAtBlockInfo 
+  subject.lastUpdatedAtBlockInfo = subject.updatedAtBlockInfo
   subject.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   subject.save()
   if (saveSnapshot) {
@@ -327,6 +338,7 @@ export function getOrCreateSummary(): Summary {
     summary = new Summary(SUMMARY_ID)
     summary.totalSubjectTokensIssued = BigInt.zero()
     summary.totalReserve = BigInt.zero()
+    summary.totalStakedSubjectTokens = BigInt.zero()
     summary.totalProtocolTokenInvested = new BigDecimal(BigInt.zero())
 
     summary.protocolBuyFeePct = BigInt.zero()
