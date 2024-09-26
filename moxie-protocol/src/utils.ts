@@ -1,6 +1,6 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction } from "../generated/schema"
+import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, } from "../generated/schema"
 import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS } from "./constants"
 
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
@@ -12,6 +12,7 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
     subjectToken.symbol = token.symbol()
     subjectToken.decimals = TOKEN_DECIMALS
     // setting default values for now
+    subjectToken.totalStaked = BigInt.zero()
     subjectToken.reserve = BigInt.zero()
     subjectToken.reserveRatio = BigInt.zero()
     subjectToken.currentPriceInMoxie = BigDecimal.zero()
@@ -27,6 +28,7 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
     subjectToken.sellSideVolume = BigInt.zero()
     subjectToken.protocolTokenInvested = BigDecimal.zero()
     subjectToken.status = ONBOARDING_STATUS_ONBOARDING_INITIALIZED
+    subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
     saveSubjectToken(subjectToken, block)
   }
   return subjectToken
@@ -43,11 +45,18 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
   if (!portfolio) {
     portfolio = new Portfolio(portfolioId)
     let subjectToken = getOrCreateSubjectToken(subjectAddress, block)
+    // new holder
+    subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
+      BigInt.fromI32(1)
+    )
+    saveSubjectToken(subjectToken, block)
     portfolio.user = user.id
     portfolio.subjectToken = subjectToken.id
     portfolio.balance = BigInt.zero()
     portfolio.buyVolume = BigInt.zero()
     portfolio.sellVolume = BigInt.zero()
+    portfolio.stakedBalance = BigInt.zero()
+    portfolio.unstakedBalance = BigInt.zero()
     portfolio.protocolTokenInvested = BigDecimal.zero()
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     portfolio.subjectTokenBuyVolume = BigInt.zero()
@@ -56,8 +65,26 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
   return portfolio
 }
 
-export function savePortfolio(portfolio: Portfolio, block: ethereum.Block): void {
+/**
+ * Saves portfolio entity and updates the subject token unique holders count
+ * @param portfolio Portfolio entity which needs to be saved
+ * @param block ethereum.Block
+ * @param deleteZeroBalancePortfolio boolean flag to check balance and delete portfolio if balance is zero
+ * @returns 
+ */
+export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, deleteZeroBalancePortfolio: bool = false): void {
   portfolio.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
+  if (deleteZeroBalancePortfolio && portfolio.balance.equals(BigInt.zero())) {
+    let subjectToken = SubjectToken.load(portfolio.subjectToken)!
+    subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(
+      BigInt.fromI32(1)
+    )
+    saveSubjectToken(subjectToken, block)
+    // delete portfolio if balance gets zero
+    store.remove("Portfolio", portfolio.id)
+    return
+  }
   portfolio.save()
 }
 
@@ -296,13 +323,14 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
   subjectToken.save()
 }
 
-export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block, saveSnapshot: boolean = false): void {
-  subject.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
-  subject.save()
+export function saveSubjectToken(subjectToken: SubjectToken, block: ethereum.Block, saveSnapshot: boolean = false): void {
+  subjectToken.lastUpdatedAtBlockInfo = subjectToken.updatedAtBlockInfo
+  subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  subjectToken.save()
   if (saveSnapshot) {
-    let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subject, block.timestamp)
-    createSubjectTokenDailySnapshot(subject, block.timestamp, lastHourylSnapshotEndTimestamp)
-    createSubjectTokenRollingDailySnapshot(subject, block.timestamp)
+    let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subjectToken, block.timestamp)
+    createSubjectTokenDailySnapshot(subjectToken, block.timestamp, lastHourylSnapshotEndTimestamp)
+    createSubjectTokenRollingDailySnapshot(subjectToken, block.timestamp)
   }
 }
 
@@ -312,6 +340,7 @@ export function getOrCreateSummary(): Summary {
     summary = new Summary(SUMMARY_ID)
     summary.totalSubjectTokensIssued = BigInt.zero()
     summary.totalReserve = BigInt.zero()
+    summary.totalStakedSubjectTokens = BigInt.zero()
     summary.totalProtocolTokenInvested = new BigDecimal(BigInt.zero())
 
     summary.protocolBuyFeePct = BigInt.zero()
@@ -531,3 +560,5 @@ export function isBlacklistedSubjectTokenAddress(subjectAddress: Address): bool 
 export function isBlacklistedAuction(auctionId: string): bool {
   return BLACKLISTED_AUCTION.isSet(auctionId)
 }
+
+
