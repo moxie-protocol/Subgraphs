@@ -122,6 +122,7 @@ export function handleSubjectTokenDestinationsApproved(event: SubjectTokenDestin
     subjectToken = new SubjectToken(subjectId)
   }
   subjectToken.vestingContractAddress = event.address.toHexString()
+  subjectToken.tokenDestinationsApproved = true
   subjectToken.subjectToken = event.params._subjectToken
   subjectToken.blockNumberUpdated = event.block.number
   subjectToken.save()
@@ -136,6 +137,7 @@ export function handleSubjectTokenDestinationsRevoked(event: SubjectTokenDestina
   subjectToken.vestingContractAddress = event.address.toHexString().toLowerCase()
   subjectToken.subjectToken = event.params._subjectToken
   subjectToken.blockNumberUpdated = event.block.number
+  subjectToken.tokenDestinationsApproved = false
   subjectToken.save()
 }
 
