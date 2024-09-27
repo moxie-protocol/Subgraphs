@@ -13,3 +13,4 @@ BLACKLISTED_SUBJECT_TOKEN_ADDRESS.set(
 
 export const BLACKLISTED_AUCTION = new TypedMap<string, bool>()
 BLACKLISTED_AUCTION.set("228", true)
+BLACKLISTED_AUCTION.set("1516", true)
