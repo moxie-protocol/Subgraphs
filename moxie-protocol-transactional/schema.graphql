@@ -5,6 +5,39 @@ type BlockInfo @entity {
   timestamp: BigInt!
 }
 
+type LockInfo @entity {
+  "index"
+  id: ID!
+  "txHash of the transaction"
+  txHash: Bytes!
+  "logIndex of the transaction"
+  logIndex: BigInt!
+  "User's address"
+  user: User!
+  "Buyer's address, if the lock is a buy and lock"
+  buyer: User
+  "Subject's token address"
+  subjectToken: SubjectToken!
+  "portfolio"
+  portfolio: Portfolio!
+  "Buyer's portfolio , if the lock is a buy and lock"
+  buyerPortfolio: Portfolio
+  "Subject's address"
+  subject: User!
+  "Unlock time in seconds"
+  unlockTimeInSec: BigInt!
+  "Amount locked"
+  amount: BigInt!
+  "isBuy"
+  isBuy: Boolean!
+  "Lock period"
+  lockPeriodInSec: BigInt!
+  "moxie spent to buy the subject token & lock"
+  moxieDepositAmount: BigInt!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+}
+
 type SubjectToken @entity {
   "address of the subject token"
   id: ID!
@@ -26,6 +59,8 @@ type SubjectToken @entity {
   reserveRatio: BigInt!
   "Total supply of the token"
   totalSupply: BigInt!
+  "total locked In staking"
+  totalStaked: BigInt!
   "initial supply when bonding curve is initialized"
   initialSupply: BigInt!
 
@@ -58,8 +93,16 @@ type Portfolio @entity {
   user: User!
   "Subject's token address"
   subjectToken: SubjectToken!
+  "lockInfos"
+  lockInfos: [LockInfo!]! @derivedFrom(field: "portfolio")
+  "lockInfos as buyer"
+  buyerLockInfos: [LockInfo!]! @derivedFrom(field: "buyerPortfolio")
   "Net quantity of the subject token by the user"
   balance: BigInt!
+  "staked quantity of the subject token by the user"
+  stakedBalance: BigInt!
+  "unstaked quantity of the subject token by the user"
+  unstakedBalance: BigInt!
   "Moxie spent by user to buy the subject token(buyShare + auctionOrders)"
   buyVolume: BigInt!
   "total subject token bought by user"
@@ -94,6 +137,7 @@ type Summary @entity {
   protocolSellFeePct: BigInt!
   subjectBuyFeePct: BigInt!
   subjectSellFeePct: BigInt!
+
 }
 
 type Auction @entity {
