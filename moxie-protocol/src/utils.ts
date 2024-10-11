@@ -1,8 +1,7 @@
-import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray } from "@graphprotocol/graph-ts"
+import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray, dataSource } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, } from "../generated/schema"
-import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS } from "./constants"
-
+import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
   if (!subjectToken) {
@@ -562,3 +561,16 @@ export function isBlacklistedAuction(auctionId: string): bool {
 }
 
 
+export function chooseUser(from: Address, beneficiary: Address): Address {
+  if (dataSource.network() == "base") {
+    if (WHITELISTED_CONTRACTS_MAINNET.isSet(beneficiary.toHexString().toLowerCase())) {
+      return from
+    }
+    return beneficiary
+  }
+
+  if (WHITELISTED_CONTRACTS_TESTNET.isSet(beneficiary.toHexString().toLowerCase())) {
+    return from
+  }
+  return beneficiary
+}
