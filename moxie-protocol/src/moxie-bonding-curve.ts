@@ -56,7 +56,8 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 
   const blockInfo = getOrCreateBlockInfo(event.block)
   // TODO: need to fix for spender
-  let user = getOrCreateUser(event.params._beneficiary, event.block)
+  let userAddress = event.params._beneficiary == event.transaction.from ? event.params._beneficiary : event.transaction.from
+  let user = getOrCreateUser(userAddress, event.block)
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block)
   let calculatedPrice = new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply, subjectToken.reserveRatio)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params._sellAmount)
@@ -183,7 +184,9 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   if (event.params._spender != event.params._beneficiary) {
     // TODO: need to fix for spender
   }
-  let user = getOrCreateUser(event.params._beneficiary, event.block)
+
+  let userAddress = event.params._beneficiary == event.transaction.from ? event.params._beneficiary : event.transaction.from
+  let user = getOrCreateUser(userAddress, event.block)
 
   // Saving order entity
   let order = new Order(getTxEntityId(event))
