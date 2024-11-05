@@ -1,6 +1,8 @@
 type LockInfo @entity {
   "index"
   id: ID!
+  "from address of this lock creation transaction"
+  from: Bytes!
   "txHash of the transaction"
   txHash: Bytes!
   "logIndex of the transaction"
