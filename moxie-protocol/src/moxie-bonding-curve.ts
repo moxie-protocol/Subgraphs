@@ -79,6 +79,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   order.price = calculatedPrice.price
 
   order.blockInfo = blockInfo.id
+  order.blockNumber = event.block.number
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(userAddress, event.params._buyToken, event.transaction.hash, event.block)
@@ -202,6 +203,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.subjectFee = fees.subjectFee
   order.protocolFee = fees.protocolFee
   order.blockInfo = blockInfo.id
+  order.blockNumber = event.block.number
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(userAddress, event.params._sellToken, event.transaction.hash, event.block)

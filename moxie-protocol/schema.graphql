@@ -61,6 +61,8 @@ type SubjectTokenRollingDailySnapshot @entity {
 
   createdAtBlockInfo: BlockInfo!
   updatedAtBlockInfo: BlockInfo!
+  createdAtBlockNumber: BigInt!
+  updatedAtBlockNumber: BigInt!
   initialHourlySnapshot: SubjectTokenHourlySnapshot
 }
 
@@ -118,6 +120,8 @@ type SubjectTokenDailySnapshot @entity {
 
   createdAtBlockInfo: BlockInfo!
   updatedAtBlockInfo: BlockInfo!
+  createdAtBlockNumber: BigInt!
+  updatedAtBlockNumber: BigInt!
   lastSubjectTokenDailySnapshot: SubjectTokenDailySnapshot
 
   hourlySnapshotEndTimestamps: [BigInt!]!
@@ -176,6 +180,8 @@ type SubjectTokenHourlySnapshot @entity {
   hourlyProtocolFeeChange: BigInt!
   createdAtBlockInfo: BlockInfo!
   updatedAtBlockInfo: BlockInfo!
+  createdAtBlockNumber: BigInt!
+  updatedAtBlockNumber: BigInt!
 }
 
 type SubjectToken @entity {
@@ -227,8 +233,12 @@ type SubjectToken @entity {
   portfolio: [Portfolio!]! @derivedFrom(field: "subjectToken")
   "created at block information"
   createdAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
   "updated at block information"
   updatedAtBlockInfo: BlockInfo!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
   "updated at block information"
   lastUpdatedAtBlockInfo: BlockInfo!
   "last order happened block number"
@@ -273,8 +283,9 @@ type Auction @entity {
   startTxHash: Bytes!
   endTxHash: Bytes
   startBlockInfo: BlockInfo!
+  startBlockNumber: BigInt!
   endBlockInfo: BlockInfo
-
+  endBlockNumber: BigInt!
   auctionEndDate: BigInt!
 }
 
@@ -309,6 +320,10 @@ type Portfolio @entity {
   createdAtBlockInfo: BlockInfo!
   "updated at block information"
   updatedAtBlockInfo: BlockInfo!
+  "created at block information"
+  createdAtBlockNumber: BigInt!
+  "updated at block information"
+  updatedAtBlockNumber: BigInt!
 }
 
 type LockInfo @entity {
@@ -326,7 +341,7 @@ type LockInfo @entity {
   subjectToken: SubjectToken!
   "portfolio"
   portfolio: Portfolio!
-  "Buyer's portfolio , if the lock is a buy and lock" 
+  "Buyer's portfolio , if the lock is a buy and lock"
   buyerPortfolio: Portfolio
   "Subject's address"
   subject: User!
@@ -342,6 +357,8 @@ type LockInfo @entity {
   moxieDepositAmount: BigInt!
   "created at block information"
   createdAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
 }
 
 type User @entity {
@@ -365,6 +382,10 @@ type User @entity {
   createdAtBlockInfo: BlockInfo!
   "updated at block information"
   updatedAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
 }
 
 type Order @entity {
@@ -398,6 +419,8 @@ type Order @entity {
   protocolFeeTransfer: ProtocolFeeTransfer
   "block information"
   blockInfo: BlockInfo!
+  "block number"
+  blockNumber: BigInt!
 }
 
 enum OrderType {

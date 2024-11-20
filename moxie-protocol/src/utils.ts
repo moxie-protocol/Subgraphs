@@ -23,12 +23,14 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
     subjectToken.subjectFee = BigInt.zero()
     subjectToken.protocolFee = BigInt.zero()
     subjectToken.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    subjectToken.createdAtBlockNumber = block.number
     subjectToken.buySideVolume = BigInt.zero()
     subjectToken.lastOrderBlockNumber = BigInt.zero()
     subjectToken.sellSideVolume = BigInt.zero()
     subjectToken.protocolTokenInvested = BigDecimal.zero()
     subjectToken.status = ONBOARDING_STATUS_ONBOARDING_INITIALIZED
     subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+    subjectToken.updatedAtBlockNumber = block.number
     saveSubjectToken(subjectToken, block)
   }
   return subjectToken
@@ -59,6 +61,7 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.unstakedBalance = BigInt.zero()
     portfolio.protocolTokenInvested = BigDecimal.zero()
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    portfolio.createdAtBlockNumber = block.number
     portfolio.subjectTokenBuyVolume = BigInt.zero()
     savePortfolio(portfolio, block)
   }
@@ -74,6 +77,7 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
  */
 export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, deleteZeroBalancePortfolio: bool = false): void {
   portfolio.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  portfolio.updatedAtBlockNumber = block.number
   portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
   if (deleteZeroBalancePortfolio && portfolio.balance.equals(BigInt.zero())) {
     let subjectToken = SubjectToken.load(portfolio.subjectToken)!
@@ -98,6 +102,7 @@ export function getOrCreateUser(userAddress: Address, block: ethereum.Block): Us
     user.protocolTokenInvested = BigDecimal.zero()
     user.protocolOrdersCount = BigInt.zero()
     user.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    user.createdAtBlockNumber = block.number
     saveUser(user, block)
     let summary = getOrCreateSummary()
     summary.numberOfUsers = summary.numberOfUsers.plus(BigInt.fromI32(1))
@@ -107,6 +112,7 @@ export function getOrCreateUser(userAddress: Address, block: ethereum.Block): Us
 }
 export function saveUser(user: User, block: ethereum.Block): void {
   user.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  user.updatedAtBlockNumber = block.number
   user.save()
 }
 
@@ -126,6 +132,7 @@ function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp:
     snapshot.startSubjectFee = subjectToken.subjectFee
     snapshot.startProtocolFee = subjectToken.protocolFee
     snapshot.createdAtBlockInfo = subjectToken.createdAtBlockInfo
+    snapshot.createdAtBlockNumber = subjectToken.createdAtBlockNumber
   }
   snapshot.endTimestamp = snapshotTimestamp
 
@@ -150,6 +157,7 @@ function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp:
   snapshot.endProtocolFee = subjectToken.protocolFee
   snapshot.hourlyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
   snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
+  snapshot.updatedAtBlockNumber = subjectToken.updatedAtBlockNumber
   snapshot.save()
 
   return snapshotTimestamp
@@ -211,6 +219,7 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
     snapshot.startSubjectFee = subjectToken.subjectFee
     snapshot.startProtocolFee = subjectToken.protocolFee
     snapshot.createdAtBlockInfo = subjectToken.createdAtBlockInfo
+    snapshot.createdAtBlockNumber = subjectToken.createdAtBlockNumber
     snapshot.hourlySnapshotEndTimestamps = []
     justCreated = true
   }
@@ -237,6 +246,7 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
   snapshot.endProtocolFee = subjectToken.protocolFee
   snapshot.dailyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
   snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
+  snapshot.updatedAtBlockNumber = subjectToken.updatedAtBlockNumber
 
   let hourlySnapshotEndTimestamps = snapshot.hourlySnapshotEndTimestamps
   if (!hourlySnapshotEndTimestamps.includes(lastHourlySnapshotEndTimestamp)) {
@@ -286,6 +296,7 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
     snapshot.startSubjectFee = hourlySnapshot.endSubjectFee
     snapshot.startProtocolFee = hourlySnapshot.endProtocolFee
     snapshot.createdAtBlockInfo = hourlySnapshot.createdAtBlockInfo
+    snapshot.createdAtBlockNumber = hourlySnapshot.createdAtBlockNumber
     snapshot.initialHourlySnapshot = hourlySnapshot.id
   }
   snapshot.endTimestamp = snapshotTimestamp
@@ -311,6 +322,7 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
   snapshot.endProtocolFee = subjectToken.protocolFee
   snapshot.dailyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
   snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
+  snapshot.updatedAtBlockNumber = subjectToken.updatedAtBlockNumber
 
   snapshot.save()
 
@@ -326,6 +338,7 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
 export function saveSubjectToken(subjectToken: SubjectToken, block: ethereum.Block, saveSnapshot: boolean = false): void {
   subjectToken.lastUpdatedAtBlockInfo = subjectToken.updatedAtBlockInfo
   subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  subjectToken.updatedAtBlockNumber = block.number
   subjectToken.save()
   if (saveSnapshot) {
     let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subjectToken, block.timestamp)

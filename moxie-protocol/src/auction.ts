@@ -138,6 +138,7 @@ export function handleNewAuction(event: NewAuction): void {
   auction.protocolFee = BigInt.zero()
   auction.startTxHash = event.transaction.hash
   auction.startBlockInfo = getOrCreateBlockInfo(event.block).id
+  auction.startBlockNumber = event.block.number
   auction.minFundingThresholdNotReached = false
   auction.volumeClearingPriceOrder = BigInt.zero()
   auction.save()
