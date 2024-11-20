@@ -119,6 +119,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 
   subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
   subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
+  subjectToken.lastOrderBlockNumber = event.block.number
   saveSubjectToken(subjectToken, event.block, true)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
@@ -248,6 +249,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(protocolTokenAmount)
   // volume calculation is using amount+fees
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
+  subjectToken.lastOrderBlockNumber = event.block.number
   saveSubjectToken(subjectToken, event.block, true)
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)

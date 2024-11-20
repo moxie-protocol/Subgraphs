@@ -24,6 +24,7 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
     subjectToken.protocolFee = BigInt.zero()
     subjectToken.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     subjectToken.buySideVolume = BigInt.zero()
+    subjectToken.lastOrderBlockNumber = BigInt.zero()
     subjectToken.sellSideVolume = BigInt.zero()
     subjectToken.protocolTokenInvested = BigDecimal.zero()
     subjectToken.status = ONBOARDING_STATUS_ONBOARDING_INITIALIZED
