@@ -24,6 +24,10 @@ type SubjectTokenRollingDailySnapshot @entity {
 
   "price of the token at the start of the snapshot"
   startPrice: BigDecimal!
+  "highest price of the token during the snapshot"
+  highestPrice: BigDecimal!
+  "lowest price of the token during the snapshot"
+  lowestPrice: BigDecimal!
   "price of the token at the end of the snapshot"
   endPrice: BigDecimal!
   "daily price change"
@@ -83,6 +87,10 @@ type SubjectTokenDailySnapshot @entity {
 
   "price of the token at the start of the snapshot"
   startPrice: BigDecimal!
+  "highest price of the token during the snapshot"
+  highestPrice: BigDecimal!
+  "lowest price of the token during the snapshot"
+  lowestPrice: BigDecimal!
   "price of the token at the end of the snapshot"
   endPrice: BigDecimal!
   "daily price change"
@@ -144,6 +152,10 @@ type SubjectTokenHourlySnapshot @entity {
 
   "price of the token at the start of the snapshot"
   startPrice: BigDecimal!
+  "highest price of the token during the snapshot"
+  highestPrice: BigDecimal!
+  "lowest price of the token during the snapshot"
+  lowestPrice: BigDecimal!
   "price of the token at the end of the snapshot"
   endPrice: BigDecimal!
   "hourly price change"
