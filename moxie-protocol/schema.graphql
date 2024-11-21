@@ -201,6 +201,8 @@ type SubjectToken @entity {
   currentPriceInMoxie: BigDecimal!
   "current price of the token in Moxie in wei unit"
   currentPriceInWeiInMoxie: BigDecimal!
+  "market cap: total supply * current price"
+  marketCap: BigDecimal!
   "constant used to calculate bonding curve"
   reserveRatio: BigInt!
   "Total supply of the token"
@@ -285,7 +287,6 @@ type Auction @entity {
   startBlockInfo: BlockInfo!
   startBlockNumber: BigInt!
   endBlockInfo: BlockInfo
-  endBlockNumber: BigInt!
   auctionEndDate: BigInt!
 }
 

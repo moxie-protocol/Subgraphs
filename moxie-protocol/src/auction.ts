@@ -116,6 +116,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   order.price = calculatedPrice.price
   order.blockInfo = blockInfo.id
   order.portfolio = portfolio.id
+  order.blockNumber = event.block.number
   order.save()
 }
 

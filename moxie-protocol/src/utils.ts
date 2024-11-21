@@ -16,6 +16,7 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
     subjectToken.reserveRatio = BigInt.zero()
     subjectToken.currentPriceInMoxie = BigDecimal.zero()
     subjectToken.currentPriceInWeiInMoxie = BigDecimal.zero()
+    subjectToken.marketCap = BigDecimal.zero()
     subjectToken.totalSupply = BigInt.zero()
     subjectToken.initialSupply = BigInt.zero()
     subjectToken.uniqueHolders = BigInt.zero()
@@ -339,6 +340,7 @@ export function saveSubjectToken(subjectToken: SubjectToken, block: ethereum.Blo
   subjectToken.lastUpdatedAtBlockInfo = subjectToken.updatedAtBlockInfo
   subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   subjectToken.updatedAtBlockNumber = block.number
+  subjectToken.marketCap = subjectToken.currentPriceInMoxie.times(subjectToken.totalSupply.toBigDecimal()).div(BigInt.fromI32(10).pow(18).toBigDecimal())
   subjectToken.save()
   if (saveSnapshot) {
     let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subjectToken, block.timestamp)

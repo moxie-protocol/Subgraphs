@@ -34,7 +34,6 @@ export function handleSubjectOnboardingFinished(event: SubjectOnboardingFinished
   auction.protocolFee = protocolFee
   auction.endTxHash = event.transaction.hash
   auction.endBlockInfo = getOrCreateBlockInfo(event.block).id
-  auction.endBlockNumber = event.block.number
   auction.save()
 
   let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
