@@ -77,6 +77,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   order.subjectFee = fees.subjectFee
   order.protocolFee = fees.protocolFee
   order.price = calculatedPrice.price
+  order.marketCap = subjectToken.marketCap
 
   order.blockInfo = blockInfo.id
   order.blockNumber = event.block.number
@@ -200,6 +201,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.orderType = SELL
   order.user = user.id
   order.price = price.price
+  order.marketCap = subjectToken.marketCap
   order.subjectFee = fees.subjectFee
   order.protocolFee = fees.protocolFee
   order.blockInfo = blockInfo.id

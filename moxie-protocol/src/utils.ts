@@ -128,20 +128,13 @@ function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp:
     snapshot = new SubjectTokenHourlySnapshot(snapshotId)
     snapshot.startTimestamp = timestamp
     snapshot.startPrice = subjectToken.currentPriceInMoxie
-    snapshot.highestPrice = subjectToken.currentPriceInMoxie
-    snapshot.lowestPrice = subjectToken.currentPriceInMoxie
+    snapshot.startMarketCap = subjectToken.marketCap
     snapshot.startUniqueHolders = subjectToken.uniqueHolders
     snapshot.startVolume = subjectToken.lifetimeVolume
     snapshot.startSubjectFee = subjectToken.subjectFee
     snapshot.startProtocolFee = subjectToken.protocolFee
     snapshot.createdAtBlockInfo = subjectToken.createdAtBlockInfo
     snapshot.createdAtBlockNumber = subjectToken.createdAtBlockNumber
-  }
-  if (subjectToken.currentPriceInMoxie.gt(snapshot.highestPrice)) {
-    snapshot.highestPrice = subjectToken.currentPriceInMoxie
-  }
-  if (subjectToken.currentPriceInMoxie.lt(snapshot.lowestPrice)) {
-    snapshot.lowestPrice = subjectToken.currentPriceInMoxie
   }
   snapshot.endTimestamp = snapshotTimestamp
 
@@ -151,6 +144,9 @@ function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp:
   snapshot.reserve = subjectToken.reserve
   snapshot.endPrice = subjectToken.currentPriceInMoxie
   snapshot.hourlyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
+
+  snapshot.endMarketCap = subjectToken.marketCap
+  snapshot.marketCapChange = snapshot.endMarketCap.minus(snapshot.startMarketCap)
 
   snapshot.totalSupply = subjectToken.totalSupply
 
@@ -223,8 +219,7 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
     snapshot = new SubjectTokenDailySnapshot(snapshotId)
     snapshot.startTimestamp = timestamp
     snapshot.startPrice = subjectToken.currentPriceInMoxie
-    snapshot.highestPrice = subjectToken.currentPriceInMoxie
-    snapshot.lowestPrice = subjectToken.currentPriceInMoxie
+    snapshot.startMarketCap = subjectToken.marketCap
     snapshot.startUniqueHolders = subjectToken.uniqueHolders
     snapshot.startVolume = subjectToken.lifetimeVolume
     snapshot.startSubjectFee = subjectToken.subjectFee
@@ -234,12 +229,7 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
     snapshot.hourlySnapshotEndTimestamps = []
     justCreated = true
   }
-  if(subjectToken.currentPriceInMoxie.gt(snapshot.highestPrice)) {
-    snapshot.highestPrice = subjectToken.currentPriceInMoxie
-  }
-  if(subjectToken.currentPriceInMoxie.lt(snapshot.lowestPrice)) {
-    snapshot.lowestPrice = subjectToken.currentPriceInMoxie
-  }
+
   snapshot.endTimestamp = snapshotTimestamp
 
   snapshot.subjectToken = subjectToken.id
@@ -248,6 +238,9 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
   snapshot.reserve = subjectToken.reserve
   snapshot.endPrice = subjectToken.currentPriceInMoxie
   snapshot.dailyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
+
+  snapshot.endMarketCap = subjectToken.marketCap
+  snapshot.marketCapChange = snapshot.endMarketCap.minus(snapshot.startMarketCap)
 
   snapshot.totalSupply = subjectToken.totalSupply
 
@@ -308,8 +301,7 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
     snapshot.startTimestamp = time24HourAgo
     snapshot.startReferenceTimestamp = hourlySnapshot.endTimestamp
     snapshot.startPrice = hourlySnapshot.endPrice
-    snapshot.highestPrice = hourlySnapshot.endPrice
-    snapshot.lowestPrice = hourlySnapshot.endPrice
+    snapshot.startMarketCap = hourlySnapshot.endMarketCap
     snapshot.startUniqueHolders = hourlySnapshot.endUniqueHolders
     snapshot.startVolume = hourlySnapshot.endVolume
     snapshot.startSubjectFee = hourlySnapshot.endSubjectFee
@@ -317,12 +309,6 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
     snapshot.createdAtBlockInfo = hourlySnapshot.createdAtBlockInfo
     snapshot.createdAtBlockNumber = hourlySnapshot.createdAtBlockNumber
     snapshot.initialHourlySnapshot = hourlySnapshot.id
-  }
-  if(subjectToken.currentPriceInMoxie.gt(snapshot.highestPrice)) {
-    snapshot.highestPrice = subjectToken.currentPriceInMoxie
-  }
-  if(subjectToken.currentPriceInMoxie.lt(snapshot.lowestPrice)) {
-    snapshot.lowestPrice = subjectToken.currentPriceInMoxie
   }
   snapshot.endTimestamp = snapshotTimestamp
 
@@ -332,6 +318,9 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
   snapshot.reserve = subjectToken.reserve
   snapshot.endPrice = subjectToken.currentPriceInMoxie
   snapshot.dailyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
+
+  snapshot.endMarketCap = subjectToken.marketCap
+  snapshot.marketCapChange = snapshot.endMarketCap.minus(snapshot.startMarketCap)
 
   snapshot.totalSupply = subjectToken.totalSupply
 

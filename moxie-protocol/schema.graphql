@@ -24,14 +24,16 @@ type SubjectTokenRollingDailySnapshot @entity {
 
   "price of the token at the start of the snapshot"
   startPrice: BigDecimal!
-  "highest price of the token during the snapshot"
-  highestPrice: BigDecimal!
-  "lowest price of the token during the snapshot"
-  lowestPrice: BigDecimal!
   "price of the token at the end of the snapshot"
   endPrice: BigDecimal!
   "daily price change"
   dailyPriceChange: BigDecimal!
+  "marketCap of the token at the start of the snapshot"
+  startMarketCap: BigDecimal!
+  "marketCap of the token at the end of the snapshot"
+  endMarketCap: BigDecimal!
+  "hourly marketCap change"
+  marketCapChange: BigDecimal!
 
   "Total supply of the token"
   totalSupply: BigInt!
@@ -87,15 +89,16 @@ type SubjectTokenDailySnapshot @entity {
 
   "price of the token at the start of the snapshot"
   startPrice: BigDecimal!
-  "highest price of the token during the snapshot"
-  highestPrice: BigDecimal!
-  "lowest price of the token during the snapshot"
-  lowestPrice: BigDecimal!
   "price of the token at the end of the snapshot"
   endPrice: BigDecimal!
   "daily price change"
   dailyPriceChange: BigDecimal!
-
+  "marketCap of the token at the start of the snapshot"
+  startMarketCap: BigDecimal!
+  "marketCap of the token at the end of the snapshot"
+  endMarketCap: BigDecimal!
+  "hourly marketCap change"
+  marketCapChange: BigDecimal!
   "Total supply of the token"
   totalSupply: BigInt!
 
@@ -152,14 +155,17 @@ type SubjectTokenHourlySnapshot @entity {
 
   "price of the token at the start of the snapshot"
   startPrice: BigDecimal!
-  "highest price of the token during the snapshot"
-  highestPrice: BigDecimal!
-  "lowest price of the token during the snapshot"
-  lowestPrice: BigDecimal!
   "price of the token at the end of the snapshot"
   endPrice: BigDecimal!
   "hourly price change"
   hourlyPriceChange: BigDecimal!
+
+  "marketCap of the token at the start of the snapshot"
+  startMarketCap: BigDecimal!
+  "marketCap of the token at the end of the snapshot"
+  endMarketCap: BigDecimal!
+  "hourly marketCap change"
+  marketCapChange: BigDecimal!
 
   "Total supply of the token"
   totalSupply: BigInt!
@@ -420,6 +426,8 @@ type Order @entity {
   protocolFee: BigInt!
   "Price of the subject token"
   price: BigDecimal!
+  "market cap of the subject token"
+  marketCap: BigDecimal!
   "BUY/SELL order type"
   orderType: OrderType
   "Seller/Buyer of Fan token"

@@ -114,6 +114,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   order.subjectFee = BigInt.zero()
   order.protocolFee = BigInt.zero()
   order.price = calculatedPrice.price
+  order.marketCap = subjectToken.marketCap
   order.blockInfo = blockInfo.id
   order.portfolio = portfolio.id
   order.blockNumber = event.block.number
