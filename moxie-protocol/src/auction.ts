@@ -118,6 +118,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   order.blockInfo = blockInfo.id
   order.portfolio = portfolio.id
   order.blockNumber = event.block.number
+  order.blockTimestamp = event.block.timestamp
   order.save()
 }
 

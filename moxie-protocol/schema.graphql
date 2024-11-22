@@ -442,6 +442,8 @@ type Order @entity {
   blockInfo: BlockInfo!
   "block number"
   blockNumber: BigInt!
+  "timestamp"
+  blockTimestamp: BigInt!
 }
 
 enum OrderType {
