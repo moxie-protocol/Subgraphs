@@ -77,7 +77,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   order.subjectFee = fees.subjectFee
   order.protocolFee = fees.protocolFee
   order.price = calculatedPrice.price
-  order.marketCap = subjectToken.marketCap
+  order.marketCap = BigDecimal.zero()
 
   order.blockInfo = blockInfo.id
   order.blockNumber = event.block.number
@@ -92,7 +92,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   savePortfolio(portfolio, event.block)
 
   order.portfolio = portfolio.id
-  order.save()
+
 
   // increasing user protocol token spent
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
@@ -125,6 +125,8 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   subjectToken.lastOrderBlockNumber = event.block.number
   saveSubjectToken(subjectToken, event.block, true)
 
+  order.marketCap = subjectToken.marketCap
+  order.save()
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()
 
@@ -202,7 +204,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.orderType = SELL
   order.user = user.id
   order.price = price.price
-  order.marketCap = subjectToken.marketCap
+  order.marketCap = BigDecimal.zero()
   order.subjectFee = fees.subjectFee
   order.protocolFee = fees.protocolFee
   order.blockInfo = blockInfo.id
@@ -224,7 +226,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
     user.protocolTokenInvested = user.protocolTokenInvested.minus(oldPortfolioProtocolTokenInvested.minus(portfolio.protocolTokenInvested))
   }
   order.portfolio = portfolio.id
-  order.save()
+ 
 
   const summary = getOrCreateSummary()
   if (!summary.activeProtocolFeeBeneficiary) {
@@ -257,6 +259,9 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   subjectToken.lastOrderBlockNumber = event.block.number
   saveSubjectToken(subjectToken, event.block, true)
+  
+  order.marketCap = subjectToken.marketCap
+  order.save()
 
   activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   activeFeeBeneficiary.save()
