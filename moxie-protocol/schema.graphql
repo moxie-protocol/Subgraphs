@@ -405,6 +405,47 @@ type User @entity {
   createdAtBlockNumber: BigInt!
   "updated at block number"
   updatedAtBlockNumber: BigInt!
+  "rewards"
+  rewardDeposit: [RewardDeposit!]! @derivedFrom(field: "to")
+  "total rewards"
+  totalRewards: BigInt!
+}
+
+type RewardDeposit @entity {
+  "txHash"
+  id: ID!
+  "block information"
+  blockInfo: BlockInfo!
+  "from"
+  from: User!
+  "to"
+  to: User!
+  "amount deposited"
+  amount: BigInt!
+  "reason"
+  reason: RewardReason
+  "comment"
+  comment: String
+}
+
+enum RewardReason {
+  TRANSACTION_FEE
+  ORDER_REFERRER_FEE
+  PLATFORM_REFERRER_FEE
+  PROTOCOL_FEE
+}
+
+type RewardWithdraw @entity {
+  "txHash"
+  id: ID!
+  "block information"
+  blockInfo: BlockInfo!
+  "from"
+  from: User!
+  "to"
+  to: User!
+  "amount withdrawn"
+  amount: BigInt!
 }
 
 type Order @entity {

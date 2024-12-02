@@ -1,4 +1,4 @@
-import { BigInt, TypedMap } from "@graphprotocol/graph-ts"
+import { BigInt, TypedMap, } from "@graphprotocol/graph-ts"
 
 export const SECONDS_IN_HOUR = BigInt.fromI32(60 * 60)
 export const SECONDS_IN_DAY = SECONDS_IN_HOUR.times(BigInt.fromI32(24))
@@ -46,3 +46,21 @@ WHITELISTED_CONTRACTS_MAINNET.set(RAINBOW_ROUTER_MAINNET, true)
 WHITELISTED_CONTRACTS_MAINNET.set(STAKING_MAINNET, true)
 
 export const WHITELISTED_CONTRACTS_TESTNET = new TypedMap<string, bool>()
+
+
+
+// bytes4(keccak256("TRANSACTION_FEE")); // 0x7c5f6088
+// bytes4(keccak256("ORDER_REFERRER_FEE")); // 0xf42119e1
+// bytes4(keccak256("PLATFORM_REFERRER_FEE")); // 0x9b340ab2
+// bytes4(keccak256("PROTOCOL_FEE")); // 0xaa072a75
+
+const TRANSACTION_FEE = "TRANSACTION_FEE"
+const ORDER_REFERRER_FEE = "ORDER_REFERRER_FEE"
+const PLATFORM_REFERRER_FEE = "PLATFORM_REFERRER_FEE"
+const PROTOCOL_FEE = "PROTOCOL_FEE"
+
+export const RewardMap = new TypedMap<string, string>()
+RewardMap.set("0x7c5f6088", TRANSACTION_FEE)
+RewardMap.set("0xf42119e1", ORDER_REFERRER_FEE)
+RewardMap.set("0x9b340ab2", PLATFORM_REFERRER_FEE)
+RewardMap.set("0xaa072a75", PROTOCOL_FEE)

@@ -102,6 +102,7 @@ export function getOrCreateUser(userAddress: Address, block: ethereum.Block): Us
     user.sellVolume = BigInt.zero()
     user.protocolTokenInvested = BigDecimal.zero()
     user.protocolOrdersCount = BigInt.zero()
+    user.totalRewards = BigInt.zero()
     user.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     user.createdAtBlockNumber = block.number
     saveUser(user, block)
@@ -603,3 +604,5 @@ export function chooseUser(from: Address, beneficiary: Address): Address {
   }
   return beneficiary
 }
+
+
