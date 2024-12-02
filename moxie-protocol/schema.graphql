@@ -409,13 +409,33 @@ type User @entity {
   rewardDeposit: [RewardDeposit!]! @derivedFrom(field: "to")
   "total rewards"
   totalRewards: BigInt!
+  "balance of rewards"
+  balanceRewards: BigInt!
+  reward: [Reward!]! @derivedFrom(field: "user")
+}
+
+type Reward @entity {
+  "User's address+-+RewardReason"
+  id: ID!
+  "User's address"
+  user: User!
+  "reason"
+  reason: RewardReason!
+  "amount"
+  amount: BigInt!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
 }
 
 type RewardDeposit @entity {
   "txHash"
   id: ID!
-  "block information"
-  blockInfo: BlockInfo!
   "from"
   from: User!
   "to"
@@ -426,6 +446,10 @@ type RewardDeposit @entity {
   reason: RewardReason
   "comment"
   comment: String
+  "block number"
+  blockNumber: BigInt!
+  "block information"
+  blockInfo: BlockInfo!
 }
 
 enum RewardReason {

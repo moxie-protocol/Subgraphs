@@ -1,6 +1,6 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray, dataSource } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, } from "../generated/schema"
+import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, Reward, } from "../generated/schema"
 import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
@@ -103,6 +103,7 @@ export function getOrCreateUser(userAddress: Address, block: ethereum.Block): Us
     user.protocolTokenInvested = BigDecimal.zero()
     user.protocolOrdersCount = BigInt.zero()
     user.totalRewards = BigInt.zero()
+    user.balanceRewards = BigInt.zero()
     user.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     user.createdAtBlockNumber = block.number
     saveUser(user, block)
@@ -606,3 +607,23 @@ export function chooseUser(from: Address, beneficiary: Address): Address {
 }
 
 
+export function getOrCreateReward(user: User, rewardReason: string, block: ethereum.Block): Reward {
+  let entityId = user.id.concat("-").concat(rewardReason)
+  let reward = Reward.load(entityId)
+  if (!reward) {
+    reward = new Reward(entityId)
+    reward.user = user.id
+    reward.reason = rewardReason
+    reward.amount = BigInt.zero()
+    reward.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    reward.createdAtBlockNumber = block.number
+  }
+  return reward
+}
+
+
+export function saveReward(reward: Reward, block: ethereum.Block): void {
+  reward.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  reward.updatedAtBlockNumber = block.number
+  reward.save()
+}
