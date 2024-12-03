@@ -412,6 +412,7 @@ type User @entity {
   "balance of rewards"
   balanceRewards: BigInt!
   reward: [Reward!]! @derivedFrom(field: "user")
+  availableReward: [AvailableReward!]! @derivedFrom(field: "user")
 }
 
 type Reward @entity {
@@ -433,9 +434,38 @@ type Reward @entity {
   updatedAtBlockNumber: BigInt!
 }
 
-type RewardDeposit @entity {
-  "txHash"
+type AvailableReward @entity {
+  # userAddress-rewardType
   id: ID!
+  "User's address"
+  user: User!
+  "reason"
+  reason: RewardReason!
+  "amount"
+  amount: BigInt!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
+}
+
+enum RewardReason {
+  TRANSACTION_FEE
+  ORDER_REFERRER_FEE
+  PLATFORM_REFERRER_FEE
+  PROTOCOL_FEE
+  OTHER
+}
+
+type RewardDeposit @entity {
+  "txHash+logIndex"
+  id: ID!
+  "txHash of the transaction"
+  txHash: Bytes!
   "from"
   from: User!
   "to"
@@ -443,7 +473,7 @@ type RewardDeposit @entity {
   "amount deposited"
   amount: BigInt!
   "reason"
-  reason: RewardReason
+  reason: RewardReason!
   "comment"
   comment: String
   "block number"
@@ -452,16 +482,13 @@ type RewardDeposit @entity {
   blockInfo: BlockInfo!
 }
 
-enum RewardReason {
-  TRANSACTION_FEE
-  ORDER_REFERRER_FEE
-  PLATFORM_REFERRER_FEE
-  PROTOCOL_FEE
-}
-
 type RewardWithdraw @entity {
   "txHash"
   id: ID!
+  "txHash of the transaction"
+  txHash: Bytes!
+  "block number"
+  blockNumber: BigInt!
   "block information"
   blockInfo: BlockInfo!
   "from"
@@ -587,11 +614,16 @@ type Summary @entity {
   totalBuyVolume: BigInt!
   totalSellVolume: BigInt!
 
-  totalProtocolFee: BigInt!
+  totalProtocolFee: BigInt! # after upgrade , use deposit events from reward
   totalProtocolFeeFromAuction: BigInt!
 
   totalSubjectFee: BigInt!
   totalSubjectFeeFromAuction: BigInt!
+  # total rewards
+  totalPlatformReferrerFee: BigInt!
+  totalOrderReferrerFee: BigInt!
+
+  v2UpgradeBlockNumber: BigInt
 }
 
 type AuctionUser @entity {

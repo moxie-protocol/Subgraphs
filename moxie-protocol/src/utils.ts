@@ -1,7 +1,7 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray, dataSource } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, Reward, } from "../generated/schema"
-import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
+import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, Reward, AvailableReward, } from "../generated/schema"
+import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, ORDER_REFERRER_FEE, ORDER_REFERRER_FEE_SIG, OTHER, PCT_BASE, PLATFORM_REFERRER_FEE, PLATFORM_REFERRER_FEE_SIG, PROTOCOL_FEE, PROTOCOL_FEE_SIG, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS, TRANSACTION_FEE, TRANSACTION_FEE_SIG, V2_UPGRADE_BLOCK_NUMBER, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
   if (!subjectToken) {
@@ -388,6 +388,9 @@ export function getOrCreateSummary(): Summary {
     summary.totalProtocolFeeFromAuction = BigInt.zero()
     summary.totalSubjectFee = BigInt.zero()
     summary.totalSubjectFeeFromAuction = BigInt.zero()
+    summary.totalPlatformReferrerFee = BigInt.zero()
+    summary.totalOrderReferrerFee = BigInt.zero()
+    summary.v2UpgradeBlockNumber = V2_UPGRADE_BLOCK_NUMBER
     summary.save()
   }
   return summary
@@ -621,9 +624,65 @@ export function getOrCreateReward(user: User, rewardReason: string, block: ether
   return reward
 }
 
+export function getOrCreateAvailableReward(user: User, rewardReason: string, block: ethereum.Block): AvailableReward {
+  let entityId = user.id.concat("-").concat(rewardReason)
+  let reward = AvailableReward.load(entityId)
+  if (!reward) {
+    reward = new AvailableReward(entityId)
+    reward.user = user.id
+    reward.reason = rewardReason
+    reward.amount = BigInt.zero()
+    reward.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    reward.createdAtBlockNumber = block.number
+  }
+  return reward
+}
+
 
 export function saveReward(reward: Reward, block: ethereum.Block): void {
   reward.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   reward.updatedAtBlockNumber = block.number
   reward.save()
+}
+
+export function saveAvailableReward(reward: AvailableReward, block: ethereum.Block): void {
+  reward.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  reward.updatedAtBlockNumber = block.number
+  reward.save()
+}
+
+
+export function GetRewardReason(reason: Bytes): string {
+  let reasonHex = reason.toHexString()
+  if (reasonHex == ORDER_REFERRER_FEE_SIG) {
+    return ORDER_REFERRER_FEE
+  } else if (reasonHex == PLATFORM_REFERRER_FEE_SIG) {
+    return PLATFORM_REFERRER_FEE
+  } else if (reasonHex == TRANSACTION_FEE_SIG) {
+    return TRANSACTION_FEE
+  } else if (reasonHex == PROTOCOL_FEE_SIG) {
+    return PROTOCOL_FEE
+  } else {
+    return OTHER
+  }
+}
+
+export function handleWithdrawForAvailableReward(fromUser: User, amount: BigInt, block: ethereum.Block): void {
+  let priorityList = [ORDER_REFERRER_FEE, PLATFORM_REFERRER_FEE, TRANSACTION_FEE, PROTOCOL_FEE]
+  for (let i = 0; i < priorityList.length; i++) {
+    let reward = AvailableReward.load(fromUser.id.concat("-").concat(priorityList[i]))
+    if (!reward) {
+      continue
+    }
+    // amount 100, reward.amount 50 , 30 , 20
+    if (reward.amount.gt(amount)) {
+      reward.amount = reward.amount.minus(amount)
+      saveAvailableReward(reward, block)
+      break
+    } else {
+      amount = amount.minus(reward.amount)
+      reward.amount = BigInt.zero()
+      saveAvailableReward(reward, block)
+    }
+  }
 }

@@ -2,15 +2,16 @@ import { Address, BigInt, log, store } from "@graphprotocol/graph-ts"
 
 import { Deposit, Withdraw } from '../generated/ProtocolRewards/ProtocolRewards'
 import { LockInfo, Portfolio, Reward, RewardDeposit, RewardWithdraw } from '../generated/schema'
-import { getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateReward, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, getTxEntityId, savePortfolio, saveReward, saveUser } from './utils'
-import { RewardMap } from "./constants"
+import { getOrCreateAvailableReward, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateReward, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, GetRewardReason, getTxEntityId, handleWithdrawForAvailableReward, saveAvailableReward, savePortfolio, saveReward, saveUser } from './utils'
+import { ORDER_REFERRER_FEE, PLATFORM_REFERRER_FEE, PROTOCOL_FEE } from "./constants"
 
 
 export function handleDeposit(event: Deposit): void {
  let blockInfo = getOrCreateBlockInfo(event.block)
  let entityId = getTxEntityId(event)
- let rewardReason = RewardMap.get(event.params._reason.toHexString())
+ let rewardReason = GetRewardReason(event.params._reason)
  let rewardDeposit = new RewardDeposit(entityId)
+ rewardDeposit.txHash = event.transaction.hash
  rewardDeposit.blockInfo = blockInfo.id
  rewardDeposit.blockNumber = event.block.number
  let fromUser = getOrCreateUser(event.params._from, event.block)
@@ -28,15 +29,32 @@ export function handleDeposit(event: Deposit): void {
  rewardDeposit.save()
 
  // adding reward entity
- let reward = getOrCreateReward(toUser, rewardReason!, event.block)
+ let reward = getOrCreateReward(toUser, rewardReason, event.block)
  reward.amount = reward.amount.plus(event.params._amount)
  saveReward(reward, event.block)
+ // adding available reward entity
+ let availableReward = getOrCreateAvailableReward(toUser, rewardReason, event.block)
+ availableReward.amount = reward.amount.plus(event.params._amount)
+ saveAvailableReward(availableReward, event.block)
+
+ let summary = getOrCreateSummary()
+ if (rewardReason == PLATFORM_REFERRER_FEE) {
+  summary.totalPlatformReferrerFee = summary.totalPlatformReferrerFee.plus(event.params._amount)
+ } else if (rewardReason == ORDER_REFERRER_FEE) {
+  summary.totalOrderReferrerFee = summary.totalOrderReferrerFee.plus(event.params._amount)
+ } else if (rewardReason == PROTOCOL_FEE){
+  summary.totalProtocolFee = summary.totalProtocolFee.plus(event.params._amount)
+ }
+ summary.save()
 }
 
 export function handleWithdraw(event: Withdraw): void {
+ //  ORDER_REFERRER_FEE & PLATFORM_REFERRER_FEE first preference
  let blockInfo = getOrCreateBlockInfo(event.block)
  let rewardWithdraw = new RewardWithdraw(getTxEntityId(event))
  rewardWithdraw.blockInfo = blockInfo.id
+ rewardWithdraw.blockNumber = event.block.number
+ rewardWithdraw.txHash = event.transaction.hash
  let fromUser = getOrCreateUser(event.params._from, event.block)
  fromUser.balanceRewards = fromUser.balanceRewards.minus(event.params._amount)
  saveUser(fromUser, event.block)
@@ -48,4 +66,6 @@ export function handleWithdraw(event: Withdraw): void {
  rewardWithdraw.to = toUser.id
  rewardWithdraw.amount = event.params._amount
  rewardWithdraw.save()
+
+ handleWithdrawForAvailableReward(fromUser, event.params._amount, event.block)
 }
