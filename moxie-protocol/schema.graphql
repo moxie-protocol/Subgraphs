@@ -28,6 +28,12 @@ type SubjectTokenRollingDailySnapshot @entity {
   endPrice: BigDecimal!
   "daily price change"
   dailyPriceChange: BigDecimal!
+  "marketCap of the token at the start of the snapshot"
+  startMarketCap: BigDecimal!
+  "marketCap of the token at the end of the snapshot"
+  endMarketCap: BigDecimal!
+  "hourly marketCap change"
+  marketCapChange: BigDecimal!
 
   "Total supply of the token"
   totalSupply: BigInt!
@@ -61,6 +67,8 @@ type SubjectTokenRollingDailySnapshot @entity {
 
   createdAtBlockInfo: BlockInfo!
   updatedAtBlockInfo: BlockInfo!
+  createdAtBlockNumber: BigInt!
+  updatedAtBlockNumber: BigInt!
   initialHourlySnapshot: SubjectTokenHourlySnapshot
 }
 
@@ -85,7 +93,12 @@ type SubjectTokenDailySnapshot @entity {
   endPrice: BigDecimal!
   "daily price change"
   dailyPriceChange: BigDecimal!
-
+  "marketCap of the token at the start of the snapshot"
+  startMarketCap: BigDecimal!
+  "marketCap of the token at the end of the snapshot"
+  endMarketCap: BigDecimal!
+  "hourly marketCap change"
+  marketCapChange: BigDecimal!
   "Total supply of the token"
   totalSupply: BigInt!
 
@@ -118,6 +131,8 @@ type SubjectTokenDailySnapshot @entity {
 
   createdAtBlockInfo: BlockInfo!
   updatedAtBlockInfo: BlockInfo!
+  createdAtBlockNumber: BigInt!
+  updatedAtBlockNumber: BigInt!
   lastSubjectTokenDailySnapshot: SubjectTokenDailySnapshot
 
   hourlySnapshotEndTimestamps: [BigInt!]!
@@ -144,6 +159,13 @@ type SubjectTokenHourlySnapshot @entity {
   endPrice: BigDecimal!
   "hourly price change"
   hourlyPriceChange: BigDecimal!
+
+  "marketCap of the token at the start of the snapshot"
+  startMarketCap: BigDecimal!
+  "marketCap of the token at the end of the snapshot"
+  endMarketCap: BigDecimal!
+  "hourly marketCap change"
+  marketCapChange: BigDecimal!
 
   "Total supply of the token"
   totalSupply: BigInt!
@@ -176,6 +198,8 @@ type SubjectTokenHourlySnapshot @entity {
   hourlyProtocolFeeChange: BigInt!
   createdAtBlockInfo: BlockInfo!
   updatedAtBlockInfo: BlockInfo!
+  createdAtBlockNumber: BigInt!
+  updatedAtBlockNumber: BigInt!
 }
 
 type SubjectToken @entity {
@@ -195,6 +219,8 @@ type SubjectToken @entity {
   currentPriceInMoxie: BigDecimal!
   "current price of the token in Moxie in wei unit"
   currentPriceInWeiInMoxie: BigDecimal!
+  "market cap: total supply * current price"
+  marketCap: BigDecimal!
   "constant used to calculate bonding curve"
   reserveRatio: BigInt!
   "Total supply of the token"
@@ -227,10 +253,16 @@ type SubjectToken @entity {
   portfolio: [Portfolio!]! @derivedFrom(field: "subjectToken")
   "created at block information"
   createdAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
   "updated at block information"
   updatedAtBlockInfo: BlockInfo!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
   "updated at block information"
   lastUpdatedAtBlockInfo: BlockInfo!
+  "last order happened block number"
+  lastOrderBlockNumber: BigInt!
   "Moxie spent by all users buy this subject token"
   buySideVolume: BigInt!
   "Moxie earned by all user to sell the subject token"
@@ -271,8 +303,8 @@ type Auction @entity {
   startTxHash: Bytes!
   endTxHash: Bytes
   startBlockInfo: BlockInfo!
+  startBlockNumber: BigInt!
   endBlockInfo: BlockInfo
-
   auctionEndDate: BigInt!
 }
 
@@ -307,6 +339,10 @@ type Portfolio @entity {
   createdAtBlockInfo: BlockInfo!
   "updated at block information"
   updatedAtBlockInfo: BlockInfo!
+  "created at block information"
+  createdAtBlockNumber: BigInt!
+  "updated at block information"
+  updatedAtBlockNumber: BigInt!
 }
 
 type LockInfo @entity {
@@ -324,7 +360,7 @@ type LockInfo @entity {
   subjectToken: SubjectToken!
   "portfolio"
   portfolio: Portfolio!
-  "Buyer's portfolio , if the lock is a buy and lock" 
+  "Buyer's portfolio , if the lock is a buy and lock"
   buyerPortfolio: Portfolio
   "Subject's address"
   subject: User!
@@ -340,6 +376,8 @@ type LockInfo @entity {
   moxieDepositAmount: BigInt!
   "created at block information"
   createdAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
 }
 
 type User @entity {
@@ -363,6 +401,10 @@ type User @entity {
   createdAtBlockInfo: BlockInfo!
   "updated at block information"
   updatedAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
 }
 
 type Order @entity {
@@ -384,6 +426,8 @@ type Order @entity {
   protocolFee: BigInt!
   "Price of the subject token"
   price: BigDecimal!
+  "market cap of the subject token"
+  marketCap: BigDecimal!
   "BUY/SELL order type"
   orderType: OrderType
   "Seller/Buyer of Fan token"
@@ -396,6 +440,10 @@ type Order @entity {
   protocolFeeTransfer: ProtocolFeeTransfer
   "block information"
   blockInfo: BlockInfo!
+  "block number"
+  blockNumber: BigInt!
+  "timestamp"
+  blockTimestamp: BigInt!
 }
 
 enum OrderType {

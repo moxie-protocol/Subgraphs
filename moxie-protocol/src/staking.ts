@@ -36,6 +36,7 @@ export function handleLock(event: Lock): void {
  lockInfo.amount = event.params._amount
  lockInfo.lockPeriodInSec = event.params._lockPeriodInSec
  lockInfo.createdAtBlockInfo = getOrCreateBlockInfo(event.block).id
+ lockInfo.createdAtBlockNumber = event.block.number
  lockInfo.moxieDepositAmount = event.params._moxieDepositAmount
  lockInfo.save()
 

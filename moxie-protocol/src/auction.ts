@@ -114,8 +114,11 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   order.subjectFee = BigInt.zero()
   order.protocolFee = BigInt.zero()
   order.price = calculatedPrice.price
+  order.marketCap = subjectToken.marketCap
   order.blockInfo = blockInfo.id
   order.portfolio = portfolio.id
+  order.blockNumber = event.block.number
+  order.blockTimestamp = event.block.timestamp
   order.save()
 }
 
@@ -138,6 +141,7 @@ export function handleNewAuction(event: NewAuction): void {
   auction.protocolFee = BigInt.zero()
   auction.startTxHash = event.transaction.hash
   auction.startBlockInfo = getOrCreateBlockInfo(event.block).id
+  auction.startBlockNumber = event.block.number
   auction.minFundingThresholdNotReached = false
   auction.volumeClearingPriceOrder = BigInt.zero()
   auction.save()
