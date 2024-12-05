@@ -1,7 +1,7 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray, dataSource } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, Reward, AvailableReward, } from "../generated/schema"
-import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, ORDER_REFERRER_FEE, ORDER_REFERRER_FEE_SIG, OTHER, PCT_BASE, PLATFORM_REFERRER_FEE, PLATFORM_REFERRER_FEE_SIG, PROTOCOL_FEE, PROTOCOL_FEE_SIG, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS, TRANSACTION_FEE, TRANSACTION_FEE_SIG, V2_UPGRADE_BLOCK_NUMBER, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
+import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, Reward, AvailableReward, SubjectTokenWeeklySnapshot, SubjectTokenMonthlySnapshot, } from "../generated/schema"
+import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, ORDER_REFERRER_FEE, ORDER_REFERRER_FEE_SIG, OTHER, PCT_BASE, PLATFORM_REFERRER_FEE, PLATFORM_REFERRER_FEE_SIG, PROTOCOL_FEE, PROTOCOL_FEE_SIG, SECONDS_IN_DAY, SECONDS_IN_HOUR, SECONDS_IN_MONTH, SECONDS_IN_WEEK, SUMMARY_ID, TOKEN_DECIMALS, TRANSACTION_FEE, TRANSACTION_FEE_SIG, V2_UPGRADE_BLOCK_NUMBER, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
   if (!subjectToken) {
@@ -285,6 +285,103 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
   }
 }
 
+
+function createSubjectTokenWeeklySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
+  let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_WEEK)).plus(SECONDS_IN_WEEK)
+  let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
+  let snapshot = SubjectTokenWeeklySnapshot.load(snapshotId)
+  if (!snapshot) {
+    snapshot = new SubjectTokenWeeklySnapshot(snapshotId)
+    snapshot.startTimestamp = timestamp
+    snapshot.startPrice = subjectToken.currentPriceInMoxie
+    snapshot.startMarketCap = subjectToken.marketCap
+    snapshot.startUniqueHolders = subjectToken.uniqueHolders
+    snapshot.startVolume = subjectToken.lifetimeVolume
+    snapshot.startSubjectFee = subjectToken.subjectFee
+    snapshot.startProtocolFee = subjectToken.protocolFee
+    snapshot.createdAtBlockInfo = subjectToken.createdAtBlockInfo
+    snapshot.createdAtBlockNumber = subjectToken.createdAtBlockNumber
+  }
+
+  snapshot.endTimestamp = snapshotTimestamp
+
+  snapshot.subjectToken = subjectToken.id
+
+  snapshot.subject = subjectToken.subject
+  snapshot.reserve = subjectToken.reserve
+  snapshot.endPrice = subjectToken.currentPriceInMoxie
+  snapshot.priceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
+
+  snapshot.endMarketCap = subjectToken.marketCap
+  snapshot.marketCapChange = snapshot.endMarketCap.minus(snapshot.startMarketCap)
+
+  snapshot.totalSupply = subjectToken.totalSupply
+
+  snapshot.endUniqueHolders = subjectToken.uniqueHolders
+  snapshot.uniqueHoldersChange = snapshot.endUniqueHolders.minus(snapshot.startUniqueHolders) // TODO: confirm
+
+  snapshot.endVolume = subjectToken.lifetimeVolume
+  snapshot.volumeChange = snapshot.endVolume.minus(snapshot.startVolume) // TODO: confirm
+
+  snapshot.endSubjectFee = subjectToken.subjectFee
+  snapshot.subjectFeeChange = snapshot.endSubjectFee.minus(snapshot.startSubjectFee) // TODO: confirm
+
+  snapshot.endProtocolFee = subjectToken.protocolFee
+  snapshot.protocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
+  snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
+  snapshot.updatedAtBlockNumber = subjectToken.updatedAtBlockNumber
+
+  snapshot.save()
+}
+
+function createSubjectTokenMonthlySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
+  let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_MONTH)).plus(SECONDS_IN_MONTH)
+  let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
+  let snapshot = SubjectTokenMonthlySnapshot.load(snapshotId)
+  if (!snapshot) {
+    snapshot = new SubjectTokenMonthlySnapshot(snapshotId)
+    snapshot.startTimestamp = timestamp
+    snapshot.startPrice = subjectToken.currentPriceInMoxie
+    snapshot.startMarketCap = subjectToken.marketCap
+    snapshot.startUniqueHolders = subjectToken.uniqueHolders
+    snapshot.startVolume = subjectToken.lifetimeVolume
+    snapshot.startSubjectFee = subjectToken.subjectFee
+    snapshot.startProtocolFee = subjectToken.protocolFee
+    snapshot.createdAtBlockInfo = subjectToken.createdAtBlockInfo
+    snapshot.createdAtBlockNumber = subjectToken.createdAtBlockNumber
+  }
+
+  snapshot.endTimestamp = snapshotTimestamp
+
+  snapshot.subjectToken = subjectToken.id
+
+  snapshot.subject = subjectToken.subject
+  snapshot.reserve = subjectToken.reserve
+  snapshot.endPrice = subjectToken.currentPriceInMoxie
+  snapshot.priceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
+
+  snapshot.endMarketCap = subjectToken.marketCap
+  snapshot.marketCapChange = snapshot.endMarketCap.minus(snapshot.startMarketCap)
+
+  snapshot.totalSupply = subjectToken.totalSupply
+
+  snapshot.endUniqueHolders = subjectToken.uniqueHolders
+  snapshot.uniqueHoldersChange = snapshot.endUniqueHolders.minus(snapshot.startUniqueHolders) // TODO: confirm
+
+  snapshot.endVolume = subjectToken.lifetimeVolume
+  snapshot.volumeChange = snapshot.endVolume.minus(snapshot.startVolume) // TODO: confirm
+
+  snapshot.endSubjectFee = subjectToken.subjectFee
+  snapshot.subjectFeeChange = snapshot.endSubjectFee.minus(snapshot.startSubjectFee) // TODO: confirm
+
+  snapshot.endProtocolFee = subjectToken.protocolFee
+  snapshot.protocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
+  snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
+  snapshot.updatedAtBlockNumber = subjectToken.updatedAtBlockNumber
+
+  snapshot.save()
+}
+
 /**
  * This function creates a rolling daily snapshot for the subject token
  * It takes a timestamp and finds the closest hourly snapshot 24 hour before as a startpoint
@@ -361,6 +458,8 @@ export function saveSubjectToken(subjectToken: SubjectToken, block: ethereum.Blo
     let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subjectToken, block.timestamp)
     createSubjectTokenDailySnapshot(subjectToken, block.timestamp, lastHourylSnapshotEndTimestamp)
     createSubjectTokenRollingDailySnapshot(subjectToken, block.timestamp)
+    createSubjectTokenWeeklySnapshot(subjectToken, block.timestamp)
+    createSubjectTokenMonthlySnapshot(subjectToken, block.timestamp)
   }
 }
 

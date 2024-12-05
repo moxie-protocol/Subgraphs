@@ -2,6 +2,8 @@ import { BigInt, TypedMap, } from "@graphprotocol/graph-ts"
 
 export const SECONDS_IN_HOUR = BigInt.fromI32(60 * 60)
 export const SECONDS_IN_DAY = SECONDS_IN_HOUR.times(BigInt.fromI32(24))
+export const SECONDS_IN_WEEK = SECONDS_IN_DAY.times(BigInt.fromI32(7))
+export const SECONDS_IN_MONTH = SECONDS_IN_DAY.times(BigInt.fromI32(30))
 export const SUMMARY_ID = "SUMMARY"
 export const PCT_BASE = BigInt.fromI32(10).pow(18)
 
@@ -64,4 +66,4 @@ export const PLATFORM_REFERRER_FEE_SIG = "0x9b340ab2"
 export const PROTOCOL_FEE_SIG = "0xaa072a75"
 
 
-export const V2_UPGRADE_BLOCK_NUMBER = BigInt.fromI32(18682960) // TODO: update this for deployments
+export const V2_UPGRADE_BLOCK_NUMBER = BigInt.fromI32(23269162) // TODO: update this for deployments
