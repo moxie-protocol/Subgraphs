@@ -1,7 +1,8 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray, dataSource } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, Reward, AvailableReward, SubjectTokenWeeklySnapshot, SubjectTokenMonthlySnapshot, } from "../generated/schema"
-import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, ORDER_REFERRER_FEE, ORDER_REFERRER_FEE_SIG, OTHER, PCT_BASE, PLATFORM_REFERRER_FEE, PLATFORM_REFERRER_FEE_SIG, PROTOCOL_FEE, PROTOCOL_FEE_SIG, SECONDS_IN_DAY, SECONDS_IN_HOUR, SECONDS_IN_MONTH, SECONDS_IN_WEEK, SUMMARY_ID, TOKEN_DECIMALS, TRANSACTION_FEE, TRANSACTION_FEE_SIG, V2_UPGRADE_BLOCK_NUMBER, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
+import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, ORDER_REFERRER_FEE, ORDER_REFERRER_FEE_SIG, OTHER, PCT_BASE, PLATFORM_REFERRER_FEE, PLATFORM_REFERRER_FEE_SIG, PROTOCOL_FEE, PROTOCOL_FEE_SIG, SECONDS_IN_DAY, SECONDS_IN_HOUR, SECONDS_IN_MONTH, SECONDS_IN_WEEK, SUMMARY_ID, TOKEN_DECIMALS, TRANSACTION_FEE, TRANSACTION_FEE_SIG, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
+import { V2_UPGRADE_BLOCK_NUMBER } from "./upgrades"
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
   if (!subjectToken) {

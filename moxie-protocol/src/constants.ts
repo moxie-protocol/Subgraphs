@@ -64,6 +64,3 @@ export const TRANSACTION_FEE_SIG = "0x7c5f6088"
 export const ORDER_REFERRER_FEE_SIG = "0xf42119e1"
 export const PLATFORM_REFERRER_FEE_SIG = "0x9b340ab2"
 export const PROTOCOL_FEE_SIG = "0xaa072a75"
-
-
-export const V2_UPGRADE_BLOCK_NUMBER = BigInt.fromI32(23269162) // TODO: update this for deployments

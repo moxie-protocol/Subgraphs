@@ -2,8 +2,8 @@
   "name": "protocol",
   "license": "UNLICENSED",
   "scripts": {
-    "prepare:base-sepolia": "mustache ./config/base-sepolia.json subgraph.template.yaml > subgraph.yaml",
-    "prepare:base": "mustache ./config/base.json subgraph.template.yaml > subgraph.yaml",
+    "prepare:base-sepolia": "mustache ./config/base-sepolia.json subgraph.template.yaml > subgraph.yaml && mustache ./config/base-sepolia.json upgrades-template.yaml > src/upgrades.ts",
+    "prepare:base": "mustache ./config/base.json subgraph.template.yaml > subgraph.yaml && mustache ./config/base.json upgrades-template.yaml > src/upgrades.ts",
     "codegen": "graph codegen",
     "build": "graph build",
     "cb:base-sepolia": "yarn prepare:base-sepolia && graph codegen && graph build",
