@@ -1,9 +1,10 @@
 import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
-import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
-import { Order, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectFeeTransfer, Summary, User } from "../generated/schema"
+import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
+import { Order, ProtocolFeeBeneficiary, User } from "../generated/schema"
 
 import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideProtocolAmountAddingBackFees, isBlacklistedSubjectTokenAddress, chooseUser } from "./utils"
-import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL, SUMMARY_ID } from "./constants"
+import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL } from "./constants"
+import { V2_UPGRADE_BLOCK_NUMBER } from "./upgrades"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   if (isBlacklistedSubjectTokenAddress(event.params._subjectToken)) {
     return
@@ -112,7 +113,9 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
     throw new Error("protocol beneficiary not found")
   }
   const txHash = event.transaction.hash.toHexString()
-  summary.totalProtocolFee = summary.totalProtocolFee.plus(fees.protocolFee)
+  if (event.block.number.lt(V2_UPGRADE_BLOCK_NUMBER)) {
+    summary.totalProtocolFee = summary.totalProtocolFee.plus(fees.protocolFee)
+  }
   summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
 
@@ -226,7 +229,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
     user.protocolTokenInvested = user.protocolTokenInvested.minus(oldPortfolioProtocolTokenInvested.minus(portfolio.protocolTokenInvested))
   }
   order.portfolio = portfolio.id
- 
+
 
   const summary = getOrCreateSummary()
   if (!summary.activeProtocolFeeBeneficiary) {
@@ -244,7 +247,9 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   user.sellVolume = user.sellVolume.plus(protocolTokenAmount)
   summary.numberOfSellOrders = summary.numberOfSellOrders.plus(BigInt.fromI32(1))
   summary.totalSellVolume = summary.totalSellVolume.plus(protocolTokenAmount)
-  summary.totalProtocolFee = summary.totalProtocolFee.plus(fees.protocolFee)
+  if (event.block.number.lt(V2_UPGRADE_BLOCK_NUMBER)) {
+    summary.totalProtocolFee = summary.totalProtocolFee.plus(fees.protocolFee)
+  }
   summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
   saveUser(user, event.block)
@@ -259,7 +264,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   subjectToken.lastOrderBlockNumber = event.block.number
   saveSubjectToken(subjectToken, event.block, true)
-  
+
   order.marketCap = subjectToken.marketCap
   order.save()
 

@@ -1,7 +1,9 @@
-import { BigInt, TypedMap } from "@graphprotocol/graph-ts"
+import { BigInt, TypedMap, } from "@graphprotocol/graph-ts"
 
 export const SECONDS_IN_HOUR = BigInt.fromI32(60 * 60)
 export const SECONDS_IN_DAY = SECONDS_IN_HOUR.times(BigInt.fromI32(24))
+export const SECONDS_IN_WEEK = SECONDS_IN_DAY.times(BigInt.fromI32(7))
+export const SECONDS_IN_MONTH = SECONDS_IN_DAY.times(BigInt.fromI32(30))
 export const SUMMARY_ID = "SUMMARY"
 export const PCT_BASE = BigInt.fromI32(10).pow(18)
 
@@ -46,3 +48,19 @@ WHITELISTED_CONTRACTS_MAINNET.set(RAINBOW_ROUTER_MAINNET, true)
 WHITELISTED_CONTRACTS_MAINNET.set(STAKING_MAINNET, true)
 
 export const WHITELISTED_CONTRACTS_TESTNET = new TypedMap<string, bool>()
+
+// bytes4(keccak256("TRANSACTION_FEE")); // 0x7c5f6088
+// bytes4(keccak256("ORDER_REFERRER_FEE")); // 0xf42119e1
+// bytes4(keccak256("PLATFORM_REFERRER_FEE")); // 0x9b340ab2
+// bytes4(keccak256("PROTOCOL_FEE")); // 0xaa072a75
+
+export const TRANSACTION_FEE = "TRANSACTION_FEE"
+export const ORDER_REFERRER_FEE = "ORDER_REFERRER_FEE"
+export const PLATFORM_REFERRER_FEE = "PLATFORM_REFERRER_FEE"
+export const PROTOCOL_FEE = "PROTOCOL_FEE"
+export const OTHER = "OTHER"
+
+export const TRANSACTION_FEE_SIG = "0x7c5f6088"
+export const ORDER_REFERRER_FEE_SIG = "0xf42119e1"
+export const PLATFORM_REFERRER_FEE_SIG = "0x9b340ab2"
+export const PROTOCOL_FEE_SIG = "0xaa072a75"
