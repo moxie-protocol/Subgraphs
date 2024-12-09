@@ -534,11 +534,11 @@ type User @entity {
   "rewards"
   rewardDeposit: [RewardDeposit!]! @derivedFrom(field: "to")
   "total rewards"
-  totalRewards: BigInt!
+  totalReward: BigInt!
   "balance of rewards"
-  balanceRewards: BigInt!
-  reward: [Reward!]! @derivedFrom(field: "user")
-  availableReward: [AvailableReward!]! @derivedFrom(field: "user")
+  balanceReward: BigInt!
+  rewards: [Reward!]! @derivedFrom(field: "user")
+  availableRewards: [AvailableReward!]! @derivedFrom(field: "user")
 }
 
 type Reward @entity {

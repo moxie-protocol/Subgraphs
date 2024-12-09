@@ -17,8 +17,8 @@ export function handleDeposit(event: Deposit): void {
  let fromUser = getOrCreateUser(event.params._from, event.block)
  saveUser(fromUser, event.block)
  let toUser = getOrCreateUser(event.params._to, event.block)
- toUser.totalRewards = toUser.totalRewards.plus(event.params._amount)
- toUser.balanceRewards = toUser.balanceRewards.plus(event.params._amount)
+ toUser.totalReward = toUser.totalReward.plus(event.params._amount)
+ toUser.balanceReward = toUser.balanceReward.plus(event.params._amount)
  saveUser(toUser, event.block)
 
  rewardDeposit.from = fromUser.id
@@ -56,7 +56,7 @@ export function handleWithdraw(event: Withdraw): void {
  rewardWithdraw.blockNumber = event.block.number
  rewardWithdraw.txHash = event.transaction.hash
  let fromUser = getOrCreateUser(event.params._from, event.block)
- fromUser.balanceRewards = fromUser.balanceRewards.minus(event.params._amount)
+ fromUser.balanceReward = fromUser.balanceReward.minus(event.params._amount)
  saveUser(fromUser, event.block)
 
  let toUser = getOrCreateUser(event.params._to, event.block)
