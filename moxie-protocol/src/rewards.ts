@@ -34,7 +34,7 @@ export function handleDeposit(event: Deposit): void {
  saveReward(reward, event.block)
  // adding available reward entity
  let availableReward = getOrCreateAvailableReward(toUser, rewardReason, event.block)
- availableReward.amount = reward.amount.plus(event.params._amount)
+ availableReward.amount = availableReward.amount.plus(event.params._amount)
  saveAvailableReward(availableReward, event.block)
 
  let summary = getOrCreateSummary()

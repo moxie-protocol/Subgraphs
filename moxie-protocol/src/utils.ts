@@ -776,12 +776,10 @@ export function handleWithdrawForAvailableReward(fromUser: User, amount: BigInt,
     }
     // amount 100, reward.amount 50 , 30 , 20
     if (reward.amount.gt(amount)) {
-      log.info("Reward {} amount {} is greater than amount {}", [reward.id, reward.amount.toString(), amount.toString()])
       reward.amount = reward.amount.minus(amount)
       saveAvailableReward(reward, block)
       break
     } else {
-      log.info("Reward {} amount {} is less than amount {}", [reward.id, reward.amount.toString(), amount.toString()])
       amount = amount.minus(reward.amount)
       reward.amount = BigInt.zero()
       saveAvailableReward(reward, block)
