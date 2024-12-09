@@ -11,5 +11,8 @@
   "SubjectFactory": "0x48F9887cab979b6F476bba3Cc96808BE8b8A2b72",
   "SubjectFactoryStartBlock": "17569879",
   "Staking": "0xcb2513d389354f7ac80f5042bb8948a234a439b2",
-  "StakingStartBlock": "20223873"
+  "StakingStartBlock": "20223873",
+  "ProtocolRewards": "0xDc4E7E62f383E2A6F3071f7A9833C5aB7D4B239B",
+  "ProtocolRewardsStartBlock": "23268988",
+  "V2UpgradeBlockNo": "23269162"
 }

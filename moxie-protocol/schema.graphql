@@ -138,6 +138,132 @@ type SubjectTokenDailySnapshot @entity {
   hourlySnapshotEndTimestamps: [BigInt!]!
 }
 
+type SubjectTokenMonthlySnapshot @entity {
+  "subjectId+-+endTimestamp"
+  id: ID!
+  "start block timestamp"
+  startTimestamp: BigInt!
+  "end block timestamp"
+  endTimestamp: BigInt!
+  "subject token address"
+  subjectToken: SubjectToken!
+
+  "address of the beneficiary"
+  subject: User
+  "reserve balance (moxie)/ total locked value"
+  reserve: BigInt!
+
+  "price of the token at the start of the snapshot"
+  startPrice: BigDecimal!
+  "price of the token at the end of the snapshot"
+  endPrice: BigDecimal!
+  "daily price change"
+  priceChange: BigDecimal!
+  "marketCap of the token at the start of the snapshot"
+  startMarketCap: BigDecimal!
+  "marketCap of the token at the end of the snapshot"
+  endMarketCap: BigDecimal!
+  "hourly marketCap change"
+  marketCapChange: BigDecimal!
+  "Total supply of the token"
+  totalSupply: BigInt!
+
+  "total number of unique holders at start of the snapshot"
+  startUniqueHolders: BigInt!
+  "total number of unique holders at end of the snapshot"
+  endUniqueHolders: BigInt!
+  " unique holders change"
+  uniqueHoldersChange: BigInt!
+
+  "amount of moxie used to buy or sell this subject token at start of the snapshot"
+  startVolume: BigInt!
+  "amount of moxie used to buy or sell this subject token at end of the snapshot"
+  endVolume: BigInt!
+  " volume change"
+  volumeChange: BigInt!
+
+  "total beneficiary fee at start of the snapshot"
+  startSubjectFee: BigInt!
+  "total beneficiary fee at end of the snapshot"
+  endSubjectFee: BigInt!
+  " beneficiary fee change"
+  subjectFeeChange: BigInt!
+  "total protocol fee at start of the snapshot"
+  startProtocolFee: BigInt!
+  "total protocol fee at end of the snapshot"
+  endProtocolFee: BigInt!
+  " protocol fee change"
+  protocolFeeChange: BigInt!
+
+  createdAtBlockInfo: BlockInfo!
+  updatedAtBlockInfo: BlockInfo!
+  createdAtBlockNumber: BigInt!
+  updatedAtBlockNumber: BigInt!
+}
+
+type SubjectTokenWeeklySnapshot @entity {
+  "subjectId+-+endTimestamp"
+  id: ID!
+  "start block timestamp"
+  startTimestamp: BigInt!
+  "end block timestamp"
+  endTimestamp: BigInt!
+  "subject token address"
+  subjectToken: SubjectToken!
+
+  "address of the beneficiary"
+  subject: User
+  "reserve balance (moxie)/ total locked value"
+  reserve: BigInt!
+
+  "price of the token at the start of the snapshot"
+  startPrice: BigDecimal!
+  "price of the token at the end of the snapshot"
+  endPrice: BigDecimal!
+  "daily price change"
+  priceChange: BigDecimal!
+  "marketCap of the token at the start of the snapshot"
+  startMarketCap: BigDecimal!
+  "marketCap of the token at the end of the snapshot"
+  endMarketCap: BigDecimal!
+  "hourly marketCap change"
+  marketCapChange: BigDecimal!
+  "Total supply of the token"
+  totalSupply: BigInt!
+
+  "total number of unique holders at start of the snapshot"
+  startUniqueHolders: BigInt!
+  "total number of unique holders at end of the snapshot"
+  endUniqueHolders: BigInt!
+  " unique holders change"
+  uniqueHoldersChange: BigInt!
+
+  "amount of moxie used to buy or sell this subject token at start of the snapshot"
+  startVolume: BigInt!
+  "amount of moxie used to buy or sell this subject token at end of the snapshot"
+  endVolume: BigInt!
+  " volume change"
+  volumeChange: BigInt!
+
+  "total beneficiary fee at start of the snapshot"
+  startSubjectFee: BigInt!
+  "total beneficiary fee at end of the snapshot"
+  endSubjectFee: BigInt!
+  " beneficiary fee change"
+  subjectFeeChange: BigInt!
+  "total protocol fee at start of the snapshot"
+  startProtocolFee: BigInt!
+  "total protocol fee at end of the snapshot"
+  endProtocolFee: BigInt!
+  " protocol fee change"
+  protocolFeeChange: BigInt!
+
+  createdAtBlockInfo: BlockInfo!
+  updatedAtBlockInfo: BlockInfo!
+  createdAtBlockNumber: BigInt!
+  updatedAtBlockNumber: BigInt!
+}
+
 type SubjectTokenHourlySnapshot @entity {
   "subjectId+-+endTimestamp"
   id: ID!
@@ -405,6 +531,98 @@ type User @entity {
   createdAtBlockNumber: BigInt!
   "updated at block number"
   updatedAtBlockNumber: BigInt!
+  "rewards"
+  rewardDeposit: [RewardDeposit!]! @derivedFrom(field: "to")
+  "total rewards"
+  totalReward: BigInt!
+  "balance of rewards"
+  balanceReward: BigInt!
+  rewards: [Reward!]! @derivedFrom(field: "user")
+  availableRewards: [AvailableReward!]! @derivedFrom(field: "user")
+}
+
+type Reward @entity {
+  "User's address+-+RewardReason"
+  id: ID!
+  "User's address"
+  user: User!
+  "reason"
+  reason: RewardReason!
+  "amount"
+  amount: BigInt!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
+}
+
+type AvailableReward @entity {
+  # userAddress-rewardType
+  id: ID!
+  "User's address"
+  user: User!
+  "reason"
+  reason: RewardReason!
+  "amount"
+  amount: BigInt!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
+}
+
+enum RewardReason {
+  TRANSACTION_FEE
+  ORDER_REFERRER_FEE
+  PLATFORM_REFERRER_FEE
+  PROTOCOL_FEE
+  OTHER
+}
+
+type RewardDeposit @entity {
+  "txHash+logIndex"
+  id: ID!
+  "txHash of the transaction"
+  txHash: Bytes!
+  "from"
+  from: User!
+  "to"
+  to: User!
+  "amount deposited"
+  amount: BigInt!
+  "reason"
+  reason: RewardReason!
+  "comment"
+  comment: String
+  "block number"
+  blockNumber: BigInt!
+  "block information"
+  blockInfo: BlockInfo!
+}
+
+type RewardWithdraw @entity {
+  "txHash"
+  id: ID!
+  "txHash of the transaction"
+  txHash: Bytes!
+  "block number"
+  blockNumber: BigInt!
+  "block information"
+  blockInfo: BlockInfo!
+  "from"
+  from: User!
+  "to"
+  to: User!
+  "amount withdrawn"
+  amount: BigInt!
 }
 
 type Order @entity {
@@ -522,11 +740,16 @@ type Summary @entity {
   totalBuyVolume: BigInt!
   totalSellVolume: BigInt!
 
-  totalProtocolFee: BigInt!
+  totalProtocolFee: BigInt! # after upgrade , use deposit events from reward
   totalProtocolFeeFromAuction: BigInt!
 
   totalSubjectFee: BigInt!
   totalSubjectFeeFromAuction: BigInt!
+  # total rewards
+  totalPlatformReferrerFee: BigInt!
+  totalOrderReferrerFee: BigInt!
+
+  v2UpgradeBlockNumber: BigInt
 }
 
 type AuctionUser @entity {

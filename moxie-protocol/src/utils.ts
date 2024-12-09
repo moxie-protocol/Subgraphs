@@ -1,7 +1,8 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray, dataSource } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, } from "../generated/schema"
-import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
+import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, Reward, AvailableReward, SubjectTokenWeeklySnapshot, SubjectTokenMonthlySnapshot, } from "../generated/schema"
+import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, ORDER_REFERRER_FEE, ORDER_REFERRER_FEE_SIG, OTHER, PCT_BASE, PLATFORM_REFERRER_FEE, PLATFORM_REFERRER_FEE_SIG, PROTOCOL_FEE, PROTOCOL_FEE_SIG, SECONDS_IN_DAY, SECONDS_IN_HOUR, SECONDS_IN_MONTH, SECONDS_IN_WEEK, SUMMARY_ID, TOKEN_DECIMALS, TRANSACTION_FEE, TRANSACTION_FEE_SIG, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
+import { V2_UPGRADE_BLOCK_NUMBER } from "./upgrades"
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
   if (!subjectToken) {
@@ -102,6 +103,8 @@ export function getOrCreateUser(userAddress: Address, block: ethereum.Block): Us
     user.sellVolume = BigInt.zero()
     user.protocolTokenInvested = BigDecimal.zero()
     user.protocolOrdersCount = BigInt.zero()
+    user.totalReward = BigInt.zero()
+    user.balanceReward = BigInt.zero()
     user.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     user.createdAtBlockNumber = block.number
     saveUser(user, block)
@@ -283,6 +286,103 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
   }
 }
 
+
+function createSubjectTokenWeeklySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
+  let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_WEEK)).plus(SECONDS_IN_WEEK)
+  let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
+  let snapshot = SubjectTokenWeeklySnapshot.load(snapshotId)
+  if (!snapshot) {
+    snapshot = new SubjectTokenWeeklySnapshot(snapshotId)
+    snapshot.startTimestamp = timestamp
+    snapshot.startPrice = subjectToken.currentPriceInMoxie
+    snapshot.startMarketCap = subjectToken.marketCap
+    snapshot.startUniqueHolders = subjectToken.uniqueHolders
+    snapshot.startVolume = subjectToken.lifetimeVolume
+    snapshot.startSubjectFee = subjectToken.subjectFee
+    snapshot.startProtocolFee = subjectToken.protocolFee
+    snapshot.createdAtBlockInfo = subjectToken.createdAtBlockInfo
+    snapshot.createdAtBlockNumber = subjectToken.createdAtBlockNumber
+  }
+
+  snapshot.endTimestamp = snapshotTimestamp
+
+  snapshot.subjectToken = subjectToken.id
+
+  snapshot.subject = subjectToken.subject
+  snapshot.reserve = subjectToken.reserve
+  snapshot.endPrice = subjectToken.currentPriceInMoxie
+  snapshot.priceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
+
+  snapshot.endMarketCap = subjectToken.marketCap
+  snapshot.marketCapChange = snapshot.endMarketCap.minus(snapshot.startMarketCap)
+
+  snapshot.totalSupply = subjectToken.totalSupply
+
+  snapshot.endUniqueHolders = subjectToken.uniqueHolders
+  snapshot.uniqueHoldersChange = snapshot.endUniqueHolders.minus(snapshot.startUniqueHolders) // TODO: confirm
+
+  snapshot.endVolume = subjectToken.lifetimeVolume
+  snapshot.volumeChange = snapshot.endVolume.minus(snapshot.startVolume) // TODO: confirm
+
+  snapshot.endSubjectFee = subjectToken.subjectFee
+  snapshot.subjectFeeChange = snapshot.endSubjectFee.minus(snapshot.startSubjectFee) // TODO: confirm
+
+  snapshot.endProtocolFee = subjectToken.protocolFee
+  snapshot.protocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
+  snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
+  snapshot.updatedAtBlockNumber = subjectToken.updatedAtBlockNumber
+
+  snapshot.save()
+}
+
+function createSubjectTokenMonthlySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
+  let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_MONTH)).plus(SECONDS_IN_MONTH)
+  let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
+  let snapshot = SubjectTokenMonthlySnapshot.load(snapshotId)
+  if (!snapshot) {
+    snapshot = new SubjectTokenMonthlySnapshot(snapshotId)
+    snapshot.startTimestamp = timestamp
+    snapshot.startPrice = subjectToken.currentPriceInMoxie
+    snapshot.startMarketCap = subjectToken.marketCap
+    snapshot.startUniqueHolders = subjectToken.uniqueHolders
+    snapshot.startVolume = subjectToken.lifetimeVolume
+    snapshot.startSubjectFee = subjectToken.subjectFee
+    snapshot.startProtocolFee = subjectToken.protocolFee
+    snapshot.createdAtBlockInfo = subjectToken.createdAtBlockInfo
+    snapshot.createdAtBlockNumber = subjectToken.createdAtBlockNumber
+  }
+
+  snapshot.endTimestamp = snapshotTimestamp
+
+  snapshot.subjectToken = subjectToken.id
+
+  snapshot.subject = subjectToken.subject
+  snapshot.reserve = subjectToken.reserve
+  snapshot.endPrice = subjectToken.currentPriceInMoxie
+  snapshot.priceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
+
+  snapshot.endMarketCap = subjectToken.marketCap
+  snapshot.marketCapChange = snapshot.endMarketCap.minus(snapshot.startMarketCap)
+
+  snapshot.totalSupply = subjectToken.totalSupply
+
+  snapshot.endUniqueHolders = subjectToken.uniqueHolders
+  snapshot.uniqueHoldersChange = snapshot.endUniqueHolders.minus(snapshot.startUniqueHolders) // TODO: confirm
+
+  snapshot.endVolume = subjectToken.lifetimeVolume
+  snapshot.volumeChange = snapshot.endVolume.minus(snapshot.startVolume) // TODO: confirm
+
+  snapshot.endSubjectFee = subjectToken.subjectFee
+  snapshot.subjectFeeChange = snapshot.endSubjectFee.minus(snapshot.startSubjectFee) // TODO: confirm
+
+  snapshot.endProtocolFee = subjectToken.protocolFee
+  snapshot.protocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
+  snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
+  snapshot.updatedAtBlockNumber = subjectToken.updatedAtBlockNumber
+
+  snapshot.save()
+}
+
 /**
  * This function creates a rolling daily snapshot for the subject token
  * It takes a timestamp and finds the closest hourly snapshot 24 hour before as a startpoint
@@ -359,6 +459,8 @@ export function saveSubjectToken(subjectToken: SubjectToken, block: ethereum.Blo
     let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subjectToken, block.timestamp)
     createSubjectTokenDailySnapshot(subjectToken, block.timestamp, lastHourylSnapshotEndTimestamp)
     createSubjectTokenRollingDailySnapshot(subjectToken, block.timestamp)
+    createSubjectTokenWeeklySnapshot(subjectToken, block.timestamp)
+    createSubjectTokenMonthlySnapshot(subjectToken, block.timestamp)
   }
 }
 
@@ -386,6 +488,9 @@ export function getOrCreateSummary(): Summary {
     summary.totalProtocolFeeFromAuction = BigInt.zero()
     summary.totalSubjectFee = BigInt.zero()
     summary.totalSubjectFeeFromAuction = BigInt.zero()
+    summary.totalPlatformReferrerFee = BigInt.zero()
+    summary.totalOrderReferrerFee = BigInt.zero()
+    summary.v2UpgradeBlockNumber = V2_UPGRADE_BLOCK_NUMBER
     summary.save()
   }
   return summary
@@ -602,4 +707,82 @@ export function chooseUser(from: Address, beneficiary: Address): Address {
     return from
   }
   return beneficiary
+}
+
+
+export function getOrCreateReward(user: User, rewardReason: string, block: ethereum.Block): Reward {
+  let entityId = user.id.concat("-").concat(rewardReason)
+  let reward = Reward.load(entityId)
+  if (!reward) {
+    reward = new Reward(entityId)
+    reward.user = user.id
+    reward.reason = rewardReason
+    reward.amount = BigInt.zero()
+    reward.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    reward.createdAtBlockNumber = block.number
+  }
+  return reward
+}
+
+export function getOrCreateAvailableReward(user: User, rewardReason: string, block: ethereum.Block): AvailableReward {
+  let entityId = user.id.concat("-").concat(rewardReason)
+  let reward = AvailableReward.load(entityId)
+  if (!reward) {
+    reward = new AvailableReward(entityId)
+    reward.user = user.id
+    reward.reason = rewardReason
+    reward.amount = BigInt.zero()
+    reward.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    reward.createdAtBlockNumber = block.number
+  }
+  return reward
+}
+
+
+export function saveReward(reward: Reward, block: ethereum.Block): void {
+  reward.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  reward.updatedAtBlockNumber = block.number
+  reward.save()
+}
+
+export function saveAvailableReward(reward: AvailableReward, block: ethereum.Block): void {
+  reward.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  reward.updatedAtBlockNumber = block.number
+  reward.save()
+}
+
+
+export function GetRewardReason(reason: Bytes): string {
+  let reasonHex = reason.toHexString()
+  if (reasonHex == ORDER_REFERRER_FEE_SIG) {
+    return ORDER_REFERRER_FEE
+  } else if (reasonHex == PLATFORM_REFERRER_FEE_SIG) {
+    return PLATFORM_REFERRER_FEE
+  } else if (reasonHex == TRANSACTION_FEE_SIG) {
+    return TRANSACTION_FEE
+  } else if (reasonHex == PROTOCOL_FEE_SIG) {
+    return PROTOCOL_FEE
+  } else {
+    return OTHER
+  }
+}
+
+export function handleWithdrawForAvailableReward(fromUser: User, amount: BigInt, block: ethereum.Block): void {
+  let priorityList = [ORDER_REFERRER_FEE, PLATFORM_REFERRER_FEE, TRANSACTION_FEE, PROTOCOL_FEE]
+  for (let i = 0; i < priorityList.length; i++) {
+    let reward = AvailableReward.load(fromUser.id.concat("-").concat(priorityList[i]))
+    if (!reward) {
+      continue
+    }
+    // amount 100, reward.amount 50 , 30 , 20
+    if (reward.amount.gt(amount)) {
+      reward.amount = reward.amount.minus(amount)
+      saveAvailableReward(reward, block)
+      break
+    } else {
+      amount = amount.minus(reward.amount)
+      reward.amount = BigInt.zero()
+      saveAvailableReward(reward, block)
+    }
+  }
 }
