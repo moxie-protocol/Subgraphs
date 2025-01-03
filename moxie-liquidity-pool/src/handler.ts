@@ -10,9 +10,11 @@ import {
   Deposit,
   Withdraw
 } from "../generated/AerodromeGauge/AerodromeGauge"
+
+import { Mint, Burn } from "../generated/AerodromeCLPool/AerodromeCLPool"
 import { getOrCreateBlockInfo, getOrCreatePoolEntity, getOrCreateUserEntity, getOrCreateUserPoolEntity, handleSyncEvents, handleTransferEvents } from "./utils"
 import { GAUGE_LP_TOKEN_MAP } from "./constants"
-import { log } from "@graphprotocol/graph-ts"
+import { Address } from "@graphprotocol/graph-ts"
 
 export function handleSync(event: Sync): void {
   handleSyncEvents(event, event.params.reserve0, event.params.reserve1)
@@ -29,6 +31,17 @@ export function handleTransfer(event: Transfer): void {
 
 export function handleTransfer2(event: Transfer2): void {
   handleTransferEvents(event, event.params.from, event.params.to, event.params.value)
+}
+
+// handling mint and burn events for the AerodromeCLPool
+export function handleMint(event: Mint): void {
+  // assuming transaction.from is the user who minted the tokens
+  handleTransferEvents(event, Address.zero(), event.transaction.from, event.params.amount)
+}
+
+export function handleBurn(event: Burn): void {
+  // assuming transaction.from is the user who burned the tokens
+  handleTransferEvents(event, event.transaction.from, Address.zero(), event.params.amount)
 }
 
 //When the Aerodrome Gauge Contract is invoked when LP Tokens are deposited we need to track it
