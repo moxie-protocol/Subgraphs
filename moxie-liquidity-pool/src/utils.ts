@@ -82,6 +82,8 @@ export function handleTransferEvents(event: ethereum.Event, from: Address, to: A
     pool.totalSupply = pool.totalSupply.minus(amount)
     let sender = getOrCreateUserEntity(event, from.toHexString())
     let senderUserPool = getOrCreateUserPoolEntity(event, sender.id, pool.id)
+    senderUserPool.unstakedLpAmount = senderUserPool.unstakedLpAmount.minus(amount)
+    senderUserPool.totalLPAmount = senderUserPool.stakedLPAmount.plus(senderUserPool.unstakedLpAmount)
     senderUserPool.updatedAt = getOrCreateBlockInfo(event).id
     senderUserPool.latestTransactionHash = event.transaction.hash
     pool.save()
