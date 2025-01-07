@@ -111,6 +111,30 @@ dataSources:
       eventHandlers:
         - event: Mint(address,indexed address,indexed int24,indexed int24,uint128,uint256,uint256)
           handler: handleMint
-        - event: Burn(indexed address,indexed int24,indexed int24,uint128,uint256,uint256)
-          handler: handleBurn
+      callHandlers:
+        - function: setGaugeAndPositionManager(address,address)
+          handler: handleSetGaugeAndPositionManager
       file: ./src/handler.ts
+templates:
+  - name: NonfungiblePositionManager
+    kind: ethereum/contract
+    network: base
+    source:
+      abi: NonfungiblePositionManager
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/nft-manager.ts
+      entities:
+        - NonfungiblePositionManager
+      abis:
+        - name: NonfungiblePositionManager
+          file: ./abis/NonfungiblePositionManager.json
+      eventHandlers:
+        - event: DecreaseLiquidity(indexed uint256,uint128,uint256,uint256)
+          handler: handleDecreaseLiquidity
+        - event: IncreaseLiquidity(indexed uint256,uint128,uint256,uint256)
+          handler: handleIncreaseLiquidity
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer3

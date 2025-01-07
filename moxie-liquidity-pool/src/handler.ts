@@ -11,11 +11,12 @@ import {
   Withdraw
 } from "../generated/AerodromeGauge/AerodromeGauge"
 
-import { Mint, Burn } from "../generated/AerodromeCLPool/AerodromeCLPool"
-import { getOrCreateBlockInfo, getOrCreatePoolEntity, getOrCreateUserEntity, getOrCreateUserPoolEntity, handleSyncEvents, handleTransferEvents } from "./utils"
+import { Mint, Burn, SetGaugeAndPositionManagerCall } from "../generated/AerodromeCLPool/AerodromeCLPool"
+import { getOrCreateBlockInfo, getOrCreatePoolEntity, getOrCreateUserEntity, getOrCreateUserPoolEntity, getV3NftIdentifier, handleSyncEvents, handleTransferEvents } from "./utils"
 import { GAUGE_LP_TOKEN_MAP } from "./constants"
-import { Address } from "@graphprotocol/graph-ts"
-
+import { Address, BigInt, log } from "@graphprotocol/graph-ts"
+import { V3NftMint, V3NftTokenIdToLiquidity, NFTManager } from "../generated/schema"
+import { NonfungiblePositionManager } from "../generated/templates/NonfungiblePositionManager/NonfungiblePositionManager"
 export function handleSync(event: Sync): void {
   handleSyncEvents(event, event.params.reserve0, event.params.reserve1)
 }
@@ -26,22 +27,26 @@ export function handleSync2(event: Sync2): void {
 
 //Handling transfers of LP Token. We need to track pool totalSupply and balance of each user
 export function handleTransfer(event: Transfer): void {
-  handleTransferEvents(event, event.params.from, event.params.to, event.params.value)
+  handleTransferEvents(event, event.params.from, event.params.to, event.params.value, event.address.toHexString())
 }
 
 export function handleTransfer2(event: Transfer2): void {
-  handleTransferEvents(event, event.params.from, event.params.to, event.params.value)
+  handleTransferEvents(event, event.params.from, event.params.to, event.params.value, event.address.toHexString())
 }
 
 // handling mint and burn events for the AerodromeCLPool
 export function handleMint(event: Mint): void {
   // assuming transaction.from is the user who minted the tokens
-  handleTransferEvents(event, Address.zero(), event.transaction.from, event.params.amount)
+  let entityId = getV3NftIdentifier(event.transaction.hash, event.params.amount, event.params.amount0, event.params.amount1)
+  let entity = new V3NftMint(entityId)
+  entity.save()
+
+  handleTransferEvents(event, Address.zero(), event.transaction.from, event.params.amount, event.address.toHexString())
 }
 
 export function handleBurn(event: Burn): void {
   // assuming transaction.from is the user who burned the tokens
-  handleTransferEvents(event, event.transaction.from, Address.zero(), event.params.amount)
+  handleTransferEvents(event, event.transaction.from, Address.zero(), event.params.amount, event.address.toHexString())
 }
 
 //When the Aerodrome Gauge Contract is invoked when LP Tokens are deposited we need to track it
@@ -79,4 +84,12 @@ export function handleWithdraw(event: Withdraw): void {
     userPool.updatedAt = getOrCreateBlockInfo(event).id
     userPool.save()
   }
+}
+
+
+export function handleSetGaugeAndPositionManager(call: SetGaugeAndPositionManagerCall): void {
+  let entity = new NFTManager(call.inputs._nft.toHexString())
+  entity.save()
+
+  NonfungiblePositionManager.bind(call.inputs._nft)
 }

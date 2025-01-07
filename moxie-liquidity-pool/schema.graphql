@@ -36,3 +36,18 @@ type UserPool @entity {
   createdAt: BlockInfo!
   updatedAt: BlockInfo!
 }
+
+type V3NftMint @entity {
+  "Txhash+liquidity+amount0+amount1"
+  id: ID!
+}
+
+type V3NftTokenIdToLiquidity @entity {
+  id: ID!
+  liquidity: BigInt!
+}
+
+type NFTManager @entity {
+  id: ID!
+  nft: Bytes!
+}
