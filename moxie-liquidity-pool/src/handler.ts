@@ -10,13 +10,13 @@ import {
   Deposit,
   Withdraw
 } from "../generated/AerodromeGauge/AerodromeGauge"
-
+import { Deposit as CLDeposit, Withdraw as CLWithdraw } from "../generated/AerodromeCLGauge/AerodromeCLGauge"
 import { Mint, Burn, SetGaugeAndPositionManagerCall } from "../generated/AerodromeCLPool/AerodromeCLPool"
 import { getOrCreateBlockInfo, getOrCreatePoolEntity, getOrCreateUserEntity, getOrCreateUserPoolEntity, getV3NftIdentifier, handleSyncEvents, handleTransferEvents } from "./utils"
 import { GAUGE_LP_TOKEN_MAP } from "./constants"
 import { Address, BigInt, log } from "@graphprotocol/graph-ts"
-import { V3NftMint, V3NftTokenIdToLiquidity, NFTManager } from "../generated/schema"
-import { NonfungiblePositionManager } from "../generated/templates/NonfungiblePositionManager/NonfungiblePositionManager"
+import { V3NftMint, V3NftTokenIdToLiquidity, NFTManager, User, UserPool } from "../generated/schema"
+import { NonfungiblePositionManager } from "../generated/templates"
 export function handleSync(event: Sync): void {
   handleSyncEvents(event, event.params.reserve0, event.params.reserve1)
 }
@@ -90,6 +90,51 @@ export function handleWithdraw(event: Withdraw): void {
 export function handleSetGaugeAndPositionManager(call: SetGaugeAndPositionManagerCall): void {
   let entity = new NFTManager(call.inputs._nft.toHexString())
   entity.save()
+  // creating new handler for the NFTManager contract
+  NonfungiblePositionManager.create(call.inputs._nft)
+}
 
-  NonfungiblePositionManager.bind(call.inputs._nft)
+export function handleCLDeposit(event: CLDeposit): void {
+  let poolId = GAUGE_LP_TOKEN_MAP.mustGet(event.address.toHexString())
+  if (poolId != null) {
+    let tokenIdToLiquidity = V3NftTokenIdToLiquidity.load(event.params.tokenId.toString())
+    if (!tokenIdToLiquidity) {
+      log.info("Not a IncreaseLiquidity event to be handled", [])
+      return
+    }
+    if (!tokenIdToLiquidity.ownerPool) {
+      throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString())
+    }
+    let userPool = UserPool.load(tokenIdToLiquidity.ownerPool!)
+    if (!userPool) {
+      throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString())
+    }
+    userPool.stakedLPAmount = userPool.stakedLPAmount.plus(event.params.liquidityToStake)
+    userPool.totalLPAmount = userPool.stakedLPAmount.plus(userPool.unstakedLpAmount)
+    userPool.latestStakeTransactionHash = event.transaction.hash
+    userPool.updatedAt = getOrCreateBlockInfo(event).id
+    userPool.save()
+  }
+}
+export function handleCLWithdraw(event: CLWithdraw): void {
+  let poolId = GAUGE_LP_TOKEN_MAP.mustGet(event.address.toHexString())
+  if (poolId != null) {
+    let tokenIdToLiquidity = V3NftTokenIdToLiquidity.load(event.params.tokenId.toString())
+    if (!tokenIdToLiquidity) {
+      log.info("Not a DecreaseLiquidity event to be handled", [])
+      return
+    }
+    if (!tokenIdToLiquidity.ownerPool) {
+      throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString())
+    }
+    let userPool = UserPool.load(tokenIdToLiquidity.ownerPool!)
+    if (!userPool) {
+      throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString())
+    }
+    userPool.stakedLPAmount = userPool.stakedLPAmount.minus(event.params.liquidityToStake)
+    userPool.totalLPAmount = userPool.stakedLPAmount.plus(userPool.unstakedLpAmount)
+    userPool.latestStakeTransactionHash = event.transaction.hash
+    userPool.updatedAt = getOrCreateBlockInfo(event).id
+    userPool.save()
+  }
 }

@@ -5,9 +5,9 @@ import { Transfer as NftTransfer, IncreaseLiquidity, DecreaseLiquidity } from ".
 import { NFT_MANAGER_POOL_MAP } from "./constants"
 
 export function handleIncreaseLiquidity(event: IncreaseLiquidity): void {
- log.info("Handling IncreaseLiquidity event for tokenId: {} txHash: {}", [event.params.tokenId.toString(), event.transaction.hash.toHexString()])
+ let entityId = getV3NftIdentifier(event.transaction.hash, event.params.liquidity, event.params.amount0, event.params.amount1)
+ log.info("Handling IncreaseLiquidity event for tokenId: {} txHash: {} entityId {}", [event.params.tokenId.toString(), event.transaction.hash.toHexString(), entityId])
  // saving tokenId to liquidity mapping for handling future transfer events
- let entityId = getV3NftIdentifier(event.transaction.hash, event.params.liquidity, BigInt.zero(), BigInt.zero())
  let entity = V3NftMint.load(entityId)
  if (entity) {
   // means nft is just getting minted
