@@ -778,3 +778,10 @@ type VaultTransferTx @entity {
   txHash: Bytes!
   blockInfo: BlockInfo!
 }
+
+
+type SubjectToSubjectToken @entity {
+  "subject address"
+  id:ID!
+  subjectToken: SubjectToken!
+}

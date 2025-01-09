@@ -1,6 +1,6 @@
 import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
-import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
-import { Order, ProtocolFeeBeneficiary, User } from "../generated/schema"
+import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, Initialized, MoxieBondingCurve, SubjectReserveRatioUpdated } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
+import { Order, ProtocolFeeBeneficiary, SubjectToken, SubjectToSubjectToken, User } from "../generated/schema"
 
 import { calculateBuySideFee, calculateSellSideFee, createProtocolFeeTransfer, createSubjectFeeTransfer, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, handleNewBeneficiary, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideProtocolAmountAddingBackFees, isBlacklistedSubjectTokenAddress, chooseUser } from "./utils"
 import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL } from "./constants"
@@ -318,4 +318,16 @@ export function handleInitialized(event: Initialized): void {
   summary.subjectSellFeePct = subjectSellFeePct
 
   summary.save()
+}
+
+
+
+export function handleSubjectReserveRatioUpdated(event: SubjectReserveRatioUpdated): void {
+  let subjectToSubjectToken = SubjectToSubjectToken.load(event.params._subject.toHexString())
+  if (subjectToSubjectToken == null) {
+    throw new Error("SubjectToSubjectToken not found, subject: " + event.params._subject.toHexString())
+  }
+  let subjectToken = SubjectToken.load(subjectToSubjectToken.subjectToken)
+  subjectToken!.reserveRatio = event.params._newReserveRatio
+  saveSubjectToken(subjectToken!, event.block, true)
 }
