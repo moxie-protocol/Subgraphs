@@ -15,7 +15,7 @@ import { Mint, Burn, SetGaugeAndPositionManagerCall } from "../generated/Aerodro
 import { getOrCreateBlockInfo, getOrCreatePoolEntity, getOrCreateUserEntity, getOrCreateUserPoolEntity, getV3NftIdentifier, handleSyncEvents, handleTransferEvents } from "./utils"
 import { GAUGE_LP_TOKEN_MAP } from "./constants"
 import { Address, BigInt, log } from "@graphprotocol/graph-ts"
-import { V3NftMint, V3NftTokenIdToLiquidity, NFTManager, User, UserPool } from "../generated/schema"
+import { V3NftMint, V3NftTokenIdToLiquidity, NFTManager, User, UserPool, V3NftMintViaTransfer } from "../generated/schema"
 import { NonfungiblePositionManager } from "../generated/templates"
 export function handleSync(event: Sync): void {
   handleSyncEvents(event, event.params.reserve0, event.params.reserve1)
@@ -40,6 +40,9 @@ export function handleMint(event: Mint): void {
   let entityId = getV3NftIdentifier(event.transaction.hash, event.params.amount, event.params.amount0, event.params.amount1)
   let entity = new V3NftMint(entityId)
   entity.save()
+
+  let txEntity = new V3NftMintViaTransfer(event.transaction.hash.toHexString().concat("-").concat(event.logIndex.toString()))
+  txEntity.save()
 
   handleTransferEvents(event, Address.zero(), event.transaction.from, event.params.amount, event.address.toHexString())
 }
@@ -103,11 +106,11 @@ export function handleCLDeposit(event: CLDeposit): void {
       return
     }
     if (!tokenIdToLiquidity.ownerPool) {
-      throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString())
+      throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString() + "txHash: " + event.transaction.hash.toHexString())
     }
     let userPool = UserPool.load(tokenIdToLiquidity.ownerPool!)
     if (!userPool) {
-      throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString())
+      throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString() + "txHash: " + event.transaction.hash.toHexString())
     }
     userPool.stakedLPAmount = userPool.stakedLPAmount.plus(event.params.liquidityToStake)
     userPool.totalLPAmount = userPool.stakedLPAmount.plus(userPool.unstakedLpAmount)
@@ -125,14 +128,13 @@ export function handleCLWithdraw(event: CLWithdraw): void {
       return
     }
     if (!tokenIdToLiquidity.ownerPool) {
-      throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString())
+      throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString() + "txHash: " + event.transaction.hash.toHexString())
     }
     let userPool = UserPool.load(tokenIdToLiquidity.ownerPool!)
     if (!userPool) {
-      throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString())
+      throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString() + "txHash: " + event.transaction.hash.toHexString())
     }
     userPool.stakedLPAmount = userPool.stakedLPAmount.minus(event.params.liquidityToStake)
-    userPool.totalLPAmount = userPool.stakedLPAmount.plus(userPool.unstakedLpAmount)
     userPool.latestStakeTransactionHash = event.transaction.hash
     userPool.updatedAt = getOrCreateBlockInfo(event).id
     userPool.save()

@@ -42,6 +42,11 @@ type V3NftMint @entity {
   id: ID!
 }
 
+type V3NftMintViaTransfer @entity {
+  "Txhash+logIndex"
+  id: ID!
+}
+
 type V3NftTokenIdToLiquidity @entity {
   id: ID!
   liquidity: BigInt!

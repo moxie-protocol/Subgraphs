@@ -1,8 +1,8 @@
-import { Pool, UserPool, V3NftMint, V3NftTokenIdToLiquidity } from "../generated/schema"
+import { Pool, UserPool, V3NftMint, V3NftMintViaTransfer, V3NftTokenIdToLiquidity } from "../generated/schema"
 import { getOrCreateBlockInfo, getOrCreatePoolEntity, getOrCreateUserEntity, getOrCreateUserPoolEntity, getV3NftIdentifier, handleTransferEvents } from "./utils"
 import { Address, BigInt, log } from "@graphprotocol/graph-ts"
 import { Transfer as NftTransfer, IncreaseLiquidity, DecreaseLiquidity } from "../generated/templates/NonfungiblePositionManager/NonfungiblePositionManager"
-import { NFT_MANAGER_POOL_MAP } from "./constants"
+import { AerodromeCLGaugeAddress, NFT_MANAGER_POOL_MAP } from "./constants"
 
 export function handleIncreaseLiquidity(event: IncreaseLiquidity): void {
  let entityId = getV3NftIdentifier(event.transaction.hash, event.params.liquidity, event.params.amount0, event.params.amount1)
@@ -40,7 +40,7 @@ export function handleIncreaseLiquidity(event: IncreaseLiquidity): void {
   pool.save()
   let ownerPool = UserPool.load(tokenIdToLiquidity.ownerPool!)
   if (!ownerPool) {
-   throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString())
+   throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString() + "txHash: " + event.transaction.hash.toHexString())
   }
   ownerPool.unstakedLpAmount = ownerPool.unstakedLpAmount.plus(event.params.liquidity)
   ownerPool.totalLPAmount = ownerPool.stakedLPAmount.plus(ownerPool.unstakedLpAmount)
@@ -73,7 +73,7 @@ export function handleDecreaseLiquidity(event: DecreaseLiquidity): void {
   pool.save()
   let ownerPool = UserPool.load(tokenIdToLiquidity.ownerPool!)
   if (!ownerPool) {
-   throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString())
+   throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString() + "txHash: " + event.transaction.hash.toHexString())
   }
   ownerPool.unstakedLpAmount = ownerPool.unstakedLpAmount.minus(event.params.liquidity)
   ownerPool.totalLPAmount = ownerPool.stakedLPAmount.plus(ownerPool.unstakedLpAmount)
@@ -86,11 +86,28 @@ export function handleTransfer3(event: NftTransfer): void {
  log.info("Handling Transfer event for tokenId: {} txHash: {}", [event.params.tokenId.toString(), event.transaction.hash.toHexString()])
  let tokenIdToLiquidity = V3NftTokenIdToLiquidity.load(event.params.tokenId.toString())
  if (!tokenIdToLiquidity) {
-  log.info("Not a Transfer event to be handled", [])
-  return
+  let txEntity = V3NftMintViaTransfer.load(event.transaction.hash.toHexString().concat("-").concat(event.logIndex.minus(BigInt.fromI32(1)).toString()))
+  if (txEntity) {
+   tokenIdToLiquidity = new V3NftTokenIdToLiquidity(event.params.tokenId.toString())
+   tokenIdToLiquidity.liquidity = BigInt.zero()
+  }else{
+   log.info("Not a Transfer event to be handled", [])
+   return
+  }
  }
  if (event.params.from == Address.zero()) {
-  log.info("Transfer from is zero address, already handled", [])
+  log.info("Handling minting of tokenId: {} txHash: {}", [event.params.tokenId.toString(), event.transaction.hash.toHexString()])
+  let poolId = NFT_MANAGER_POOL_MAP.mustGet(event.address.toHexString())
+  if (poolId != null) {
+   let poolAddress = poolId.toString()
+   let ownerPool = getOrCreateUserPoolEntity(event, event.params.to.toHexString(), poolAddress)
+   ownerPool.updatedAt = getOrCreateBlockInfo(event).id
+   ownerPool.save()
+   log.info("Updating ownerPool for tokenId: {} to {}", [event.params.tokenId.toString(), ownerPool.id])
+   tokenIdToLiquidity.ownerPool = ownerPool.id
+   log.info("Handling minting of tokenId: {} ownerPool: {} txHash: {} 2", [event.params.tokenId.toString(), ownerPool.id, event.transaction.hash.toHexString()])
+   tokenIdToLiquidity.save()
+  }
   return
  }
  if (event.params.to == Address.zero()) {
@@ -100,13 +117,22 @@ export function handleTransfer3(event: NftTransfer): void {
  let poolId = NFT_MANAGER_POOL_MAP.mustGet(event.address.toHexString())
  if (poolId != null) {
   let poolAddress = poolId.toString()
-  handleTransferEvents(event, event.params.from, event.params.to, tokenIdToLiquidity.liquidity, poolAddress)
+  let toAddressIsPool = event.params.to.toHexString().toLowerCase() == AerodromeCLGaugeAddress
+  let fromAddressIsPool = event.params.from.toHexString().toLowerCase() == AerodromeCLGaugeAddress
 
+  log.info("tokenId: {} from: {} to: {} fromPool: {} toPool: {}", [event.params.tokenId.toString(), event.params.from.toHexString(), event.params.to.toHexString(), fromAddressIsPool.toString(), toAddressIsPool.toString()])
+  if (toAddressIsPool || fromAddressIsPool) {
+   log.info("Transfer to or from pool, not handling", [])
+   return
+  }
+  handleTransferEvents(event, event.params.from, event.params.to, tokenIdToLiquidity.liquidity, poolAddress)
   let ownerPool = getOrCreateUserPoolEntity(event, event.params.to.toHexString(), poolAddress)
   ownerPool.updatedAt = getOrCreateBlockInfo(event).id
   ownerPool.save()
+  log.info("Updating ownerPool for tokenId: {} to {}", [event.params.tokenId.toString(), ownerPool.id])
   tokenIdToLiquidity.ownerPool = ownerPool.id
   tokenIdToLiquidity.save()
+
  } else {
   // this should never happen
   throw new Error("Pool not found for NFTManager address: " + event.address.toHexString())
