@@ -117,15 +117,15 @@ export function handleTransfer3(event: NftTransfer): void {
  let poolId = NFT_MANAGER_POOL_MAP.mustGet(event.address.toHexString())
  if (poolId != null) {
   let poolAddress = poolId.toString()
+  handleTransferEvents(event, event.params.from, event.params.to, tokenIdToLiquidity.liquidity, poolAddress)
   let toAddressIsPool = event.params.to.toHexString().toLowerCase() == AerodromeCLGaugeAddress
   let fromAddressIsPool = event.params.from.toHexString().toLowerCase() == AerodromeCLGaugeAddress
 
   log.info("tokenId: {} from: {} to: {} fromPool: {} toPool: {}", [event.params.tokenId.toString(), event.params.from.toHexString(), event.params.to.toHexString(), fromAddressIsPool.toString(), toAddressIsPool.toString()])
   if (toAddressIsPool || fromAddressIsPool) {
-   log.info("Transfer to or from pool, not handling", [])
+   log.info("Transfer to or from pool, not handling tokenIdToLiquidity ownerPool change", [])
    return
   }
-  handleTransferEvents(event, event.params.from, event.params.to, tokenIdToLiquidity.liquidity, poolAddress)
   let ownerPool = getOrCreateUserPoolEntity(event, event.params.to.toHexString(), poolAddress)
   ownerPool.updatedAt = getOrCreateBlockInfo(event).id
   ownerPool.save()
