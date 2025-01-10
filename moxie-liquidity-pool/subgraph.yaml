@@ -111,6 +111,12 @@ dataSources:
       eventHandlers:
         - event: Mint(address,indexed address,indexed int24,indexed int24,uint128,uint256,uint256)
           handler: handleMint
+        - event: Swap(indexed address,indexed address,int256,int256,uint160,uint128,int24)
+          handler: handleSwap
+        - event: Burn(indexed address,indexed int24,indexed int24,uint128,uint256,uint256)
+          handler: handleBurn
+        - event: CollectFees(indexed address,uint128,uint128)
+          handler: handleCollectFees
       callHandlers:
         - function: setGaugeAndPositionManager(address,address)
           handler: handleSetGaugeAndPositionManager
