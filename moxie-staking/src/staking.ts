@@ -4,6 +4,7 @@ import { Lock } from "../generated/Staking/Staking"
 import { LockInfo } from "../generated/schema"
 export function handleLock(event: Lock): void {
   let lockInfo = new LockInfo(event.params._index.toString())
+  lockInfo.from = event.transaction.from
   lockInfo.txHash = event.transaction.hash
   lockInfo.logIndex = event.logIndex
   lockInfo.user = event.params._user
