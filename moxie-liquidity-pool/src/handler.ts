@@ -11,7 +11,7 @@ import {
   Withdraw
 } from "../generated/AerodromeGauge/AerodromeGauge"
 import { Deposit as CLDeposit, Withdraw as CLWithdraw } from "../generated/AerodromeCLGauge/AerodromeCLGauge"
-import { Mint, Burn, SetGaugeAndPositionManagerCall, Swap, Collect, CollectFees } from "../generated/AerodromeCLPool/AerodromeCLPool"
+import { Mint, Burn, SetGaugeAndPositionManagerCall, Swap, Collect, CollectFees, Flash } from "../generated/AerodromeCLPool/AerodromeCLPool"
 import { getOrCreateBlockInfo, getOrCreatePoolEntity, getOrCreateUserEntity, getOrCreateUserPoolEntity, getV3NftIdentifier, handleSyncEvents, handleTransferEvents } from "./utils"
 import { GAUGE_LP_TOKEN_MAP } from "./constants"
 import { Address, BigInt, log } from "@graphprotocol/graph-ts"
@@ -73,6 +73,17 @@ export function handleCollectFees(event: CollectFees): void {
   let pool = getOrCreatePoolEntity(event, event.address.toHexString())
   pool.nonMoxieReserve = pool.nonMoxieReserve.minus(event.params.amount0)
   pool.moxieReserve = pool.moxieReserve.minus(event.params.amount1)
+  pool.updatedAt = getOrCreateBlockInfo(event).id
+  pool.save()
+}
+
+export function handleFlash(event: Flash):void{
+  // handling pool
+  // amount0 is non moxie (for current case), may need to extend in the future
+  // amount1 is moxie (for current case), may need to extend in the future
+  let pool = getOrCreatePoolEntity(event, event.address.toHexString())
+  pool.nonMoxieReserve = pool.nonMoxieReserve.minus(event.params.paid0)
+  pool.moxieReserve = pool.moxieReserve.minus(event.params.paid1)
   pool.updatedAt = getOrCreateBlockInfo(event).id
   pool.save()
 }
