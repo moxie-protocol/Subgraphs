@@ -323,11 +323,15 @@ export function handleInitialized(event: Initialized): void {
 
 
 export function handleSubjectReserveRatioUpdated(event: SubjectReserveRatioUpdated): void {
+  log.info("handling SubjectReserveRatioUpdated event for subject {} txHash {}",[event.params._subject.toHexString(), event.transaction.hash.toHexString()])
   let subjectToSubjectToken = SubjectToSubjectToken.load(event.params._subject.toHexString())
   if (subjectToSubjectToken == null) {
     throw new Error("SubjectToSubjectToken not found, subject: " + event.params._subject.toHexString())
   }
   let subjectToken = SubjectToken.load(subjectToSubjectToken.subjectToken)
   subjectToken!.reserveRatio = event.params._newReserveRatio
+  let calculatedPrice = new CalculatePrice(subjectToken!.reserve, subjectToken!.totalSupply, subjectToken!.reserveRatio)
+  subjectToken!.currentPriceInMoxie = calculatedPrice.price
+  subjectToken!.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   saveSubjectToken(subjectToken!, event.block, true)
 }
