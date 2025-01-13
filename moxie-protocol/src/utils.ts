@@ -459,8 +459,8 @@ export function saveSubjectToken(subjectToken: SubjectToken, block: ethereum.Blo
     let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subjectToken, block.timestamp)
     createSubjectTokenDailySnapshot(subjectToken, block.timestamp, lastHourylSnapshotEndTimestamp)
     createSubjectTokenRollingDailySnapshot(subjectToken, block.timestamp)
-    createSubjectTokenWeeklySnapshot(subjectToken, block.timestamp)
-    createSubjectTokenMonthlySnapshot(subjectToken, block.timestamp)
+    // createSubjectTokenWeeklySnapshot(subjectToken, block.timestamp)
+    // createSubjectTokenMonthlySnapshot(subjectToken, block.timestamp)
   }
 }
 
