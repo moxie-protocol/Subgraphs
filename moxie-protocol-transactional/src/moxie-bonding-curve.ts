@@ -1,6 +1,6 @@
 import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
-import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
-import { User } from "../generated/schema"
+import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, Initialized, MoxieBondingCurve, SubjectReserveRatioUpdated } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
+import { SubjectToken, SubjectToSubjectToken, User } from "../generated/schema"
 
 import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideFee, isBlacklistedSubjectTokenAddress } from "./utils"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
@@ -134,4 +134,19 @@ export function handleInitialized(event: Initialized): void {
   summary.subjectSellFeePct = subjectSellFeePct
 
   summary.save()
+}
+
+
+export function handleSubjectReserveRatioUpdated(event: SubjectReserveRatioUpdated): void {
+  log.info("handling SubjectReserveRatioUpdated event for subject {} txHash {}", [event.params._subject.toHexString(), event.transaction.hash.toHexString()])
+  let subjectToSubjectToken = SubjectToSubjectToken.load(event.params._subject.toHexString())
+  if (subjectToSubjectToken == null) {
+    throw new Error("SubjectToSubjectToken not found, subject: " + event.params._subject.toHexString())
+  }
+  let subjectToken = SubjectToken.load(subjectToSubjectToken.subjectToken)
+  subjectToken!.reserveRatio = event.params._newReserveRatio
+  let calculatedPrice = new CalculatePrice(subjectToken!.reserve, subjectToken!.totalSupply, subjectToken!.reserveRatio)
+  subjectToken!.currentPriceInMoxie = calculatedPrice.price
+  subjectToken!.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
+  saveSubjectToken(subjectToken!, event.block)
 }

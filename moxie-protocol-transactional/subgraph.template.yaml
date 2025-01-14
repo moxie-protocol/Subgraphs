@@ -81,6 +81,8 @@ dataSources:
           handler: handleUpdateFees
         - event: Initialized(uint64)
           handler: handleInitialized
+        - event: SubjectReserveRatioUpdated(address,uint32,uint32)
+          handler: handleSubjectReserveRatioUpdated
       file: ./src/moxie-bonding-curve.ts
   - kind: ethereum
     name: EasyAuction

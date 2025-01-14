@@ -129,3 +129,10 @@ type AuctionUser @entity {
   id: ID!
   userAddress: Bytes!
 }
+
+
+type SubjectToSubjectToken @entity {
+  "subject address"
+  id: ID!
+  subjectToken: SubjectToken!
+}
