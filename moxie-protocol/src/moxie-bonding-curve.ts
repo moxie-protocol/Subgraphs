@@ -226,7 +226,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
     user.protocolTokenInvested = user.protocolTokenInvested.minus(oldPortfolioProtocolTokenInvested.minus(portfolio.protocolTokenInvested))
   }
   order.portfolio = portfolio.id
- 
+
 
   const summary = getOrCreateSummary()
   if (!summary.activeProtocolFeeBeneficiary) {
@@ -259,7 +259,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   subjectToken.lastOrderBlockNumber = event.block.number
   saveSubjectToken(subjectToken, event.block, true)
-  
+
   order.marketCap = subjectToken.marketCap
   order.save()
 
@@ -327,5 +327,5 @@ export function handleSubjectReserveRatioUpdated(event: SubjectReserveRatioUpdat
   let calculatedPrice = new CalculatePrice(subjectToken!.reserve, subjectToken!.totalSupply, subjectToken!.reserveRatio)
   subjectToken!.currentPriceInMoxie = calculatedPrice.price
   subjectToken!.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
-  saveSubjectToken(subjectToken!, event.block)
+  saveSubjectToken(subjectToken!, event.block, true)
 }
