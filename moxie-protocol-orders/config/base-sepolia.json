@@ -1,0 +1,15 @@
+{
+  "network": "base-sepolia",
+  "EasyAuction": "0x8EB6A9275637358Fea56D8431e85B6BB6F260853",
+  "EasyAuctionStartBlock": "12934136",
+  "TokenManager": "0xFd990aF1c711cC0fc46E66B22877B028aF7eF59C",
+  "TokenManagerStartBlock": "12934201",
+  "Vault": "0x3C1Fd0E625765A40fFd58adc4784603A07f5D05f",
+  "VaultStartBlock": "12934204",
+  "MoxieBondingCurve": "0x56147e70A57012ade3003fe93a394BFC35d747e3",
+  "MoxieBondingCurveStartBlock": "12934212",
+  "SubjectFactory": "0x9cE6e0c6282ac0050B1888656C5c5716a4Ef4BE8",
+  "SubjectFactoryStartBlock": "12934191",
+  "Staking": "0x1d5c3Fe067091DFdFE6dd31F62D0F9fA90509651",
+  "StakingStartBlock": "15713702"
+}
