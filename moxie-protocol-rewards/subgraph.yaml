@@ -1,0 +1,28 @@
+specVersion: 0.0.4
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: ProtocolRewards
+    network: base
+    source:
+      address: "0xDc4E7E62f383E2A6F3071f7A9833C5aB7D4B239B"
+      abi: ProtocolRewards
+      startBlock: 23268988
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Subject
+        - User
+      abis:
+        - name: ProtocolRewards
+          file: ./abis/ProtocolRewards.json
+      eventHandlers:
+        - event: Deposit(indexed address,indexed address,indexed bytes4,uint256,string)
+          handler: handleDeposit
+        - event: Withdraw(indexed address,indexed address,uint256)
+          handler: handleWithdraw
+      file: ./src/protocol-rewards.ts
+ 
