@@ -1,0 +1,5 @@
+{
+  "network": "base-sepolia",
+  "ProtocolRewards": "0x0615aAB0C377928De0a343d5177B4fbD981EB855",
+  "ProtocolRewardsStartBlock": "18750031"
+}
