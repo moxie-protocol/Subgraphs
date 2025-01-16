@@ -25,7 +25,7 @@ export function handleTransfer(event: Transfer): void {
     totalSupply = totalSupply.minus(value)
   }
   subjectToken.totalSupply = totalSupply
-
+  saveSubjectToken(subjectToken, event.block)
   // updating portfolios
   if (!mint) {
     let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
@@ -37,5 +37,4 @@ export function handleTransfer(event: Transfer): void {
     toAddressPortfolio.unstakedBalance = toAddressPortfolio.unstakedBalance.plus(value)
     savePortfolio(toAddressPortfolio, event.block, true)
   }
-  saveSubjectToken(subjectToken, event.block)
 }
