@@ -58,8 +58,8 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.balance = BigInt.zero()
     portfolio.buyVolume = BigInt.zero()
     portfolio.sellVolume = BigInt.zero()
-    // portfolio.stakedBalance = BigInt.zero()
-    // portfolio.unstakedBalance = BigInt.zero()
+    portfolio.stakedBalance = BigInt.zero()
+    portfolio.unstakedBalance = BigInt.zero()
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     portfolio.createdAtBlockNumber = block.number
     portfolio.subjectTokenBuyVolume = BigInt.zero()
@@ -79,7 +79,7 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
 export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, deleteZeroBalancePortfolio: bool = false): void {
   portfolio.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   portfolio.updatedAtBlockNumber = block.number
-  // portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
+  portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
   if (deleteZeroBalancePortfolio && portfolio.balance.equals(BigInt.zero())) {
     let subjectToken = SubjectToken.load(portfolio.subjectToken)!
     subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(
@@ -157,6 +157,7 @@ export function getOrCreateSummary(): Summary {
     summary.totalProtocolFeeFromAuction = BigInt.zero()
     summary.totalSubjectFee = BigInt.zero()
     summary.totalSubjectFeeFromAuction = BigInt.zero()
+    summary.totalStakedSubjectTokens = BigInt.zero()
     summary.save()
   }
   return summary

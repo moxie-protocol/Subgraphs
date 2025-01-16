@@ -109,6 +109,30 @@ dataSources:
           handler: handleSubjectReserveRatioUpdated
       file: ./src/moxie-bonding-curve.ts
   - kind: ethereum
+    name: Staking
+    network: {{network}}
+    source:
+      address: "{{Staking}}"
+      abi: Staking
+      startBlock: {{StakingStartBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - LockInfo
+      abis:
+        - name: Staking
+          file: ./abis/Staking.json
+      eventHandlers:
+        - event: Lock(indexed address,indexed address,indexed address,uint256,uint256,uint256,uint256,address,uint256)
+          handler: handleLock
+        - event: LockExtended(indexed address,indexed address,indexed address,uint256[],uint256)
+          handler: handleLockExtended
+        - event: Withdraw(indexed address,indexed address,indexed address,uint256[],uint256)
+          handler: handleWithdraw
+      file: ./src/staking.ts
+  - kind: ethereum
     name: EasyAuction
     network: {{network}}
     source:
