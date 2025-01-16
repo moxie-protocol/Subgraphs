@@ -71,6 +71,7 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
  */
 export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, deleteZeroBalancePortfolio: bool = false): void {
   portfolio.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
   if (deleteZeroBalancePortfolio && portfolio.balance.equals(BigInt.zero())) {
     let subjectToken = SubjectToken.load(portfolio.subjectToken)!
     subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(
