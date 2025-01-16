@@ -52,7 +52,6 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.balance = BigInt.zero()
     portfolio.stakedBalance = BigInt.zero()
     portfolio.unstakedBalance = BigInt.zero()
-    log.info("Portfolio {} initialized {} balance: {}", [portfolioId, txHash.toHexString(), portfolio.balance.toString()])
     portfolio.buyVolume = BigInt.zero()
     portfolio.sellVolume = BigInt.zero()
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
@@ -74,6 +73,10 @@ export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, delet
   portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
   if (deleteZeroBalancePortfolio && portfolio.balance.equals(BigInt.zero())) {
     let subjectToken = SubjectToken.load(portfolio.subjectToken)!
+    if (subjectToken.uniqueHolders.equals(BigInt.zero())) {
+      log.error("Portfolio: Unique holders count is zero for subjectToken: {}", [subjectToken.id])
+      return
+    }
     subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(
       BigInt.fromI32(1)
     )
