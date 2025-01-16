@@ -25,6 +25,7 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
     subjectToken.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     subjectToken.buySideVolume = BigInt.zero()
     subjectToken.sellSideVolume = BigInt.zero()
+    subjectToken.totalStaked = BigInt.zero()
     saveSubjectToken(subjectToken, block)
   }
   return subjectToken
@@ -41,9 +42,16 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
   if (!portfolio) {
     portfolio = new Portfolio(portfolioId)
     let subjectToken = getOrCreateSubjectToken(subjectAddress, block)
+    // new holder
+    subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
+      BigInt.fromI32(1)
+    )
+    saveSubjectToken(subjectToken, block)
     portfolio.user = user.id
     portfolio.subjectToken = subjectToken.id
     portfolio.balance = BigInt.zero()
+    portfolio.stakedBalance = BigInt.zero()
+    portfolio.unstakedBalance = BigInt.zero()
     log.info("Portfolio {} initialized {} balance: {}", [portfolioId, txHash.toHexString(), portfolio.balance.toString()])
     portfolio.buyVolume = BigInt.zero()
     portfolio.sellVolume = BigInt.zero()
@@ -54,8 +62,25 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
   return portfolio
 }
 
-export function savePortfolio(portfolio: Portfolio, block: ethereum.Block): void {
+/**
+ * Saves portfolio entity and updates the subject token unique holders count
+ * @param portfolio Portfolio entity which needs to be saved
+ * @param block ethereum.Block
+ * @param deleteZeroBalancePortfolio boolean flag to check balance and delete portfolio if balance is zero
+ * @returns 
+ */
+export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, deleteZeroBalancePortfolio: bool = false): void {
   portfolio.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  if (deleteZeroBalancePortfolio && portfolio.balance.equals(BigInt.zero())) {
+    let subjectToken = SubjectToken.load(portfolio.subjectToken)!
+    subjectToken.uniqueHolders = subjectToken.uniqueHolders.minus(
+      BigInt.fromI32(1)
+    )
+    saveSubjectToken(subjectToken, block)
+    // delete portfolio if balance gets zero
+    store.remove("Portfolio", portfolio.id)
+    return
+  }
   portfolio.save()
 }
 
@@ -113,6 +138,7 @@ export function getOrCreateSummary(): Summary {
     summary.protocolSellFeePct = BigInt.zero()
     summary.subjectBuyFeePct = BigInt.zero()
     summary.subjectSellFeePct = BigInt.zero()
+    summary.totalStakedSubjectTokens = BigInt.zero()
     summary.save()
   }
   return summary
