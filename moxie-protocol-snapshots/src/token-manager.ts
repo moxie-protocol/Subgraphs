@@ -9,7 +9,7 @@ export function handleTokenDeployed(event: TokenDeployed): void {
   if (isBlacklistedSubjectTokenAddress(token)) {
     return
   }
-  let subjectToken = getOrCreateSubjectToken(token, event.block)
+  let subjectToken = getOrCreateSubjectToken(token, event.block, false)
   let user = getOrCreateUser(event.params._beneficiary, event.block)
   subjectToken.subject = user.id
   saveSubjectToken(subjectToken, event.block)

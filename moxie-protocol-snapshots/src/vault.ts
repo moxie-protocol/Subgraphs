@@ -12,7 +12,7 @@ export function handleVaultDeposit(event: VaultDeposit): void {
   if (isBlacklistedSubjectTokenAddress(event.params.subject)) {
     return
   }
-  let subjectToken = getOrCreateSubjectToken(event.params.subject, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params.subject, event.block, false)
   // subject.reserve = subject.reserve.plus(event.params.amount)
   subjectToken.reserve = event.params.totalReserve
   saveSubjectToken(subjectToken, event.block, true)
@@ -34,7 +34,7 @@ export function handleVaultTransfer(event: VaultTransfer): void {
   if (isBlacklistedSubjectTokenAddress(event.params.subject)) {
     return
   }
-  let subjectToken = getOrCreateSubjectToken(event.params.subject, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params.subject, event.block, false)
 
   // subjectToken.reserve = subjectToken.reserve.minus(event.params.amount)
   subjectToken.reserve = event.params.totalReserve

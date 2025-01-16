@@ -11,7 +11,7 @@ export function handleTransfer(event: Transfer): void {
   let to = event.params.to
   let value = event.params.value
 
-  let subjectToken = getOrCreateSubjectToken(contractAddress, event.block)
+  let subjectToken = getOrCreateSubjectToken(contractAddress, event.block, false)
   let totalSupply = subjectToken.totalSupply
   let summary = getOrCreateSummary()
   let mint = from == Address.zero()
@@ -32,13 +32,13 @@ export function handleTransfer(event: Transfer): void {
 
   // updating portfolios
   if (!mint) {
-    let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
+    let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block, false)
     fromAddressPortfolio.unstakedBalance = fromAddressPortfolio.unstakedBalance.minus(value)
-    savePortfolio(fromAddressPortfolio, event.block,true)
+    savePortfolio(fromAddressPortfolio, event.block, true)
   }
   if (!burn) {
-    let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
+    let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block, false)
     toAddressPortfolio.unstakedBalance = toAddressPortfolio.unstakedBalance.plus(value)
-    savePortfolio(toAddressPortfolio, event.block,true)
+    savePortfolio(toAddressPortfolio, event.block, true)
   }
 }

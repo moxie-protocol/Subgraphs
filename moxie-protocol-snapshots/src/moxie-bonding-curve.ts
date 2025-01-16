@@ -8,7 +8,7 @@ export function handleBondingCurveInitialized(event: BondingCurveInitialized): v
   if (isBlacklistedSubjectTokenAddress(event.params._subjectToken)) {
     return
   }
-  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block, false)
   subjectToken.reserveRatio = event.params._reserveRatio
   subjectToken.initialSupply = event.params._initialSupply // initial supply of subject token
   let calculatedPrice = new CalculatePrice(event.params._reserve, subjectToken.initialSupply, subjectToken.reserveRatio)
@@ -57,8 +57,8 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   const blockInfo = getOrCreateBlockInfo(event.block)
   const userAddress = chooseUser(event.transaction.from, event.params._beneficiary)
   // TODO: need to fix for spender
-  let user = getOrCreateUser(userAddress, event.block)
-  let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block)
+  let user = getOrCreateUser(userAddress, event.block, false)
+  let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block, false)
   let calculatedPrice = new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply, subjectToken.reserveRatio)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params._sellAmount)
   subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
@@ -66,7 +66,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._sellAmount)
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(userAddress, event.params._buyToken, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(userAddress, event.params._buyToken, event.transaction.hash, event.block, true)
   portfolio.buyVolume = portfolio.buyVolume.plus(event.params._sellAmount)
   portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(event.params._buyAmount)
@@ -89,7 +89,6 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   // if (!activeFeeBeneficiary) {
   //   throw new Error("protocol beneficiary not found")
   // }
-  const txHash = event.transaction.hash.toHexString()
   summary.totalProtocolFee = summary.totalProtocolFee.plus(fees.protocolFee)
   summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
@@ -142,7 +141,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
 
   const blockInfo = getOrCreateBlockInfo(event.block)
   // calculating price here the sell amount will be subject token and buy amount is protocol token since it's a sell
-  let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block, false)
 
   //Since HandleSellOrder is called before the vault transfer we need to predict final state of reserve and supply when calculating price
   let predictedReserve = subjectToken.reserve.minus(event.params._buyAmount.plus(fees.protocolFee).plus(fees.subjectFee))
@@ -155,11 +154,11 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // TODO: need to fix for spender
   // }
   let userAddress = chooseUser(event.transaction.from, event.params._beneficiary)
-  let user = getOrCreateUser(userAddress, event.block)
+  let user = getOrCreateUser(userAddress, event.block, false)
 
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(userAddress, event.params._sellToken, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(userAddress, event.params._sellToken, event.transaction.hash, event.block, false)
   // volume calculation is using amount+fees
   portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
 
@@ -182,7 +181,6 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // if (!activeFeeBeneficiary) {
   //   throw new Error("protocol beneficiary not found")
   // }
-  let txHash = event.transaction.hash.toHexString()
 
 
   // volume calculation is using amount+fees

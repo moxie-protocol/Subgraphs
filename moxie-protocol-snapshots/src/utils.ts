@@ -2,7 +2,8 @@ import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray, da
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Portfolio, SubjectToken, SubjectTokenDailySnapshot, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, } from "../generated/schema"
 import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
-export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
+
+export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block, saveSubjectTokenFlag: bool = true): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
   if (!subjectToken) {
     subjectToken = new SubjectToken(subjectTokenAddress.toHexString())
@@ -32,7 +33,9 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
     subjectToken.status = ONBOARDING_STATUS_ONBOARDING_INITIALIZED
     subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
     subjectToken.updatedAtBlockNumber = block.number
-    saveSubjectToken(subjectToken, block)
+    if (saveSubjectTokenFlag) {
+      saveSubjectToken(subjectToken, block)
+    }
   }
   return subjectToken
 }
@@ -41,13 +44,13 @@ export function getPortfolioId(userAddress: Address, subjectAddress: Address): s
   return userAddress.toHexString() + "-" + subjectAddress.toHexString()
 }
 
-export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Address, txHash: Bytes, block: ethereum.Block): Portfolio {
+export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Address, txHash: Bytes, block: ethereum.Block, savePortfolioFlag: bool = true): Portfolio {
   let user = getOrCreateUser(userAddress, block)
   let portfolioId = getPortfolioId(userAddress, subjectAddress)
   let portfolio = Portfolio.load(portfolioId)
   if (!portfolio) {
     portfolio = new Portfolio(portfolioId)
-    let subjectToken = getOrCreateSubjectToken(subjectAddress, block)
+    let subjectToken = getOrCreateSubjectToken(subjectAddress, block, false)
     // new holder
     subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
       BigInt.fromI32(1)
@@ -64,7 +67,9 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     portfolio.createdAtBlockNumber = block.number
     portfolio.subjectTokenBuyVolume = BigInt.zero()
-    savePortfolio(portfolio, block)
+    if (savePortfolioFlag) {
+      savePortfolio(portfolio, block)
+    }
   }
   return portfolio
 }
@@ -93,7 +98,7 @@ export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, delet
   portfolio.save()
 }
 
-export function getOrCreateUser(userAddress: Address, block: ethereum.Block): User {
+export function getOrCreateUser(userAddress: Address, block: ethereum.Block, saveUserFlag: bool = true): User {
   let user = User.load(userAddress.toHexString())
   if (!user) {
     user = new User(userAddress.toHexString())
@@ -103,7 +108,9 @@ export function getOrCreateUser(userAddress: Address, block: ethereum.Block): Us
     user.protocolOrdersCount = BigInt.zero()
     user.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     user.createdAtBlockNumber = block.number
-    saveUser(user, block)
+    if (saveUserFlag) {
+      saveUser(user, block)
+    }
     let summary = getOrCreateSummary()
     summary.numberOfUsers = summary.numberOfUsers.plus(BigInt.fromI32(1))
     summary.save()

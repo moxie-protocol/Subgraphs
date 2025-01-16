@@ -75,10 +75,10 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
     log.warning("Subject amount is zero, txHash: {}", [event.transaction.hash.toHexString()])
     return
   }
-  let subjectToken = getOrCreateSubjectToken(subjectTokenAddress, event.block)
+  let subjectToken = getOrCreateSubjectToken(subjectTokenAddress, event.block, false)
   let calculatedPrice = new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply, subjectToken.reserveRatio)
 
-  let user = getOrCreateUser(userAddress, event.block)
+  let user = getOrCreateUser(userAddress, event.block, false)
   user.buyVolume = user.buyVolume.plus(protocolTokenAmount)
   user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   saveUser(user, event.block)
@@ -96,7 +96,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   saveSubjectToken(subjectToken, event.block, true)
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(userAddress, subjectTokenAddress, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(userAddress, subjectTokenAddress, event.transaction.hash, event.block, false)
   portfolio.buyVolume = portfolio.buyVolume.plus(protocolTokenAmount)
   portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(subjectAmount)
@@ -109,7 +109,7 @@ export function handleNewAuction(event: NewAuction): void {
     return
   }
 
-  let subjectToken = getOrCreateSubjectToken(event.params._auctioningToken, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params._auctioningToken, event.block, false)
   let auction = new Auction(event.params.auctionId.toString())
   auction.minFundingThreshold = event.params.minFundingThreshold
   auction.auctionEndDate = event.params.auctionEndDate

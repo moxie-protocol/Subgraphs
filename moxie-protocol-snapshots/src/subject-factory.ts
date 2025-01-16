@@ -12,12 +12,12 @@ export function handleSubjectOnboardingInitiated(event: SubjectOnboardingInitiat
     return
   }
   let auction = loadAuction(event.params._auctionId)
-  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block, false)
   auction.subjectToken = subjectToken.id
   auction.save()
 
   subjectToken.auction = auction.id
-  subjectToken.save()
+  saveSubjectToken(subjectToken, event.block)
 }
 export function handleSubjectOnboardingFinished(event: SubjectOnboardingFinished): void {
   if (isBlacklistedAuction(event.params._auctionId.toString())) {
@@ -36,7 +36,7 @@ export function handleSubjectOnboardingFinished(event: SubjectOnboardingFinished
   auction.endBlockInfo = getOrCreateBlockInfo(event.block).id
   auction.save()
 
-  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
+  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block, false)
   subjectToken.status = ONBOARDING_STATUS_ONBOARDING_FINISHED
   saveSubjectToken(subjectToken, event.block)
 
