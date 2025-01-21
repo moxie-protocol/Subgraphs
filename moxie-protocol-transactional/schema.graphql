@@ -53,6 +53,10 @@ type SubjectToken @entity {
   totalStaked: BigInt!
   "all the lockInfos"
   lockInfos: [LockInfo!]! @derivedFrom(field: "subjectToken")
+  "total moxie invested by the user, after reducing when user sells the token"
+  protocolTokenInvested: BigDecimal!
+  "market cap: total supply * current price"
+  marketCap: BigDecimal!
 }
 
 type Portfolio @entity {
@@ -82,6 +86,9 @@ type Portfolio @entity {
   createdAtBlockInfo: BlockInfo!
   "updated at block information"
   updatedAtBlockInfo: BlockInfo!
+
+  "total moxie invested by the user"
+  protocolTokenInvested: BigDecimal!
 }
 
 type User @entity {
@@ -97,6 +104,8 @@ type User @entity {
   createdAtBlockInfo: BlockInfo!
   "updated at block information"
   updatedAtBlockInfo: BlockInfo!
+  "total moxie invested by the user"
+  protocolTokenInvested: BigDecimal!
 }
 
 type Summary @entity {

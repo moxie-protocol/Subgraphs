@@ -77,7 +77,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(Address.fromBytes(auctionAndOrder.user.userAddress), subjectTokenAddress, event.transaction.hash, event.block)
   portfolio.buyVolume = portfolio.buyVolume.plus(protocolTokenAmount)
-  // portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
+  portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(subjectAmount)
 
   savePortfolio(portfolio, event.block)
@@ -86,7 +86,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   // increasing user protocol token spent
   user.buyVolume = user.buyVolume.plus(protocolTokenAmount)
   // increasing user investment
-  // user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
+  user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   saveUser(user, event.block)
 
   // const summary = getOrCreateSummary()
@@ -97,7 +97,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
 
   let subjectToken = getOrCreateSubjectToken(subjectTokenAddress, event.block)
   subjectToken.buySideVolume = subjectToken.buySideVolume.plus(protocolTokenAmount)
-  // subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
+  subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   saveSubjectToken(subjectToken, event.block)
 }

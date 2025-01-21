@@ -2,6 +2,7 @@ import { Address, BigDecimal, BigInt, ByteArray, Bytes, ethereum, log, store } f
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Portfolio, SubjectToken, User, Summary } from "../generated/schema"
 import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, PCT_BASE, SUMMARY_ID } from "./constants"
+import { staking } from "./contracts"
 
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
@@ -26,6 +27,8 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
     subjectToken.buySideVolume = BigInt.zero()
     subjectToken.sellSideVolume = BigInt.zero()
     subjectToken.totalStaked = BigInt.zero()
+    subjectToken.protocolTokenInvested = BigDecimal.zero()
+    subjectToken.marketCap = BigDecimal.zero()
     saveSubjectToken(subjectToken, block)
   }
   return subjectToken
@@ -42,10 +45,12 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
   if (!portfolio) {
     portfolio = new Portfolio(portfolioId)
     let subjectToken = getOrCreateSubjectToken(subjectAddress, block)
-    // new holder
-    subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
-      BigInt.fromI32(1)
-    )
+    if (userAddress != Address.zero() && userAddress.toHexString().toLowerCase() != staking.toLowerCase()) {
+      // new holder
+      subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
+        BigInt.fromI32(1)
+      )
+    }
     saveSubjectToken(subjectToken, block)
     portfolio.user = user.id
     portfolio.subjectToken = subjectToken.id
@@ -56,6 +61,7 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.sellVolume = BigInt.zero()
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     portfolio.subjectTokenBuyVolume = BigInt.zero()
+    portfolio.protocolTokenInvested = BigDecimal.zero()
     savePortfolio(portfolio, block)
   }
   return portfolio
@@ -90,6 +96,7 @@ export function getOrCreateUser(userAddress: Address, block: ethereum.Block): Us
     user = new User(userAddress.toHexString())
     user.buyVolume = BigInt.zero()
     user.sellVolume = BigInt.zero()
+    user.protocolTokenInvested = BigDecimal.zero()
     user.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     saveUser(user, block)
   }
@@ -100,13 +107,10 @@ export function saveUser(user: User, block: ethereum.Block): void {
   user.save()
 }
 
-function getSnapshotId(subjectToken: SubjectToken, timestamp: BigInt): string {
-  return subjectToken.id.concat("-").concat(timestamp.toString())
-}
-
-export function saveSubjectToken(subject: SubjectToken, block: ethereum.Block): void {
-  subject.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
-  subject.save()
+export function saveSubjectToken(subjectToken: SubjectToken, block: ethereum.Block): void {
+  subjectToken.marketCap = subjectToken.currentPriceInMoxie.times(subjectToken.totalSupply.toBigDecimal()).div(BigInt.fromI32(10).pow(18).toBigDecimal())
+  subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  subjectToken.save()
 }
 
 export function getOrCreateBlockInfo(block: ethereum.Block): BlockInfo {

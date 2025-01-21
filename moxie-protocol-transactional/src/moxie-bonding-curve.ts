@@ -44,6 +44,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 
   let user = getOrCreateUser(event.params._beneficiary, event.block)
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
+  user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   saveUser(user, event.block)
 
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block)
@@ -53,12 +54,14 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._sellAmount)
+  subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   saveSubjectToken(subjectToken, event.block)
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.transaction.hash, event.block)
   portfolio.buyVolume = portfolio.buyVolume.plus(event.params._sellAmount)
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(event.params._buyAmount)
+  portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   savePortfolio(portfolio, event.block)
 }
 
@@ -108,6 +111,16 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._sellToken, event.transaction.hash, event.block)
   // volume uses amount with fees
   portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
+
+  // buyVolume / subjectTokenBuyVolume = protocolTokenInvested / balance
+  if (portfolio.subjectTokenBuyVolume.gt(BigInt.zero())) {
+    let oldPortfolioProtocolTokenInvested = portfolio.protocolTokenInvested
+    // Updated the calculation here to use fractional sell to calculate tvl
+    portfolio.protocolTokenInvested = oldPortfolioProtocolTokenInvested.minus(oldPortfolioProtocolTokenInvested.times(new BigDecimal(event.params._sellAmount)).div(new BigDecimal(portfolio.balance)))
+    // user protocol token invested is total protocol token invested by user(sum of all portfolio protocol token invested)
+    // user.protocolTokenInvested is reduced same amount as  portfolio.protocolTokenInvested is reduced
+    user.protocolTokenInvested = user.protocolTokenInvested.minus(oldPortfolioProtocolTokenInvested.minus(portfolio.protocolTokenInvested))
+  }
   savePortfolio(portfolio, event.block)
 }
 
