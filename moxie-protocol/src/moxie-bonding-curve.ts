@@ -83,8 +83,15 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   order.blockNumber = event.block.number
   order.blockTimestamp = event.block.timestamp
 
+
+  subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
+  subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
+  subjectToken.lastOrderBlockNumber = event.block.number
+  saveSubjectToken(subjectToken, event.block, true)
+
+
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(userAddress, event.params._buyToken, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(userAddress, event.params._buyToken, event.transaction.hash, event.block,false)
   portfolio.buyVolume = portfolio.buyVolume.plus(event.params._sellAmount)
   portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(event.params._buyAmount)
@@ -119,11 +126,6 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   createSubjectFeeTransfer(event, blockInfo, order, subjectToken, fees.subjectFee)
 
   createProtocolFeeTransfer(event, blockInfo, order, subjectToken, activeFeeBeneficiary, fees.protocolFee)
-
-  subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
-  subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
-  subjectToken.lastOrderBlockNumber = event.block.number
-  saveSubjectToken(subjectToken, event.block, true)
 
   order.marketCap = subjectToken.marketCap
   order.save()
@@ -211,8 +213,17 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   order.blockNumber = event.block.number
   order.blockTimestamp = event.block.timestamp
 
+  subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
+  subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
+  // volume calculation is using amount+fees
+  subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(protocolTokenAmount)
+  // volume calculation is using amount+fees
+  subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
+  subjectToken.lastOrderBlockNumber = event.block.number
+  saveSubjectToken(subjectToken, event.block, true)
+  
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(userAddress, event.params._sellToken, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(userAddress, event.params._sellToken, event.transaction.hash, event.block,false)
   // volume calculation is using amount+fees
   portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
 
@@ -225,6 +236,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
     // user.protocolTokenInvested is reduced same amount as  portfolio.protocolTokenInvested is reduced
     user.protocolTokenInvested = user.protocolTokenInvested.minus(oldPortfolioProtocolTokenInvested.minus(portfolio.protocolTokenInvested))
   }
+  savePortfolio(portfolio, event.block)
   order.portfolio = portfolio.id
 
 
@@ -248,17 +260,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
   saveUser(user, event.block)
-  savePortfolio(portfolio, event.block)
   createProtocolFeeTransfer(event, blockInfo, order, subjectToken, activeFeeBeneficiary, fees.protocolFee)
-
-  subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
-  subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
-  // volume calculation is using amount+fees
-  subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(protocolTokenAmount)
-  // volume calculation is using amount+fees
-  subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
-  subjectToken.lastOrderBlockNumber = event.block.number
-  saveSubjectToken(subjectToken, event.block, true)
 
   order.marketCap = subjectToken.marketCap
   order.save()

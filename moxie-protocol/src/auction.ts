@@ -96,7 +96,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   saveSubjectToken(subjectToken, event.block, true)
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(userAddress, subjectTokenAddress, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(userAddress, subjectTokenAddress, event.transaction.hash, event.block,false)
   portfolio.buyVolume = portfolio.buyVolume.plus(protocolTokenAmount)
   portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(subjectAmount)

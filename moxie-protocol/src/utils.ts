@@ -2,6 +2,7 @@ import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray, da
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, ProtocolFeeTransfer, SubjectToken, SubjectTokenDailySnapshot, SubjectFeeTransfer, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, } from "../generated/schema"
 import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
+import { staking } from "./contracts"
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
   if (!subjectToken) {
@@ -41,17 +42,19 @@ export function getPortfolioId(userAddress: Address, subjectAddress: Address): s
   return userAddress.toHexString() + "-" + subjectAddress.toHexString()
 }
 
-export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Address, txHash: Bytes, block: ethereum.Block): Portfolio {
+export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Address, txHash: Bytes, block: ethereum.Block, savePortfolioFlag: bool = true): Portfolio {
   let user = getOrCreateUser(userAddress, block)
   let portfolioId = getPortfolioId(userAddress, subjectAddress)
   let portfolio = Portfolio.load(portfolioId)
   if (!portfolio) {
     portfolio = new Portfolio(portfolioId)
     let subjectToken = getOrCreateSubjectToken(subjectAddress, block)
-    // new holder
-    subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
-      BigInt.fromI32(1)
-    )
+    if (userAddress != Address.zero() && userAddress.toHexString().toLowerCase() != staking.toLowerCase()) {
+      // new holder
+      subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
+        BigInt.fromI32(1)
+      )
+    }
     saveSubjectToken(subjectToken, block)
     portfolio.user = user.id
     portfolio.subjectToken = subjectToken.id
@@ -64,7 +67,9 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
     portfolio.createdAtBlockInfo = getOrCreateBlockInfo(block).id
     portfolio.createdAtBlockNumber = block.number
     portfolio.subjectTokenBuyVolume = BigInt.zero()
-    savePortfolio(portfolio, block)
+    if (savePortfolioFlag) {
+      savePortfolio(portfolio, block)
+    }
   }
   return portfolio
 }
