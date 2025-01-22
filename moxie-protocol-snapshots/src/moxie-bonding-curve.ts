@@ -65,6 +65,13 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._sellAmount)
+
+
+  subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
+  subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
+  subjectToken.lastOrderBlockNumber = event.block.number
+  saveSubjectToken(subjectToken, event.block, true)
+  
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(userAddress, event.params._buyToken, event.transaction.hash, event.block, true)
   portfolio.buyVolume = portfolio.buyVolume.plus(event.params._sellAmount)
@@ -93,11 +100,6 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
 
-
-  subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
-  subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
-  subjectToken.lastOrderBlockNumber = event.block.number
-  saveSubjectToken(subjectToken, event.block, true)
 
 
   // activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
@@ -156,12 +158,19 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   let userAddress = chooseUser(event.transaction.from, event.params._beneficiary)
   let user = getOrCreateUser(userAddress, event.block, false)
 
+  subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
+  subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
+  // volume calculation is using amount+fees
+  subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(protocolTokenAmount)
+  // volume calculation is using amount+fees
+  subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
+  subjectToken.lastOrderBlockNumber = event.block.number
+  saveSubjectToken(subjectToken, event.block, true)
 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(userAddress, event.params._sellToken, event.transaction.hash, event.block, false)
   // volume calculation is using amount+fees
   portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
-
   // buyVolume / subjectTokenBuyVolume = protocolTokenInvested / balance
   if (portfolio.subjectTokenBuyVolume.gt(BigInt.zero())) {
     let oldPortfolioProtocolTokenInvested = portfolio.protocolTokenInvested
@@ -171,6 +180,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
     // user.protocolTokenInvested is reduced same amount as  portfolio.protocolTokenInvested is reduced
     user.protocolTokenInvested = user.protocolTokenInvested.minus(oldPortfolioProtocolTokenInvested.minus(portfolio.protocolTokenInvested))
   }
+  savePortfolio(portfolio, event.block)
 
 
   const summary = getOrCreateSummary()
@@ -191,16 +201,6 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
   saveUser(user, event.block)
-  savePortfolio(portfolio, event.block)
-
-  subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
-  subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
-  // volume calculation is using amount+fees
-  subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(protocolTokenAmount)
-  // volume calculation is using amount+fees
-  subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
-  subjectToken.lastOrderBlockNumber = event.block.number
-  saveSubjectToken(subjectToken, event.block, true)
 
   // activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
   // activeFeeBeneficiary.save()
