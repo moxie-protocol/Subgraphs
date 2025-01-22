@@ -207,8 +207,7 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   let portfolio = getOrCreatePortfolio(userAddress, event.params._sellToken, event.transaction.hash, event.block)
   // volume calculation is using amount+fees
   portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
-  savePortfolio(portfolio, event.block)
-
+  
   // buyVolume / subjectTokenBuyVolume = protocolTokenInvested / balance
   if (portfolio.subjectTokenBuyVolume.gt(BigInt.zero())) {
     let oldPortfolioProtocolTokenInvested = portfolio.protocolTokenInvested
@@ -218,6 +217,8 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
     // user.protocolTokenInvested is reduced same amount as  portfolio.protocolTokenInvested is reduced
     user.protocolTokenInvested = user.protocolTokenInvested.minus(oldPortfolioProtocolTokenInvested.minus(portfolio.protocolTokenInvested))
   }
+  savePortfolio(portfolio, event.block)
+  
   order.portfolio = portfolio.id
 
   const summary = getOrCreateSummary()
