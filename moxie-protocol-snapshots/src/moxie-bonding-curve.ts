@@ -2,7 +2,7 @@ import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula, Initialized, MoxieBondingCurve, SubjectReserveRatioUpdated } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { SubjectToken, SubjectToSubjectToken, Summary, User } from "../generated/schema"
 
-import { calculateBuySideFee, calculateSellSideFee, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideProtocolAmountAddingBackFees, isBlacklistedSubjectTokenAddress, chooseUser } from "./utils"
+import { calculateBuySideFee, calculateSellSideFee, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideProtocolAmountAddingBackFees, isBlacklistedSubjectTokenAddress, isWhiteListed } from "./utils"
 import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL, SUMMARY_ID } from "./constants"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   if (isBlacklistedSubjectTokenAddress(event.params._subjectToken)) {
@@ -55,7 +55,11 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let protocolTokenSpentAfterFees = event.params._sellAmount.minus(fees.protocolFee).minus(fees.subjectFee)
 
   const blockInfo = getOrCreateBlockInfo(event.block)
-  const userAddress = chooseUser(event.transaction.from, event.params._beneficiary)
+  const isWhiteListedBeneficiary = isWhiteListed(event.params._beneficiary)
+  let userAddress = event.params._beneficiary
+  if (isWhiteListedBeneficiary) {
+    userAddress = event.transaction.from
+  }
   // TODO: need to fix for spender
   let user = getOrCreateUser(userAddress, event.block, false)
   let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block, false)
@@ -71,18 +75,24 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   subjectToken.protocolFee = subjectToken.protocolFee.plus(fees.protocolFee)
   subjectToken.lastOrderBlockNumber = event.block.number
   saveSubjectToken(subjectToken, event.block, true)
-  
+
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(userAddress, event.params._buyToken, event.transaction.hash, event.block, true)
   portfolio.buyVolume = portfolio.buyVolume.plus(event.params._sellAmount)
-  portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+  if (!isWhiteListedBeneficiary) {
+    // increating portfolio protocol token invested only if user is not white listed
+    portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+  }
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(event.params._buyAmount)
 
   savePortfolio(portfolio, event.block)
   // increasing user protocol token spent
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
   // increasing user investment
-  user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+  if (!isWhiteListedBeneficiary) {
+    // increasing user protocol token invested only if user is not white listed
+    user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+  }
   saveUser(user, event.block)
 
   const summary = getOrCreateSummary()
@@ -100,10 +110,15 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
 
+  if (isWhiteListedBeneficiary) {
+    let user = getOrCreateUser(event.params._beneficiary, event.block)
+    user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+    saveUser(user, event.block)
 
-
-  // activeFeeBeneficiary.totalFees = activeFeeBeneficiary.totalFees.plus(fees.protocolFee)
-  // activeFeeBeneficiary.save()
+    let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.transaction.hash, event.block)
+    portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+    savePortfolio(portfolio, event.block)
+  }
 
 }
 
@@ -155,7 +170,11 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // if (event.params._spender != event.params._beneficiary) {
   // TODO: need to fix for spender
   // }
-  let userAddress = chooseUser(event.transaction.from, event.params._beneficiary)
+  let isWhiteListedBeneficiary = isWhiteListed(event.params._beneficiary)
+  let userAddress = event.params._beneficiary
+  if (isWhiteListedBeneficiary) {
+    userAddress = event.transaction.from
+  }
   let user = getOrCreateUser(userAddress, event.block, false)
 
   subjectToken.subjectFee = subjectToken.subjectFee.plus(fees.subjectFee)
@@ -171,15 +190,6 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   let portfolio = getOrCreatePortfolio(userAddress, event.params._sellToken, event.transaction.hash, event.block, false)
   // volume calculation is using amount+fees
   portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
-  // buyVolume / subjectTokenBuyVolume = protocolTokenInvested / balance
-  if (portfolio.subjectTokenBuyVolume.gt(BigInt.zero())) {
-    let oldPortfolioProtocolTokenInvested = portfolio.protocolTokenInvested
-    // Updated the calculation here to use fractional sell to calculate tvl
-    portfolio.protocolTokenInvested = oldPortfolioProtocolTokenInvested.minus(oldPortfolioProtocolTokenInvested.times(new BigDecimal(event.params._sellAmount)).div(new BigDecimal(portfolio.balance)))
-    // user protocol token invested is total protocol token invested by user(sum of all portfolio protocol token invested)
-    // user.protocolTokenInvested is reduced same amount as  portfolio.protocolTokenInvested is reduced
-    user.protocolTokenInvested = user.protocolTokenInvested.minus(oldPortfolioProtocolTokenInvested.minus(portfolio.protocolTokenInvested))
-  }
   savePortfolio(portfolio, event.block)
 
 
