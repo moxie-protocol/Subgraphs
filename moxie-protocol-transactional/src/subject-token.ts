@@ -1,9 +1,8 @@
-import { Address, BigInt, log, store } from "@graphprotocol/graph-ts"
+import { Address, BigDecimal, BigInt, log, store } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/templates/SubjectTokenContract/ERC20"
-import { getOrCreatePortfolio, getOrCreateSubjectToken, isBlacklistedSubjectTokenAddress, savePortfolio, saveSubjectToken } from "./utils"
+import { getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, isBlacklistedSubjectTokenAddress, savePortfolio, saveSubjectToken, saveUser } from "./utils"
 
 export function handleTransfer(event: Transfer): void {
-  log.warning("Transfer event: {}", [event.transaction.hash.toHexString()])
   let contractAddress = event.address
   if (isBlacklistedSubjectTokenAddress(contractAddress)) {
     return
@@ -14,6 +13,7 @@ export function handleTransfer(event: Transfer): void {
 
   let subjectToken = getOrCreateSubjectToken(contractAddress, event.block)
   let totalSupply = subjectToken.totalSupply
+  let summary = getOrCreateSummary()
   let mint = from == Address.zero()
   if (mint) {
     // minting
@@ -24,17 +24,34 @@ export function handleTransfer(event: Transfer): void {
     // burning
     totalSupply = totalSupply.minus(value)
   }
+  summary.save()
   subjectToken.totalSupply = totalSupply
   saveSubjectToken(subjectToken, event.block)
+
   // updating portfolios
+  let protcolTokenInvestedDiff = BigDecimal.zero()
+  // for mint `from` address is zero, no need to update `from` portfolio
   if (!mint) {
-    let fromAddressPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
-    fromAddressPortfolio.unstakedBalance = fromAddressPortfolio.unstakedBalance.minus(value)
-    savePortfolio(fromAddressPortfolio, event.block, true)
+    let fromPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
+    let fromOldProtocolTokenInvested = fromPortfolio.protocolTokenInvested
+    protcolTokenInvestedDiff = fromOldProtocolTokenInvested.times(new BigDecimal(value)).div(new BigDecimal(fromPortfolio.balance))
+    fromPortfolio.protocolTokenInvested = fromOldProtocolTokenInvested.minus(protcolTokenInvestedDiff)
+    fromPortfolio.unstakedBalance = fromPortfolio.unstakedBalance.minus(value)
+    savePortfolio(fromPortfolio, event.block, true)
+
+    let fromUser = getOrCreateUser(from, event.block)
+    fromUser.protocolTokenInvested = fromUser.protocolTokenInvested.minus(protcolTokenInvestedDiff)
+    saveUser(fromUser, event.block)
   }
+  // for burn `to` address is zero, no need to update `to` portfolio
   if (!burn) {
-    let toAddressPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
-    toAddressPortfolio.unstakedBalance = toAddressPortfolio.unstakedBalance.plus(value)
-    savePortfolio(toAddressPortfolio, event.block, true)
+    let toPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
+    toPortfolio.unstakedBalance = toPortfolio.unstakedBalance.plus(value)
+    toPortfolio.protocolTokenInvested = toPortfolio.protocolTokenInvested.plus(protcolTokenInvestedDiff)
+    savePortfolio(toPortfolio, event.block, true)
+
+    let toUser = getOrCreateUser(to, event.block)
+    toUser.protocolTokenInvested = toUser.protocolTokenInvested.plus(protcolTokenInvestedDiff)
+    saveUser(toUser, event.block)
   }
 }

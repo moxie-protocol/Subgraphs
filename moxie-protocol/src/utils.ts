@@ -590,16 +590,9 @@ export function isBlacklistedAuction(auctionId: string): bool {
 }
 
 
-export function chooseUser(from: Address, beneficiary: Address): Address {
+export function isWhiteListed(beneficiary: Address): bool {
   if (dataSource.network() == "base") {
-    if (WHITELISTED_CONTRACTS_MAINNET.isSet(beneficiary.toHexString().toLowerCase())) {
-      return from
-    }
-    return beneficiary
+    return WHITELISTED_CONTRACTS_MAINNET.isSet(beneficiary.toHexString().toLowerCase())
   }
-
-  if (WHITELISTED_CONTRACTS_TESTNET.isSet(beneficiary.toHexString().toLowerCase())) {
-    return from
-  }
-  return beneficiary
+  return WHITELISTED_CONTRACTS_TESTNET.isSet(beneficiary.toHexString().toLowerCase())
 }

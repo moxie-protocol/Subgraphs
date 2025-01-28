@@ -1,7 +1,7 @@
-import { Address, BigDecimal, BigInt, ByteArray, Bytes, ethereum, log, store } from "@graphprotocol/graph-ts"
+import { Address, BigDecimal, BigInt, ByteArray, Bytes, dataSource, ethereum, log, store } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Portfolio, SubjectToken, User, Summary } from "../generated/schema"
-import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, PCT_BASE, SUMMARY_ID } from "./constants"
+import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, PCT_BASE, SUMMARY_ID, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
 import { staking } from "./contracts"
 
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
@@ -235,4 +235,12 @@ export function isBlacklistedSubjectTokenAddress(subjectAddress: Address): bool 
 
 export function isBlacklistedAuction(auctionId: string): bool {
   return BLACKLISTED_AUCTION.isSet(auctionId)
+}
+
+
+export function isWhiteListed(beneficiary: Address): bool {
+  if (dataSource.network() == "base") {
+    return WHITELISTED_CONTRACTS_MAINNET.isSet(beneficiary.toHexString().toLowerCase())
+  }
+  return WHITELISTED_CONTRACTS_TESTNET.isSet(beneficiary.toHexString().toLowerCase())
 }
