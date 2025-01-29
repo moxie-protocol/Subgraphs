@@ -36,7 +36,9 @@ export function handleTransfer(event: Transfer): void {
   if (!mint) {
     let fromPortfolio = getOrCreatePortfolio(from, contractAddress, event.transaction.hash, event.block)
     let fromOldProtocolTokenInvested = fromPortfolio.protocolTokenInvested
-    protcolTokenInvestedDiff = fromOldProtocolTokenInvested.times(new BigDecimal(value)).div(new BigDecimal(fromPortfolio.balance))
+    if (fromPortfolio.balance.gt(BigInt.zero())) {
+      protcolTokenInvestedDiff = fromOldProtocolTokenInvested.times(new BigDecimal(value)).div(new BigDecimal(fromPortfolio.balance))
+    }
     fromPortfolio.protocolTokenInvested = fromOldProtocolTokenInvested.minus(protcolTokenInvestedDiff)
     fromPortfolio.unstakedBalance = fromPortfolio.unstakedBalance.minus(value)
     savePortfolio(fromPortfolio, event.block, true)
