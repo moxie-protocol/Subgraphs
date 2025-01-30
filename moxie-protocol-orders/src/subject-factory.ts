@@ -17,7 +17,7 @@ export function handleSubjectOnboardingInitiated(event: SubjectOnboardingInitiat
   auction.save()
 
   subjectToken.auction = auction.id
-  subjectToken.save()
+  saveSubjectToken(subjectToken, event.block)
 }
 export function handleSubjectOnboardingFinished(event: SubjectOnboardingFinished): void {
   if (isBlacklistedAuction(event.params._auctionId.toString())) {
