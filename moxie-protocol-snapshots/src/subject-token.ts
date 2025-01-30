@@ -1,6 +1,6 @@
 import { Address, BigDecimal, BigInt, log, store } from "@graphprotocol/graph-ts"
 import { Transfer } from "../generated/templates/SubjectTokenContract/ERC20"
-import { getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, isBlacklistedSubjectTokenAddress, savePortfolio, saveSubjectToken, saveUser } from "./utils"
+import { BeneficiaryType, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, getUserType, isBlacklistedSubjectTokenAddress, savePortfolio, saveSubjectToken, saveUser } from "./utils"
 
 export function handleTransfer(event: Transfer): void {
   let contractAddress = event.address
@@ -39,7 +39,9 @@ export function handleTransfer(event: Transfer): void {
     if (fromPortfolio.balance.gt(BigInt.zero())) {
       protcolTokenInvestedDiff = fromOldProtocolTokenInvested.times(new BigDecimal(value)).div(new BigDecimal(fromPortfolio.balance))
     }
-    fromPortfolio.protocolTokenInvested = fromOldProtocolTokenInvested.minus(protcolTokenInvestedDiff)
+    if(getUserType(from) != BeneficiaryType.STAKING) {
+      fromPortfolio.protocolTokenInvested = fromOldProtocolTokenInvested.minus(protcolTokenInvestedDiff)
+    }
     fromPortfolio.unstakedBalance = fromPortfolio.unstakedBalance.minus(value)
     savePortfolio(fromPortfolio, event.block, true)
 
@@ -51,7 +53,9 @@ export function handleTransfer(event: Transfer): void {
   if (!burn) {
     let toPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
     toPortfolio.unstakedBalance = toPortfolio.unstakedBalance.plus(value)
-    toPortfolio.protocolTokenInvested = toPortfolio.protocolTokenInvested.plus(protcolTokenInvestedDiff)
+    if(getUserType(to) != BeneficiaryType.STAKING) {
+      toPortfolio.protocolTokenInvested = toPortfolio.protocolTokenInvested.plus(protcolTokenInvestedDiff)
+    }
     savePortfolio(toPortfolio, event.block, true)
 
     let toUser = getOrCreateUser(to, event.block)

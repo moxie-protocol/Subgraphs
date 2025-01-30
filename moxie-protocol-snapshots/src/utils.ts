@@ -1,10 +1,46 @@
-import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray, dataSource } from "@graphprotocol/graph-ts"
+import {
+  Address,
+  BigDecimal,
+  BigInt,
+  Bytes,
+  ethereum,
+  log,
+  store,
+  ByteArray,
+  dataSource,
+} from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { BlockInfo, Portfolio, SubjectToken, SubjectTokenDailySnapshot, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, } from "../generated/schema"
-import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, STAKING_CONTRACTS_TESTNET, STAKING_CONTRACTS_MAINNET, SUMMARY_ID, TOKEN_DECIMALS, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
-import { staking } from "./contracts"
+import {
+  BlockInfo,
+  Portfolio,
+  SubjectToken,
+  SubjectTokenDailySnapshot,
+  SubjectTokenHourlySnapshot,
+  Summary,
+  User,
+  SubjectTokenRollingDailySnapshot,
+  Auction,
+} from "../generated/schema"
+import {
+  BLACKLISTED_AUCTION,
+  BLACKLISTED_SUBJECT_TOKEN_ADDRESS,
+  ONBOARDING_STATUS_ONBOARDING_INITIALIZED,
+  PCT_BASE,
+  SECONDS_IN_DAY,
+  SECONDS_IN_HOUR,
+  STAKING_CONTRACTS_TESTNET,
+  STAKING_CONTRACTS_MAINNET,
+  SUMMARY_ID,
+  TOKEN_DECIMALS,
+  WHITELISTED_CONTRACTS_MAINNET,
+  WHITELISTED_CONTRACTS_TESTNET,
+} from "./constants"
 
-export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block, saveSubjectTokenFlag: bool = true): SubjectToken {
+export function getOrCreateSubjectToken(
+  subjectTokenAddress: Address,
+  block: ethereum.Block,
+  saveSubjectTokenFlag: bool = true
+): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
   if (!subjectToken) {
     subjectToken = new SubjectToken(subjectTokenAddress.toHexString())
@@ -41,18 +77,30 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
   return subjectToken
 }
 
-export function getPortfolioId(userAddress: Address, subjectAddress: Address): string {
+export function getPortfolioId(
+  userAddress: Address,
+  subjectAddress: Address
+): string {
   return userAddress.toHexString() + "-" + subjectAddress.toHexString()
 }
 
-export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Address, txHash: Bytes, block: ethereum.Block, savePortfolioFlag: bool = true): Portfolio {
+export function getOrCreatePortfolio(
+  userAddress: Address,
+  subjectAddress: Address,
+  txHash: Bytes,
+  block: ethereum.Block,
+  savePortfolioFlag: bool = true
+): Portfolio {
   let user = getOrCreateUser(userAddress, block)
   let portfolioId = getPortfolioId(userAddress, subjectAddress)
   let portfolio = Portfolio.load(portfolioId)
   if (!portfolio) {
     portfolio = new Portfolio(portfolioId)
     let subjectToken = getOrCreateSubjectToken(subjectAddress, block, false)
-    if (userAddress != Address.zero() && userAddress.toHexString().toLowerCase() != staking.toLowerCase()) {
+    if (
+      userAddress != Address.zero() &&
+      getUserType(userAddress) != BeneficiaryType.STAKING
+    ) {
       // new holder
       subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
         BigInt.fromI32(1)
@@ -82,9 +130,13 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
  * @param portfolio Portfolio entity which needs to be saved
  * @param block ethereum.Block
  * @param deleteZeroBalancePortfolio boolean flag to check balance and delete portfolio if balance is zero
- * @returns 
+ * @returns
  */
-export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, deleteZeroBalancePortfolio: bool = false): void {
+export function savePortfolio(
+  portfolio: Portfolio,
+  block: ethereum.Block,
+  deleteZeroBalancePortfolio: bool = false
+): void {
   portfolio.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   portfolio.updatedAtBlockNumber = block.number
   portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
@@ -101,7 +153,11 @@ export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, delet
   portfolio.save()
 }
 
-export function getOrCreateUser(userAddress: Address, block: ethereum.Block, saveUserFlag: bool = true): User {
+export function getOrCreateUser(
+  userAddress: Address,
+  block: ethereum.Block,
+  saveUserFlag: bool = true
+): User {
   let user = User.load(userAddress.toHexString())
   if (!user) {
     user = new User(userAddress.toHexString())
@@ -129,8 +185,13 @@ export function saveUser(user: User, block: ethereum.Block): void {
 /**
  * Creates a new hourly snapshot for the subject token and returns the timestamp of the snapshot
  */
-function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp: BigInt): BigInt {
-  let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_HOUR)).plus(SECONDS_IN_HOUR)
+function createSubjectTokenHourlySnapshot(
+  subjectToken: SubjectToken,
+  timestamp: BigInt
+): BigInt {
+  let snapshotTimestamp = timestamp
+    .minus(timestamp.mod(SECONDS_IN_HOUR))
+    .plus(SECONDS_IN_HOUR)
   let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
   let snapshot = SubjectTokenHourlySnapshot.load(snapshotId)
   if (!snapshot) {
@@ -155,21 +216,29 @@ function createSubjectTokenHourlySnapshot(subjectToken: SubjectToken, timestamp:
   snapshot.hourlyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
 
   snapshot.endMarketCap = subjectToken.marketCap
-  snapshot.marketCapChange = snapshot.endMarketCap.minus(snapshot.startMarketCap)
+  snapshot.marketCapChange = snapshot.endMarketCap.minus(
+    snapshot.startMarketCap
+  )
 
   snapshot.totalSupply = subjectToken.totalSupply
 
   snapshot.endUniqueHolders = subjectToken.uniqueHolders
-  snapshot.hourlyUniqueHoldersChange = snapshot.endUniqueHolders.minus(snapshot.startUniqueHolders) // TODO: confirm
+  snapshot.hourlyUniqueHoldersChange = snapshot.endUniqueHolders.minus(
+    snapshot.startUniqueHolders
+  ) // TODO: confirm
 
   snapshot.endVolume = subjectToken.lifetimeVolume
   snapshot.hourlyVolumeChange = snapshot.endVolume.minus(snapshot.startVolume) // TODO: confirm
 
   snapshot.endSubjectFee = subjectToken.subjectFee
-  snapshot.hourlySubjectFeeChange = snapshot.endSubjectFee.minus(snapshot.startSubjectFee) // TODO: confirm
+  snapshot.hourlySubjectFeeChange = snapshot.endSubjectFee.minus(
+    snapshot.startSubjectFee
+  ) // TODO: confirm
 
   snapshot.endProtocolFee = subjectToken.protocolFee
-  snapshot.hourlyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
+  snapshot.hourlyProtocolFeeChange = snapshot.endProtocolFee.minus(
+    snapshot.startProtocolFee
+  ) // TODO: confirm
   snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
   snapshot.updatedAtBlockNumber = subjectToken.updatedAtBlockNumber
   snapshot.save()
@@ -188,39 +257,91 @@ function getSnapshotId(subjectToken: SubjectToken, timestamp: BigInt): string {
  * @param latestSnapshotId
  * @returns
  */
-function loadClosestSubjectTokenHourlySnapshotInPreviousDailySnapshot(subjectToken: SubjectToken, timestamp: BigInt): SubjectTokenHourlySnapshot {
+function loadClosestSubjectTokenHourlySnapshotInPreviousDailySnapshot(
+  subjectToken: SubjectToken,
+  timestamp: BigInt
+): SubjectTokenHourlySnapshot {
   if (!subjectToken.previousDailySnapshot) {
-    throw new Error("Previous daily snapshot not found for subject token: " + subjectToken.id + " and timestamp: " + timestamp.toString())
+    throw new Error(
+      "Previous daily snapshot not found for subject token: " +
+        subjectToken.id +
+        " and timestamp: " +
+        timestamp.toString()
+    )
   }
-  let previousDailySnapshot = SubjectTokenDailySnapshot.load(subjectToken.previousDailySnapshot!)
+  let previousDailySnapshot = SubjectTokenDailySnapshot.load(
+    subjectToken.previousDailySnapshot!
+  )
   if (!previousDailySnapshot) {
-    throw new Error("Previous daily snapshot not loading for subject token: " + subjectToken.id + " and timestamp: " + timestamp.toString())
+    throw new Error(
+      "Previous daily snapshot not loading for subject token: " +
+        subjectToken.id +
+        " and timestamp: " +
+        timestamp.toString()
+    )
   }
   let snapshotTimestamp = BigInt.zero()
-  if (isEveryElementGreaterThanTarget(previousDailySnapshot.hourlySnapshotEndTimestamps, timestamp) && previousDailySnapshot.lastSubjectTokenDailySnapshot) {
+  if (
+    isEveryElementGreaterThanTarget(
+      previousDailySnapshot.hourlySnapshotEndTimestamps,
+      timestamp
+    ) &&
+    previousDailySnapshot.lastSubjectTokenDailySnapshot
+  ) {
     // means the timestamp is before the first hourly snapshot in the daily snapshot
     // and there is a previous daily snapshot
-    let dayBeforeDailySnapshot = SubjectTokenDailySnapshot.load(previousDailySnapshot.lastSubjectTokenDailySnapshot!)
+    let dayBeforeDailySnapshot = SubjectTokenDailySnapshot.load(
+      previousDailySnapshot.lastSubjectTokenDailySnapshot!
+    )
     if (!dayBeforeDailySnapshot) {
-      throw new Error("Previous daily snapshot not loading for subject token: " + subjectToken.id + " and timestamp: " + timestamp.toString())
+      throw new Error(
+        "Previous daily snapshot not loading for subject token: " +
+          subjectToken.id +
+          " and timestamp: " +
+          timestamp.toString()
+      )
     }
-    snapshotTimestamp = dayBeforeDailySnapshot.hourlySnapshotEndTimestamps[dayBeforeDailySnapshot.hourlySnapshotEndTimestamps.length - 1]
-    log.warning("previousDailySnapshot.lastSubjectTokenDailySnapshot {} timestamp {} snapshotTimestamp {}", [previousDailySnapshot.lastSubjectTokenDailySnapshot!, timestamp.toString(), snapshotTimestamp.toString()])
+    snapshotTimestamp =
+      dayBeforeDailySnapshot.hourlySnapshotEndTimestamps[
+        dayBeforeDailySnapshot.hourlySnapshotEndTimestamps.length - 1
+      ]
+    log.warning(
+      "previousDailySnapshot.lastSubjectTokenDailySnapshot {} timestamp {} snapshotTimestamp {}",
+      [
+        previousDailySnapshot.lastSubjectTokenDailySnapshot!,
+        timestamp.toString(),
+        snapshotTimestamp.toString(),
+      ]
+    )
   } else {
     // means the timestamp is after the first hourly snapshot in the daily snapshot
     // or there is no previous daily snapshot before it
-    snapshotTimestamp = findClosest(previousDailySnapshot.hourlySnapshotEndTimestamps, timestamp)
+    snapshotTimestamp = findClosest(
+      previousDailySnapshot.hourlySnapshotEndTimestamps,
+      timestamp
+    )
   }
   let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
   let snapshot = SubjectTokenHourlySnapshot.load(snapshotId)
   if (!snapshot) {
-    throw new Error("Snapshot not found for subject token: " + subjectToken.id + " and timestamp: " + timestamp.toString())
+    throw new Error(
+      "Snapshot not found for subject token: " +
+        subjectToken.id +
+        " and timestamp: " +
+        timestamp.toString()
+    )
   }
   return snapshot
 }
 
-function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: BigInt, lastHourlySnapshotEndTimestamp: BigInt): void {
-  let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_DAY)).plus(SECONDS_IN_DAY)
+function createSubjectTokenDailySnapshot(
+  subjectToken: SubjectToken,
+  timestamp: BigInt,
+  lastHourlySnapshotEndTimestamp: BigInt
+): void {
+  let snapshotTimestamp = timestamp
+    .minus(timestamp.mod(SECONDS_IN_DAY))
+    .plus(SECONDS_IN_DAY)
   let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
   let snapshot = SubjectTokenDailySnapshot.load(snapshotId)
   let justCreated = false
@@ -249,21 +370,29 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
   snapshot.dailyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
 
   snapshot.endMarketCap = subjectToken.marketCap
-  snapshot.marketCapChange = snapshot.endMarketCap.minus(snapshot.startMarketCap)
+  snapshot.marketCapChange = snapshot.endMarketCap.minus(
+    snapshot.startMarketCap
+  )
 
   snapshot.totalSupply = subjectToken.totalSupply
 
   snapshot.endUniqueHolders = subjectToken.uniqueHolders
-  snapshot.dailyUniqueHoldersChange = snapshot.endUniqueHolders.minus(snapshot.startUniqueHolders) // TODO: confirm
+  snapshot.dailyUniqueHoldersChange = snapshot.endUniqueHolders.minus(
+    snapshot.startUniqueHolders
+  ) // TODO: confirm
 
   snapshot.endVolume = subjectToken.lifetimeVolume
   snapshot.dailyVolumeChange = snapshot.endVolume.minus(snapshot.startVolume) // TODO: confirm
 
   snapshot.endSubjectFee = subjectToken.subjectFee
-  snapshot.dailySubjectFeeChange = snapshot.endSubjectFee.minus(snapshot.startSubjectFee) // TODO: confirm
+  snapshot.dailySubjectFeeChange = snapshot.endSubjectFee.minus(
+    snapshot.startSubjectFee
+  ) // TODO: confirm
 
   snapshot.endProtocolFee = subjectToken.protocolFee
-  snapshot.dailyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
+  snapshot.dailyProtocolFeeChange = snapshot.endProtocolFee.minus(
+    snapshot.startProtocolFee
+  ) // TODO: confirm
   snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
   snapshot.updatedAtBlockNumber = subjectToken.updatedAtBlockNumber
 
@@ -299,14 +428,23 @@ function createSubjectTokenDailySnapshot(subjectToken: SubjectToken, timestamp: 
  * @param subjectToken
  * @param timestamp
  */
-function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, timestamp: BigInt): void {
-  let snapshotTimestamp = timestamp.minus(timestamp.mod(SECONDS_IN_HOUR)).plus(SECONDS_IN_HOUR)
+function createSubjectTokenRollingDailySnapshot(
+  subjectToken: SubjectToken,
+  timestamp: BigInt
+): void {
+  let snapshotTimestamp = timestamp
+    .minus(timestamp.mod(SECONDS_IN_HOUR))
+    .plus(SECONDS_IN_HOUR)
   let time24HourAgo = timestamp.minus(SECONDS_IN_DAY)
   let snapshotId = getSnapshotId(subjectToken, snapshotTimestamp)
   let snapshot = SubjectTokenRollingDailySnapshot.load(snapshotId)
   if (!snapshot) {
     snapshot = new SubjectTokenRollingDailySnapshot(snapshotId)
-    let hourlySnapshot = loadClosestSubjectTokenHourlySnapshotInPreviousDailySnapshot(subjectToken, time24HourAgo)
+    let hourlySnapshot =
+      loadClosestSubjectTokenHourlySnapshotInPreviousDailySnapshot(
+        subjectToken,
+        time24HourAgo
+      )
     snapshot.startTimestamp = time24HourAgo
     snapshot.startReferenceTimestamp = hourlySnapshot.endTimestamp
     snapshot.startPrice = hourlySnapshot.endPrice
@@ -329,21 +467,29 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
   snapshot.dailyPriceChange = snapshot.endPrice.minus(snapshot.startPrice) // TODO: confirm
 
   snapshot.endMarketCap = subjectToken.marketCap
-  snapshot.marketCapChange = snapshot.endMarketCap.minus(snapshot.startMarketCap)
+  snapshot.marketCapChange = snapshot.endMarketCap.minus(
+    snapshot.startMarketCap
+  )
 
   snapshot.totalSupply = subjectToken.totalSupply
 
   snapshot.endUniqueHolders = subjectToken.uniqueHolders
-  snapshot.dailyUniqueHoldersChange = snapshot.endUniqueHolders.minus(snapshot.startUniqueHolders) // TODO: confirm
+  snapshot.dailyUniqueHoldersChange = snapshot.endUniqueHolders.minus(
+    snapshot.startUniqueHolders
+  ) // TODO: confirm
 
   snapshot.endVolume = subjectToken.lifetimeVolume
   snapshot.dailyVolumeChange = snapshot.endVolume.minus(snapshot.startVolume) // TODO: confirm
 
   snapshot.endSubjectFee = subjectToken.subjectFee
-  snapshot.dailySubjectFeeChange = snapshot.endSubjectFee.minus(snapshot.startSubjectFee) // TODO: confirm
+  snapshot.dailySubjectFeeChange = snapshot.endSubjectFee.minus(
+    snapshot.startSubjectFee
+  ) // TODO: confirm
 
   snapshot.endProtocolFee = subjectToken.protocolFee
-  snapshot.dailyProtocolFeeChange = snapshot.endProtocolFee.minus(snapshot.startProtocolFee) // TODO: confirm
+  snapshot.dailyProtocolFeeChange = snapshot.endProtocolFee.minus(
+    snapshot.startProtocolFee
+  ) // TODO: confirm
   snapshot.updatedAtBlockInfo = subjectToken.updatedAtBlockInfo
   snapshot.updatedAtBlockNumber = subjectToken.updatedAtBlockNumber
 
@@ -358,15 +504,28 @@ function createSubjectTokenRollingDailySnapshot(subjectToken: SubjectToken, time
   subjectToken.save()
 }
 
-export function saveSubjectToken(subjectToken: SubjectToken, block: ethereum.Block, saveSnapshot: boolean = false): void {
+export function saveSubjectToken(
+  subjectToken: SubjectToken,
+  block: ethereum.Block,
+  saveSnapshot: boolean = false
+): void {
   subjectToken.lastUpdatedAtBlockInfo = subjectToken.updatedAtBlockInfo
   subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   subjectToken.updatedAtBlockNumber = block.number
-  subjectToken.marketCap = subjectToken.currentPriceInMoxie.times(subjectToken.totalSupply.toBigDecimal()).div(BigInt.fromI32(10).pow(18).toBigDecimal())
+  subjectToken.marketCap = subjectToken.currentPriceInMoxie
+    .times(subjectToken.totalSupply.toBigDecimal())
+    .div(BigInt.fromI32(10).pow(18).toBigDecimal())
   subjectToken.save()
   if (saveSnapshot) {
-    let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(subjectToken, block.timestamp)
-    createSubjectTokenDailySnapshot(subjectToken, block.timestamp, lastHourylSnapshotEndTimestamp)
+    let lastHourylSnapshotEndTimestamp = createSubjectTokenHourlySnapshot(
+      subjectToken,
+      block.timestamp
+    )
+    createSubjectTokenDailySnapshot(
+      subjectToken,
+      block.timestamp,
+      lastHourylSnapshotEndTimestamp
+    )
     createSubjectTokenRollingDailySnapshot(subjectToken, block.timestamp)
   }
 }
@@ -413,7 +572,10 @@ export function getOrCreateBlockInfo(block: ethereum.Block): BlockInfo {
 }
 
 export function getTxEntityId(event: ethereum.Event): string {
-  return event.transaction.hash.toHexString().concat("-").concat(event.logIndex.toString())
+  return event.transaction.hash
+    .toHexString()
+    .concat("-")
+    .concat(event.logIndex.toString())
 }
 
 // export function handleNewBeneficiary(beneficiary: Address): void {
@@ -437,17 +599,29 @@ export class Fees {
 }
 export function calculateBuySideFee(_depositAmount: BigInt): Fees {
   let summary = getOrCreateSummary()
-  let protocolFee_ = _depositAmount.times(summary.protocolBuyFeePct).div(PCT_BASE)
+  let protocolFee_ = _depositAmount
+    .times(summary.protocolBuyFeePct)
+    .div(PCT_BASE)
   let subjectFee_ = _depositAmount.times(summary.subjectBuyFeePct).div(PCT_BASE)
   return new Fees(protocolFee_, subjectFee_)
 }
 
-export function calculateSellSideProtocolAmountAddingBackFees(_buyAmount: BigInt): BigInt {
+export function calculateSellSideProtocolAmountAddingBackFees(
+  _buyAmount: BigInt
+): BigInt {
   let summary = getOrCreateSummary()
-  return _calculateSellSideProtocolAmountAddingBackFees(summary.protocolSellFeePct, summary.subjectSellFeePct, _buyAmount)
+  return _calculateSellSideProtocolAmountAddingBackFees(
+    summary.protocolSellFeePct,
+    summary.subjectSellFeePct,
+    _buyAmount
+  )
 }
 
-export function _calculateSellSideProtocolAmountAddingBackFees(protocolSellFeePct: BigInt, subjectSellFeePct: BigInt, _buyAmount: BigInt): BigInt {
+export function _calculateSellSideProtocolAmountAddingBackFees(
+  protocolSellFeePct: BigInt,
+  subjectSellFeePct: BigInt,
+  _buyAmount: BigInt
+): BigInt {
   let totalFeePCT = protocolSellFeePct.plus(subjectSellFeePct)
   // moxieAmount_ = (estimatedAmount * PCT_BASE) / (PCT_BASE - totalFeePCT);
   return _buyAmount.times(PCT_BASE).div(PCT_BASE.minus(totalFeePCT))
@@ -455,9 +629,17 @@ export function _calculateSellSideProtocolAmountAddingBackFees(protocolSellFeePc
 
 export function calculateSellSideFee(_sellAmount: BigInt): Fees {
   let summary = getOrCreateSummary()
-  return _calculateSellSideFee(summary.protocolSellFeePct, summary.subjectSellFeePct, _sellAmount)
+  return _calculateSellSideFee(
+    summary.protocolSellFeePct,
+    summary.subjectSellFeePct,
+    _sellAmount
+  )
 }
-export function _calculateSellSideFee(protocolSellFeePct: BigInt, subjectSellFeePct: BigInt, _sellAmount: BigInt): Fees {
+export function _calculateSellSideFee(
+  protocolSellFeePct: BigInt,
+  subjectSellFeePct: BigInt,
+  _sellAmount: BigInt
+): Fees {
   // protocolFee_ = (_sellAmount * protocolSellFeePct) / PCT_BASE
   // subjectFee_ = (_sellAmount * subjectSellFeePct) / PCT_BASE
 
@@ -466,8 +648,10 @@ export function _calculateSellSideFee(protocolSellFeePct: BigInt, subjectSellFee
   return new Fees(protocolFee_, subjectFee_)
 }
 
-
-export function isEveryElementGreaterThanTarget(arr: Array<BigInt>, target: BigInt): bool {
+export function isEveryElementGreaterThanTarget(
+  arr: Array<BigInt>,
+  target: BigInt
+): bool {
   if (arr.length == 0) {
     throw new Error("Array is empty")
   }
@@ -508,8 +692,16 @@ export class AuctionOrderClass {
    * @returns
    */
   smallerThan(orderRight: AuctionOrderClass): bool {
-    if (this.buyAmount.times(orderRight.sellAmount) < orderRight.buyAmount.times(this.sellAmount)) return true
-    if (this.buyAmount.times(orderRight.sellAmount) > orderRight.buyAmount.times(this.sellAmount)) return false
+    if (
+      this.buyAmount.times(orderRight.sellAmount) <
+      orderRight.buyAmount.times(this.sellAmount)
+    )
+      return true
+    if (
+      this.buyAmount.times(orderRight.sellAmount) >
+      orderRight.buyAmount.times(this.sellAmount)
+    )
+      return false
     if (this.buyAmount < orderRight.buyAmount) return true
     if (this.buyAmount > orderRight.buyAmount) return false
     if (this.userId < orderRight.userId) return true
@@ -547,9 +739,15 @@ export class CalculatePrice {
       this.priceInWei = BigDecimal.zero()
     } else {
       //Converting it from 800000 to 0.8
-      let reserveRatioDecimal = reserveRatio.divDecimal(BigInt.fromI32(10).pow(6).toBigDecimal())
-      this.price = reserve.divDecimal(totalSupply.toBigDecimal().times(reserveRatioDecimal))
-      this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
+      let reserveRatioDecimal = reserveRatio.divDecimal(
+        BigInt.fromI32(10).pow(6).toBigDecimal()
+      )
+      this.price = reserve.divDecimal(
+        totalSupply.toBigDecimal().times(reserveRatioDecimal)
+      )
+      this.priceInWei = this.price.times(
+        BigInt.fromI32(10).pow(18).toBigDecimal()
+      )
     }
   }
 }
@@ -562,7 +760,9 @@ export function loadAuction(auctionId: BigInt): Auction {
   return auction
 }
 
-export function isBlacklistedSubjectTokenAddress(subjectAddress: Address): bool {
+export function isBlacklistedSubjectTokenAddress(
+  subjectAddress: Address
+): bool {
   return BLACKLISTED_SUBJECT_TOKEN_ADDRESS.isSet(subjectAddress.toHexString())
 }
 
@@ -570,14 +770,13 @@ export function isBlacklistedAuction(auctionId: string): bool {
   return BLACKLISTED_AUCTION.isSet(auctionId)
 }
 
-
 export enum BeneficiaryType {
   STAKING,
   WHITELISTED,
   USER,
 }
 
-export function getBeneficiaryType(beneficiary: Address): BeneficiaryType {
+export function getUserType(beneficiary: Address): BeneficiaryType {
   const addressLower = beneficiary.toHexString().toLowerCase()
   const isMainnet = dataSource.network() == "base"
 

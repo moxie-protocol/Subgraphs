@@ -1,1 +1,0 @@
-export const staking = "0x1d5c3Fe067091DFdFE6dd31F62D0F9fA90509651"
