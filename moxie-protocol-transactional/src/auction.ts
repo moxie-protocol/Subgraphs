@@ -80,7 +80,7 @@ export function handleClaimedFromOrder(event: ClaimedFromOrder): void {
   portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(protocolTokenAmount))
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(subjectAmount)
 
-  savePortfolio(portfolio, event.block)
+  savePortfolio(portfolio, event.block, false)
 
   let user = getOrCreateUser(Address.fromBytes(auctionAndOrder.user.userAddress), event.block)
   // increasing user protocol token spent
