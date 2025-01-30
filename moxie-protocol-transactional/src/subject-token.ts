@@ -37,8 +37,14 @@ export function handleTransfer(event: Transfer): void {
     if (fromPortfolio.balance.gt(BigInt.zero())) {
       protcolTokenInvestedDiff = fromOldProtocolTokenInvested.times(new BigDecimal(value)).div(new BigDecimal(fromPortfolio.balance))
     }
-    if (getUserType(from) != BeneficiaryType.STAKING) {
-      fromPortfolio.protocolTokenInvested = fromOldProtocolTokenInvested.minus(protcolTokenInvestedDiff)
+    if (
+      getUserType(to) != BeneficiaryType.STAKING &&
+      getUserType(from) != BeneficiaryType.STAKING
+    ) {
+      // if both from and to are not staking, then we need to update the protocol token invested
+      fromPortfolio.protocolTokenInvested = fromOldProtocolTokenInvested.minus(
+        protcolTokenInvestedDiff
+      )
     }
     fromPortfolio.unstakedBalance = fromPortfolio.unstakedBalance.minus(value)
     savePortfolio(fromPortfolio, event.block, true)
@@ -51,8 +57,13 @@ export function handleTransfer(event: Transfer): void {
   if (!burn) {
     let toPortfolio = getOrCreatePortfolio(to, contractAddress, event.transaction.hash, event.block)
     toPortfolio.unstakedBalance = toPortfolio.unstakedBalance.plus(value)
-    if (getUserType(to) != BeneficiaryType.STAKING) {
-      toPortfolio.protocolTokenInvested = toPortfolio.protocolTokenInvested.plus(protcolTokenInvestedDiff)
+    if (
+      getUserType(to) != BeneficiaryType.STAKING &&
+      getUserType(from) != BeneficiaryType.STAKING
+    ) {
+      // if both from and to are not staking, then we need to update the protocol token invested
+      toPortfolio.protocolTokenInvested =
+        toPortfolio.protocolTokenInvested.plus(protcolTokenInvestedDiff)
     }
     savePortfolio(toPortfolio, event.block, true)
 
