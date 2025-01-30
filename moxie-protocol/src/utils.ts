@@ -10,7 +10,6 @@ import {
   dataSource,
 } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { staking } from "./contracts"
 import {
   BlockInfo,
   Order,
@@ -100,7 +99,7 @@ export function getOrCreatePortfolio(
     let subjectToken = getOrCreateSubjectToken(subjectAddress, block)
     if (
       userAddress != Address.zero() &&
-      userAddress.toHexString().toLowerCase() != staking.toLowerCase()
+      getUserType(userAddress) != BeneficiaryType.STAKING
     ) {
       // new holder
       subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
@@ -819,7 +818,7 @@ export enum BeneficiaryType {
   USER,
 }
 
-export function getBeneficiaryType(beneficiary: Address): BeneficiaryType {
+export function getUserType(beneficiary: Address): BeneficiaryType {
   const addressLower = beneficiary.toHexString().toLowerCase()
   const isMainnet = dataSource.network() == "base"
 
