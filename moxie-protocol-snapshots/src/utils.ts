@@ -1,7 +1,7 @@
 import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray, dataSource } from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
 import { BlockInfo, Portfolio, SubjectToken, SubjectTokenDailySnapshot, SubjectTokenHourlySnapshot, Summary, User, SubjectTokenRollingDailySnapshot, Auction, } from "../generated/schema"
-import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, SUMMARY_ID, TOKEN_DECIMALS, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
+import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, STAKING_CONTRACTS_TESTNET, STAKING_CONTRACTS_MAINNET, SUMMARY_ID, TOKEN_DECIMALS, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
 import { staking } from "./contracts"
 
 export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block, saveSubjectTokenFlag: bool = true): SubjectToken {
@@ -571,9 +571,28 @@ export function isBlacklistedAuction(auctionId: string): bool {
 }
 
 
-export function isWhiteListed(beneficiary: Address): bool {
-  if (dataSource.network() == "base") {
-    return WHITELISTED_CONTRACTS_MAINNET.isSet(beneficiary.toHexString().toLowerCase())
+export enum BeneficiaryType {
+  STAKING,
+  WHITELISTED,
+  USER,
+}
+
+export function getBeneficiaryType(beneficiary: Address): BeneficiaryType {
+  const addressLower = beneficiary.toHexString().toLowerCase()
+  const isMainnet = dataSource.network() == "base"
+
+  const stakingContracts = isMainnet
+    ? STAKING_CONTRACTS_MAINNET
+    : STAKING_CONTRACTS_TESTNET
+  const whitelistedContracts = isMainnet
+    ? WHITELISTED_CONTRACTS_MAINNET
+    : WHITELISTED_CONTRACTS_TESTNET
+
+  if (stakingContracts.isSet(addressLower)) {
+    return BeneficiaryType.STAKING
   }
-  return WHITELISTED_CONTRACTS_TESTNET.isSet(beneficiary.toHexString().toLowerCase())
+  if (whitelistedContracts.isSet(addressLower)) {
+    return BeneficiaryType.WHITELISTED
+  }
+  return BeneficiaryType.USER
 }

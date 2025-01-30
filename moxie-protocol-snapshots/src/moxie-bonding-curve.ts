@@ -2,7 +2,7 @@ import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, UpdateFormula, Initialized, MoxieBondingCurve, SubjectReserveRatioUpdated } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { SubjectToken, SubjectToSubjectToken, Summary, User } from "../generated/schema"
 
-import { calculateBuySideFee, calculateSellSideFee, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideProtocolAmountAddingBackFees, isBlacklistedSubjectTokenAddress, isWhiteListed } from "./utils"
+import { calculateBuySideFee, calculateSellSideFee, getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateUser, getTxEntityId, getOrCreateSummary, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideProtocolAmountAddingBackFees, isBlacklistedSubjectTokenAddress, getBeneficiaryType, BeneficiaryType } from "./utils"
 import { ORDER_TYPE_BUY as BUY, AUCTION_ORDER_CANCELLED as CANCELLED, AUCTION_ORDER_NA as NA, AUCTION_ORDER_PLACED as PLACED, ORDER_TYPE_SELL as SELL, SUMMARY_ID } from "./constants"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   if (isBlacklistedSubjectTokenAddress(event.params._subjectToken)) {
@@ -55,9 +55,12 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let protocolTokenSpentAfterFees = event.params._sellAmount.minus(fees.protocolFee).minus(fees.subjectFee)
 
   const blockInfo = getOrCreateBlockInfo(event.block)
-  const isWhiteListedBeneficiary = isWhiteListed(event.params._beneficiary)
+    let beneficiaryType = getBeneficiaryType(event.params._beneficiary)
   let userAddress = event.params._beneficiary
-  if (isWhiteListedBeneficiary) {
+  if (
+    beneficiaryType == BeneficiaryType.WHITELISTED ||
+    beneficiaryType == BeneficiaryType.STAKING
+  ) {
     userAddress = event.transaction.from
   }
   // TODO: need to fix for spender
@@ -79,7 +82,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   // updating user's portfolio
   let portfolio = getOrCreatePortfolio(userAddress, event.params._buyToken, event.transaction.hash, event.block, true)
   portfolio.buyVolume = portfolio.buyVolume.plus(event.params._sellAmount)
-  if (!isWhiteListedBeneficiary) {
+  if (beneficiaryType != BeneficiaryType.WHITELISTED) {
     // increating portfolio protocol token invested only if user is not white listed
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   }
@@ -89,7 +92,7 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   // increasing user protocol token spent
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
   // increasing user investment
-  if (!isWhiteListedBeneficiary) {
+  if (beneficiaryType != BeneficiaryType.WHITELISTED) {
     // increasing user protocol token invested only if user is not white listed
     user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
   }
@@ -110,13 +113,22 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   summary.totalSubjectFee = summary.totalSubjectFee.plus(fees.subjectFee)
   summary.save()
 
-  if (isWhiteListedBeneficiary) {
+  if (beneficiaryType == BeneficiaryType.WHITELISTED) {
     let user = getOrCreateUser(event.params._beneficiary, event.block)
-    user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+    user.protocolTokenInvested = user.protocolTokenInvested.plus(
+      new BigDecimal(event.params._sellAmount)
+    )
     saveUser(user, event.block)
 
-    let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.transaction.hash, event.block)
-    portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+    let portfolio = getOrCreatePortfolio(
+      event.params._beneficiary,
+      event.params._buyToken,
+      event.transaction.hash,
+      event.block
+    )
+    portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(
+      new BigDecimal(event.params._sellAmount)
+    )
     savePortfolio(portfolio, event.block)
   }
 
@@ -170,9 +182,12 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // if (event.params._spender != event.params._beneficiary) {
   // TODO: need to fix for spender
   // }
-  let isWhiteListedBeneficiary = isWhiteListed(event.params._beneficiary)
+  let beneficiaryType = getBeneficiaryType(event.params._beneficiary)
   let userAddress = event.params._beneficiary
-  if (isWhiteListedBeneficiary) {
+  if (
+    beneficiaryType == BeneficiaryType.WHITELISTED ||
+    beneficiaryType == BeneficiaryType.STAKING
+  ) {
     userAddress = event.transaction.from
   }
   let user = getOrCreateUser(userAddress, event.block, false)

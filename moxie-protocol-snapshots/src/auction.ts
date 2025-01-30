@@ -129,7 +129,7 @@ export function handleNewAuction(event: NewAuction): void {
   auction.save()
 
   subjectToken.auction = auction.id
-  subjectToken.save()
+  saveSubjectToken(subjectToken, event.block)
 }
 
 export function handleAuctionCleared(event: AuctionCleared): void {
