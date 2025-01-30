@@ -2,7 +2,7 @@ import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, Initialized, MoxieBondingCurve, SubjectReserveRatioUpdated } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import { SubjectToken, SubjectToSubjectToken, User } from "../generated/schema"
 
-import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideFee, isBlacklistedSubjectTokenAddress, isWhiteListed } from "./utils"
+import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideFee, isBlacklistedSubjectTokenAddress, getBeneficiaryType, BeneficiaryType } from "./utils"
 export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
   if (isBlacklistedSubjectTokenAddress(event.params._subjectToken)) {
     return
@@ -41,16 +41,18 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
 
   const fees = calculateBuySideFee(event.params._sellAmount)
   let protocolTokenSpentAfterFees = event.params._sellAmount.minus(fees.protocolFee).minus(fees.subjectFee)
-  const isWhiteListedBeneficiary = isWhiteListed(event.params._beneficiary)
+  let beneficiaryType = getBeneficiaryType(event.params._beneficiary)
   let userAddress = event.params._beneficiary
-  if (isWhiteListedBeneficiary) {
+  if (beneficiaryType == BeneficiaryType.WHITELISTED || beneficiaryType == BeneficiaryType.STAKING) {
     userAddress = event.transaction.from
   }
   let user = getOrCreateUser(userAddress, event.block)
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
-  if (!isWhiteListedBeneficiary) {
+  if (beneficiaryType != BeneficiaryType.WHITELISTED) {
     // increasing user protocol token invested only if user is not white listed
-    user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+    user.protocolTokenInvested = user.protocolTokenInvested.plus(
+      new BigDecimal(event.params._sellAmount)
+    )
   }
   saveUser(user, event.block)
 
@@ -68,13 +70,15 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   let portfolio = getOrCreatePortfolio(userAddress, event.params._buyToken, event.transaction.hash, event.block)
   portfolio.buyVolume = portfolio.buyVolume.plus(event.params._sellAmount)
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(event.params._buyAmount)
-  if (!isWhiteListedBeneficiary) {
+  if (beneficiaryType != BeneficiaryType.WHITELISTED) {
     // increating portfolio protocol token invested only if user is not white listed
-    portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
+    portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(
+      new BigDecimal(event.params._sellAmount)
+    )
   }
   savePortfolio(portfolio, event.block)
 
-  if (isWhiteListedBeneficiary) {
+  if (beneficiaryType == BeneficiaryType.WHITELISTED) {
     let user = getOrCreateUser(event.params._beneficiary, event.block)
     user.protocolTokenInvested = user.protocolTokenInvested.plus(new BigDecimal(event.params._sellAmount))
     saveUser(user, event.block)
@@ -121,9 +125,9 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // volume uses amount with fees
   subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(protocolTokenAmount)
   saveSubjectToken(subjectToken, event.block)
-  let isWhiteListedBeneficiary = isWhiteListed(event.params._beneficiary)
+  let beneficiaryType = getBeneficiaryType(event.params._beneficiary)
   let userAddress = event.params._beneficiary
-  if (isWhiteListedBeneficiary) {
+  if (beneficiaryType == BeneficiaryType.WHITELISTED || beneficiaryType == BeneficiaryType.STAKING) {
     userAddress = event.transaction.from
   }
   let user = getOrCreateUser(userAddress, event.block)

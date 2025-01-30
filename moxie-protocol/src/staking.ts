@@ -2,7 +2,7 @@ import { Address, BigInt, log, store } from "@graphprotocol/graph-ts"
 
 import { Lock, LockExtended, Withdraw } from '../generated/Staking/Staking'
 import { LockInfo, Portfolio } from '../generated/schema'
-import { getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio } from './utils'
+import { getOrCreateBlockInfo, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken } from './utils'
 export function handleLock(event: Lock): void {
  let lockInfo = new LockInfo(event.params._index.toString())
  lockInfo.txHash = event.transaction.hash
@@ -11,7 +11,7 @@ export function handleLock(event: Lock): void {
  
  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
  subjectToken.totalStaked = subjectToken.totalStaked.plus(event.params._amount)
- subjectToken.save()
+ saveSubjectToken(subjectToken, event.block)
 
  let user = getOrCreateUser(event.params._user, event.block).id
   
@@ -53,7 +53,7 @@ export function handleLockExtended(event: LockExtended): void {
  // reduce total staked amount from subject token
  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
  subjectToken.totalStaked = subjectToken.totalStaked.minus(event.params._amount)
- subjectToken.save()
+ saveSubjectToken(subjectToken, event.block)
  // loop over the array of lock indexes and delete the lock info
  let lockIndexes = event.params._indexes
  for (let i = 0; i < lockIndexes.length; i++) {
@@ -73,7 +73,7 @@ export function handleWithdraw(event: Withdraw): void {
 
  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
  subjectToken.totalStaked = subjectToken.totalStaked.minus(event.params._amount)
- subjectToken.save()
+ saveSubjectToken(subjectToken, event.block)
  // loop over the array of lock indexes and delete the lock info
  let lockIndexes = event.params._indexes
  for (let i = 0; i < lockIndexes.length; i++) {

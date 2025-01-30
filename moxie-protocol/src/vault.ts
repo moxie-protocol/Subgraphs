@@ -1,6 +1,5 @@
 import { VaultDeposit, VaultTransfer } from "../generated/Vault/Vault"
 import { getOrCreateSubjectToken, getOrCreateSummary, isBlacklistedSubjectTokenAddress, saveSubjectToken } from "./utils"
-import { handleVaultDepositTx, handleVaultTransferTx } from "./vault-tx"
 
 export function handleVaultDeposit(event: VaultDeposit): void {
   // event VaultDeposit(
@@ -10,7 +9,6 @@ export function handleVaultDeposit(event: VaultDeposit): void {
   //      uint256 amount, : _value
   //      uint256 totalReserve : reserves[_subjectToken][_token]
   //  );
-  handleVaultDepositTx(event)
   if (isBlacklistedSubjectTokenAddress(event.params.subject)) {
     return
   }
@@ -33,7 +31,6 @@ export function handleVaultTransfer(event: VaultTransfer): void {
   //     uint256 totalReserve :reserves[_subjectToken][_token])
   // );
   // Transfers tokens(MOXIE) of amount _value to _to
-  handleVaultTransferTx(event)
   if (isBlacklistedSubjectTokenAddress(event.params.subject)) {
     return
   }
