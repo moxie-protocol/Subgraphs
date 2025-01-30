@@ -1,9 +1,43 @@
-import { Address, BigDecimal, BigInt, Bytes, ethereum, log, store, ByteArray, dataSource } from "@graphprotocol/graph-ts"
+import {
+  Address,
+  BigDecimal,
+  BigInt,
+  Bytes,
+  ethereum,
+  log,
+  store,
+  ByteArray,
+  dataSource,
+} from "@graphprotocol/graph-ts"
 import { ERC20 } from "../generated/TokenManager/ERC20"
-import { BlockInfo, Order, Portfolio, ProtocolFeeBeneficiary, SubjectToken, Summary, User, Auction, } from "../generated/schema"
-import { BLACKLISTED_AUCTION, BLACKLISTED_SUBJECT_TOKEN_ADDRESS, ONBOARDING_STATUS_ONBOARDING_INITIALIZED, PCT_BASE, SECONDS_IN_DAY, SECONDS_IN_HOUR, STAKING_CONTRACTS_MAINNET, STAKING_CONTRACTS_TESTNET, SUMMARY_ID, TOKEN_DECIMALS, WHITELISTED_CONTRACTS_MAINNET, WHITELISTED_CONTRACTS_TESTNET } from "./constants"
-import { staking } from "./contracts"
-export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: ethereum.Block): SubjectToken {
+import {
+  BlockInfo,
+  Order,
+  Portfolio,
+  ProtocolFeeBeneficiary,
+  SubjectToken,
+  Summary,
+  User,
+  Auction,
+} from "../generated/schema"
+import {
+  BLACKLISTED_AUCTION,
+  BLACKLISTED_SUBJECT_TOKEN_ADDRESS,
+  ONBOARDING_STATUS_ONBOARDING_INITIALIZED,
+  PCT_BASE,
+  SECONDS_IN_DAY,
+  SECONDS_IN_HOUR,
+  STAKING_CONTRACTS_MAINNET,
+  STAKING_CONTRACTS_TESTNET,
+  SUMMARY_ID,
+  TOKEN_DECIMALS,
+  WHITELISTED_CONTRACTS_MAINNET,
+  WHITELISTED_CONTRACTS_TESTNET,
+} from "./constants"
+export function getOrCreateSubjectToken(
+  subjectTokenAddress: Address,
+  block: ethereum.Block
+): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
   if (!subjectToken) {
     subjectToken = new SubjectToken(subjectTokenAddress.toHexString())
@@ -38,18 +72,29 @@ export function getOrCreateSubjectToken(subjectTokenAddress: Address, block: eth
   return subjectToken
 }
 
-export function getPortfolioId(userAddress: Address, subjectAddress: Address): string {
+export function getPortfolioId(
+  userAddress: Address,
+  subjectAddress: Address
+): string {
   return userAddress.toHexString() + "-" + subjectAddress.toHexString()
 }
 
-export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Address, txHash: Bytes, block: ethereum.Block): Portfolio {
+export function getOrCreatePortfolio(
+  userAddress: Address,
+  subjectAddress: Address,
+  txHash: Bytes,
+  block: ethereum.Block
+): Portfolio {
   let user = getOrCreateUser(userAddress, block)
   let portfolioId = getPortfolioId(userAddress, subjectAddress)
   let portfolio = Portfolio.load(portfolioId)
   if (!portfolio) {
     portfolio = new Portfolio(portfolioId)
     let subjectToken = getOrCreateSubjectToken(subjectAddress, block)
-    if (userAddress != Address.zero() && userAddress.toHexString().toLowerCase() != staking.toLowerCase()) {
+    if (
+      userAddress != Address.zero() &&
+      getUserType(userAddress) != BeneficiaryType.STAKING
+    ) {
       // new holder
       subjectToken.uniqueHolders = subjectToken.uniqueHolders.plus(
         BigInt.fromI32(1)
@@ -77,9 +122,13 @@ export function getOrCreatePortfolio(userAddress: Address, subjectAddress: Addre
  * @param portfolio Portfolio entity which needs to be saved
  * @param block ethereum.Block
  * @param deleteZeroBalancePortfolio boolean flag to check balance and delete portfolio if balance is zero
- * @returns 
+ * @returns
  */
-export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, deleteZeroBalancePortfolio: bool = false): void {
+export function savePortfolio(
+  portfolio: Portfolio,
+  block: ethereum.Block,
+  deleteZeroBalancePortfolio: bool = false
+): void {
   portfolio.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   portfolio.updatedAtBlockNumber = block.number
   portfolio.balance = portfolio.unstakedBalance.plus(portfolio.stakedBalance)
@@ -96,7 +145,10 @@ export function savePortfolio(portfolio: Portfolio, block: ethereum.Block, delet
   portfolio.save()
 }
 
-export function getOrCreateUser(userAddress: Address, block: ethereum.Block): User {
+export function getOrCreateUser(
+  userAddress: Address,
+  block: ethereum.Block
+): User {
   let user = User.load(userAddress.toHexString())
   if (!user) {
     user = new User(userAddress.toHexString())
@@ -119,14 +171,17 @@ export function saveUser(user: User, block: ethereum.Block): void {
   user.save()
 }
 
-
-export function saveSubjectToken(subjectToken: SubjectToken, block: ethereum.Block): void {
+export function saveSubjectToken(
+  subjectToken: SubjectToken,
+  block: ethereum.Block
+): void {
   subjectToken.lastUpdatedAtBlockInfo = subjectToken.updatedAtBlockInfo
   subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
   subjectToken.updatedAtBlockNumber = block.number
-  subjectToken.marketCap = subjectToken.currentPriceInMoxie.times(subjectToken.totalSupply.toBigDecimal()).div(BigInt.fromI32(10).pow(18).toBigDecimal())
+  subjectToken.marketCap = subjectToken.currentPriceInMoxie
+    .times(subjectToken.totalSupply.toBigDecimal())
+    .div(BigInt.fromI32(10).pow(18).toBigDecimal())
   subjectToken.save()
-
 }
 
 export function getOrCreateSummary(): Summary {
@@ -170,11 +225,16 @@ export function getOrCreateBlockInfo(block: ethereum.Block): BlockInfo {
 }
 
 export function getTxEntityId(event: ethereum.Event): string {
-  return event.transaction.hash.toHexString().concat("-").concat(event.logIndex.toString())
+  return event.transaction.hash
+    .toHexString()
+    .concat("-")
+    .concat(event.logIndex.toString())
 }
 
 export function handleNewBeneficiary(beneficiary: Address): void {
-  let protocolFeeBeneficiaryEntity = new ProtocolFeeBeneficiary(beneficiary.toHexString())
+  let protocolFeeBeneficiaryEntity = new ProtocolFeeBeneficiary(
+    beneficiary.toHexString()
+  )
   protocolFeeBeneficiaryEntity.beneficiary = beneficiary
   protocolFeeBeneficiaryEntity.totalFees = BigInt.fromI32(0)
   protocolFeeBeneficiaryEntity.save()
@@ -194,17 +254,29 @@ export class Fees {
 }
 export function calculateBuySideFee(_depositAmount: BigInt): Fees {
   let summary = getOrCreateSummary()
-  let protocolFee_ = _depositAmount.times(summary.protocolBuyFeePct).div(PCT_BASE)
+  let protocolFee_ = _depositAmount
+    .times(summary.protocolBuyFeePct)
+    .div(PCT_BASE)
   let subjectFee_ = _depositAmount.times(summary.subjectBuyFeePct).div(PCT_BASE)
   return new Fees(protocolFee_, subjectFee_)
 }
 
-export function calculateSellSideProtocolAmountAddingBackFees(_buyAmount: BigInt): BigInt {
+export function calculateSellSideProtocolAmountAddingBackFees(
+  _buyAmount: BigInt
+): BigInt {
   let summary = getOrCreateSummary()
-  return _calculateSellSideProtocolAmountAddingBackFees(summary.protocolSellFeePct, summary.subjectSellFeePct, _buyAmount)
+  return _calculateSellSideProtocolAmountAddingBackFees(
+    summary.protocolSellFeePct,
+    summary.subjectSellFeePct,
+    _buyAmount
+  )
 }
 
-export function _calculateSellSideProtocolAmountAddingBackFees(protocolSellFeePct: BigInt, subjectSellFeePct: BigInt, _buyAmount: BigInt): BigInt {
+export function _calculateSellSideProtocolAmountAddingBackFees(
+  protocolSellFeePct: BigInt,
+  subjectSellFeePct: BigInt,
+  _buyAmount: BigInt
+): BigInt {
   let totalFeePCT = protocolSellFeePct.plus(subjectSellFeePct)
   // moxieAmount_ = (estimatedAmount * PCT_BASE) / (PCT_BASE - totalFeePCT);
   return _buyAmount.times(PCT_BASE).div(PCT_BASE.minus(totalFeePCT))
@@ -212,9 +284,17 @@ export function _calculateSellSideProtocolAmountAddingBackFees(protocolSellFeePc
 
 export function calculateSellSideFee(_sellAmount: BigInt): Fees {
   let summary = getOrCreateSummary()
-  return _calculateSellSideFee(summary.protocolSellFeePct, summary.subjectSellFeePct, _sellAmount)
+  return _calculateSellSideFee(
+    summary.protocolSellFeePct,
+    summary.subjectSellFeePct,
+    _sellAmount
+  )
 }
-export function _calculateSellSideFee(protocolSellFeePct: BigInt, subjectSellFeePct: BigInt, _sellAmount: BigInt): Fees {
+export function _calculateSellSideFee(
+  protocolSellFeePct: BigInt,
+  subjectSellFeePct: BigInt,
+  _sellAmount: BigInt
+): Fees {
   // protocolFee_ = (_sellAmount * protocolSellFeePct) / PCT_BASE
   // subjectFee_ = (_sellAmount * subjectSellFeePct) / PCT_BASE
 
@@ -223,11 +303,10 @@ export function _calculateSellSideFee(protocolSellFeePct: BigInt, subjectSellFee
   return new Fees(protocolFee_, subjectFee_)
 }
 
-
-
-
-
-export function isEveryElementGreaterThanTarget(arr: Array<BigInt>, target: BigInt): bool {
+export function isEveryElementGreaterThanTarget(
+  arr: Array<BigInt>,
+  target: BigInt
+): bool {
   if (arr.length == 0) {
     throw new Error("Array is empty")
   }
@@ -268,8 +347,16 @@ export class AuctionOrderClass {
    * @returns
    */
   smallerThan(orderRight: AuctionOrderClass): bool {
-    if (this.buyAmount.times(orderRight.sellAmount) < orderRight.buyAmount.times(this.sellAmount)) return true
-    if (this.buyAmount.times(orderRight.sellAmount) > orderRight.buyAmount.times(this.sellAmount)) return false
+    if (
+      this.buyAmount.times(orderRight.sellAmount) <
+      orderRight.buyAmount.times(this.sellAmount)
+    )
+      return true
+    if (
+      this.buyAmount.times(orderRight.sellAmount) >
+      orderRight.buyAmount.times(this.sellAmount)
+    )
+      return false
     if (this.buyAmount < orderRight.buyAmount) return true
     if (this.buyAmount > orderRight.buyAmount) return false
     if (this.userId < orderRight.userId) return true
@@ -307,9 +394,15 @@ export class CalculatePrice {
       this.priceInWei = BigDecimal.zero()
     } else {
       //Converting it from 800000 to 0.8
-      let reserveRatioDecimal = reserveRatio.divDecimal(BigInt.fromI32(10).pow(6).toBigDecimal())
-      this.price = reserve.divDecimal(totalSupply.toBigDecimal().times(reserveRatioDecimal))
-      this.priceInWei = this.price.times(BigInt.fromI32(10).pow(18).toBigDecimal())
+      let reserveRatioDecimal = reserveRatio.divDecimal(
+        BigInt.fromI32(10).pow(6).toBigDecimal()
+      )
+      this.price = reserve.divDecimal(
+        totalSupply.toBigDecimal().times(reserveRatioDecimal)
+      )
+      this.priceInWei = this.price.times(
+        BigInt.fromI32(10).pow(18).toBigDecimal()
+      )
     }
   }
 }
@@ -322,7 +415,9 @@ export function loadAuction(auctionId: BigInt): Auction {
   return auction
 }
 
-export function isBlacklistedSubjectTokenAddress(subjectAddress: Address): bool {
+export function isBlacklistedSubjectTokenAddress(
+  subjectAddress: Address
+): bool {
   return BLACKLISTED_SUBJECT_TOKEN_ADDRESS.isSet(subjectAddress.toHexString())
 }
 
@@ -336,7 +431,7 @@ export enum BeneficiaryType {
   USER,
 }
 
-export function getBeneficiaryType(beneficiary: Address): BeneficiaryType {
+export function getUserType(beneficiary: Address): BeneficiaryType {
   const addressLower = beneficiary.toHexString().toLowerCase()
   const isMainnet = dataSource.network() == "base"
 

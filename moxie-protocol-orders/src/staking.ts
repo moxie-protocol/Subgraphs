@@ -11,7 +11,7 @@ export function handleLock(event: Lock): void {
  
  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
  subjectToken.totalStaked = subjectToken.totalStaked.plus(event.params._amount)
- subjectToken.save()
+ saveSubjectToken(subjectToken, event.block)
 
  let user = getOrCreateUser(event.params._user, event.block).id
   
