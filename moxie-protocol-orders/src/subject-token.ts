@@ -65,7 +65,11 @@ export function handleTransfer(event: Transfer): void {
         .times(new BigDecimal(value))
         .div(new BigDecimal(fromPortfolio.balance))
     }
-    if (getUserType(from) != BeneficiaryType.STAKING) {
+    if (
+      getUserType(to) != BeneficiaryType.STAKING &&
+      getUserType(from) != BeneficiaryType.STAKING
+    ) {
+      // making sure that both  users are not staking 
       fromPortfolio.protocolTokenInvested = fromOldProtocolTokenInvested.minus(
         protcolTokenInvestedDiff
       )
@@ -94,7 +98,11 @@ export function handleTransfer(event: Transfer): void {
     savePortfolio(toPortfolio, event.block, true)
 
     let toUser = getOrCreateUser(to, event.block)
-    if (getUserType(to) != BeneficiaryType.STAKING) {
+    if (
+      getUserType(to) != BeneficiaryType.STAKING &&
+      getUserType(from) != BeneficiaryType.STAKING
+    ) {
+      // making sure that both  users are not staking 
       toUser.protocolTokenInvested = toUser.protocolTokenInvested.plus(
         protcolTokenInvestedDiff
       )
