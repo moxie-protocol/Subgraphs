@@ -1,4 +1,10 @@
-import { Address, BigInt, log, store } from "@graphprotocol/graph-ts"
+import {
+  Address,
+  BigDecimal,
+  BigInt,
+  log,
+  store,
+} from "@graphprotocol/graph-ts"
 
 import { Lock, LockExtended, Withdraw } from "../generated/Staking/Staking"
 import { LockInfo, Portfolio } from "../generated/schema"
@@ -9,6 +15,7 @@ import {
   getOrCreateSummary,
   getOrCreateUser,
   savePortfolio,
+  saveUser,
 } from "./utils"
 export function handleLock(event: Lock): void {
   let lockInfo = new LockInfo(event.params._index.toString())
@@ -23,22 +30,26 @@ export function handleLock(event: Lock): void {
   subjectToken.totalStaked = subjectToken.totalStaked.plus(event.params._amount)
   subjectToken.save()
 
-  let user = getOrCreateUser(event.params._user, event.block).id
-
+  let user = getOrCreateUser(event.params._user, event.block)
+  user.protocolTokenInvested = user.protocolTokenInvested.plus(
+    new BigDecimal(event.params._moxieDepositAmount)
+  )
+  saveUser(user, event.block)
   let beneficiaryPortfolio = getOrCreatePortfolio(
     event.params._user,
     event.params._subjectToken,
     event.transaction.hash,
     event.block
   )
-
+  beneficiaryPortfolio.protocolTokenInvested = beneficiaryPortfolio.protocolTokenInvested.plus(
+    new BigDecimal(event.params._moxieDepositAmount)
+  )
   beneficiaryPortfolio.stakedBalance = beneficiaryPortfolio.stakedBalance.plus(
     event.params._amount
   )
   savePortfolio(beneficiaryPortfolio, event.block, false)
 
   if (event.params._buyer != Address.zero()) {
-    lockInfo.buyer = getOrCreateUser(event.params._buyer, event.block).id
     let buyerPortfolio = getOrCreatePortfolio(
       event.params._buyer,
       event.params._subjectToken,
@@ -46,9 +57,8 @@ export function handleLock(event: Lock): void {
       event.block
     )
     lockInfo.buyerPortfolio = buyerPortfolio.id
-    savePortfolio(buyerPortfolio, event.block, false)
   }
-  lockInfo.user = user
+  lockInfo.user = user.id
   lockInfo.portfolio = beneficiaryPortfolio.id
   lockInfo.subjectToken = subjectToken.id
   lockInfo.subject = getOrCreateUser(event.params._subject, event.block).id

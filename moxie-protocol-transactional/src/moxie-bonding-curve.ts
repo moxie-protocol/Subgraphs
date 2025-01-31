@@ -88,7 +88,10 @@ export function handleSubjectSharePurchased(
   }
   let user = getOrCreateUser(userAddress, event.block)
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
-  if (beneficiaryType != BeneficiaryType.WHITELISTED) {
+  if (
+    beneficiaryType == BeneficiaryType.WHITELISTED ||
+    beneficiaryType == BeneficiaryType.STAKING
+  ) {
     // increasing user protocol token invested only if user is not white listed
     user.protocolTokenInvested = user.protocolTokenInvested.plus(
       new BigDecimal(event.params._sellAmount)
@@ -130,7 +133,10 @@ export function handleSubjectSharePurchased(
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(
     event.params._buyAmount
   )
-  if (beneficiaryType != BeneficiaryType.WHITELISTED) {
+  if (
+    beneficiaryType == BeneficiaryType.WHITELISTED ||
+    beneficiaryType == BeneficiaryType.STAKING
+  ) {
     // increating portfolio protocol token invested only if user is not white listed
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(
       new BigDecimal(event.params._sellAmount)

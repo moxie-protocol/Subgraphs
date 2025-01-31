@@ -176,7 +176,10 @@ export function handleSubjectSharePurchased(
     false
   )
   portfolio.buyVolume = portfolio.buyVolume.plus(event.params._sellAmount)
-  if (beneficiaryType != BeneficiaryType.WHITELISTED) {
+  if (
+    beneficiaryType == BeneficiaryType.WHITELISTED ||
+    beneficiaryType == BeneficiaryType.STAKING
+  ) {
     // increating portfolio protocol token invested only if user is not white listed
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(
       new BigDecimal(event.params._sellAmount)
@@ -193,7 +196,10 @@ export function handleSubjectSharePurchased(
   // increasing user protocol token spent
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
   // increasing user investment
-  if (beneficiaryType != BeneficiaryType.WHITELISTED) {
+  if (
+    beneficiaryType == BeneficiaryType.WHITELISTED ||
+    beneficiaryType == BeneficiaryType.STAKING
+  ) {
     user.protocolTokenInvested = user.protocolTokenInvested.plus(
       new BigDecimal(event.params._sellAmount)
     )
