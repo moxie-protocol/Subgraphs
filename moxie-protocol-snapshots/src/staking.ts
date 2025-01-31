@@ -1,4 +1,4 @@
-import { Address, BigInt, log, store } from "@graphprotocol/graph-ts"
+import { Address, BigDecimal, BigInt, log, store } from "@graphprotocol/graph-ts"
 
 import { Lock, LockExtended, Withdraw } from '../generated/Staking/Staking'
 import { LockInfo, Portfolio } from '../generated/schema'
@@ -14,9 +14,11 @@ export function handleLock(event: Lock): void {
   saveSubjectToken(subjectToken, event.block)
 
   let user = getOrCreateUser(event.params._user, event.block).id
-
   let beneficiaryPortfolio = getOrCreatePortfolio(event.params._user, event.params._subjectToken, event.transaction.hash, event.block)
-
+  beneficiaryPortfolio.protocolTokenInvested =
+    beneficiaryPortfolio.protocolTokenInvested.plus(
+      new BigDecimal(event.params._moxieDepositAmount)
+    )
   beneficiaryPortfolio.stakedBalance = beneficiaryPortfolio.stakedBalance.plus(
     event.params._amount
   )
