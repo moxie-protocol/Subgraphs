@@ -80,19 +80,14 @@ export function handleSubjectSharePurchased(
     .minus(fees.subjectFee)
   let beneficiaryType = getUserType(event.params._beneficiary)
   let userAddress = event.params._beneficiary
-  if (
-    beneficiaryType == BeneficiaryType.WHITELISTED ||
-    beneficiaryType == BeneficiaryType.STAKING
-  ) {
+  if (beneficiaryType != BeneficiaryType.USER) {
     userAddress = event.transaction.from
   }
   let user = getOrCreateUser(userAddress, event.block)
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
-  if (
-    beneficiaryType == BeneficiaryType.WHITELISTED ||
-    beneficiaryType == BeneficiaryType.STAKING
-  ) {
-    // increasing user protocol token invested only if user is not white listed
+  if (beneficiaryType == BeneficiaryType.USER) {
+    // whitelisted users are handled using beneficiary as user
+    // staking user are handled on staking handler
     user.protocolTokenInvested = user.protocolTokenInvested.plus(
       new BigDecimal(event.params._sellAmount)
     )
@@ -133,11 +128,9 @@ export function handleSubjectSharePurchased(
   portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(
     event.params._buyAmount
   )
-  if (
-    beneficiaryType == BeneficiaryType.WHITELISTED ||
-    beneficiaryType == BeneficiaryType.STAKING
-  ) {
-    // increating portfolio protocol token invested only if user is not white listed
+  if (beneficiaryType == BeneficiaryType.USER) {
+    // whitelisted users are handled using beneficiary as user
+    // staking user are handled on staking handler
     portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(
       new BigDecimal(event.params._sellAmount)
     )
