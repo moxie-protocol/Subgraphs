@@ -1,0 +1,475 @@
+type BlockInfo @entity {
+  id: ID!
+  hash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type SubjectTokenRollingDailySnapshot @entity {
+  "subjectId+-+endTimestamp"
+  id: ID!
+  "start block timestamp"
+  startTimestamp: BigInt!
+  "end block timestamp"
+  endTimestamp: BigInt!
+  "reference snapshot's end timestamp"
+  startReferenceTimestamp: BigInt!
+  "subject token address"
+  subjectToken: SubjectToken!
+
+  "address of the beneficiary"
+  subject: User
+  "reserve balance (moxie)/ total locked value"
+  reserve: BigInt!
+
+  "price of the token at the start of the snapshot"
+  startPrice: BigDecimal!
+  "price of the token at the end of the snapshot"
+  endPrice: BigDecimal!
+  "daily price change"
+  dailyPriceChange: BigDecimal!
+  "marketCap of the token at the start of the snapshot"
+  startMarketCap: BigDecimal!
+  "marketCap of the token at the end of the snapshot"
+  endMarketCap: BigDecimal!
+  "hourly marketCap change"
+  marketCapChange: BigDecimal!
+
+  "Total supply of the token"
+  totalSupply: BigInt!
+
+  "total number of unique holders at start of the snapshot"
+  startUniqueHolders: BigInt!
+  "total number of unique holders at end of the snapshot"
+  endUniqueHolders: BigInt!
+  "daily unique holders change"
+  dailyUniqueHoldersChange: BigInt!
+
+  "amount of moxie used to buy or sell this subject token at start of the snapshot"
+  startVolume: BigInt!
+  "amount of moxie used to buy or sell this subject token at end of the snapshot"
+  endVolume: BigInt!
+  "daily volume change"
+  dailyVolumeChange: BigInt!
+
+  "total beneficiary fee at start of the snapshot"
+  startSubjectFee: BigInt!
+  "total beneficiary fee at end of the snapshot"
+  endSubjectFee: BigInt!
+  "daily beneficiary fee change"
+  dailySubjectFeeChange: BigInt!
+  "total protocol fee at start of the snapshot"
+  startProtocolFee: BigInt!
+  "total protocol fee at end of the snapshot"
+  endProtocolFee: BigInt!
+  "daily protocol fee change"
+  dailyProtocolFeeChange: BigInt!
+
+  createdAtBlockInfo: BlockInfo!
+  updatedAtBlockInfo: BlockInfo!
+  createdAtBlockNumber: BigInt!
+  updatedAtBlockNumber: BigInt!
+  initialHourlySnapshot: SubjectTokenHourlySnapshot
+}
+
+type SubjectTokenDailySnapshot @entity {
+  "subjectId+-+endTimestamp"
+  id: ID!
+  "start block timestamp"
+  startTimestamp: BigInt!
+  "end block timestamp"
+  endTimestamp: BigInt!
+  "subject token address"
+  subjectToken: SubjectToken!
+
+  "address of the beneficiary"
+  subject: User
+  "reserve balance (moxie)/ total locked value"
+  reserve: BigInt!
+
+  "price of the token at the start of the snapshot"
+  startPrice: BigDecimal!
+  "price of the token at the end of the snapshot"
+  endPrice: BigDecimal!
+  "daily price change"
+  dailyPriceChange: BigDecimal!
+  "marketCap of the token at the start of the snapshot"
+  startMarketCap: BigDecimal!
+  "marketCap of the token at the end of the snapshot"
+  endMarketCap: BigDecimal!
+  "hourly marketCap change"
+  marketCapChange: BigDecimal!
+  "Total supply of the token"
+  totalSupply: BigInt!
+
+  "total number of unique holders at start of the snapshot"
+  startUniqueHolders: BigInt!
+  "total number of unique holders at end of the snapshot"
+  endUniqueHolders: BigInt!
+  "daily unique holders change"
+  dailyUniqueHoldersChange: BigInt!
+
+  "amount of moxie used to buy or sell this subject token at start of the snapshot"
+  startVolume: BigInt!
+  "amount of moxie used to buy or sell this subject token at end of the snapshot"
+  endVolume: BigInt!
+  "daily volume change"
+  dailyVolumeChange: BigInt!
+
+  "total beneficiary fee at start of the snapshot"
+  startSubjectFee: BigInt!
+  "total beneficiary fee at end of the snapshot"
+  endSubjectFee: BigInt!
+  "daily beneficiary fee change"
+  dailySubjectFeeChange: BigInt!
+  "total protocol fee at start of the snapshot"
+  startProtocolFee: BigInt!
+  "total protocol fee at end of the snapshot"
+  endProtocolFee: BigInt!
+  "daily protocol fee change"
+  dailyProtocolFeeChange: BigInt!
+
+  createdAtBlockInfo: BlockInfo!
+  updatedAtBlockInfo: BlockInfo!
+  createdAtBlockNumber: BigInt!
+  updatedAtBlockNumber: BigInt!
+  lastSubjectTokenDailySnapshot: SubjectTokenDailySnapshot
+
+  hourlySnapshotEndTimestamps: [BigInt!]!
+}
+
+type SubjectTokenHourlySnapshot @entity {
+  "subjectId+-+endTimestamp"
+  id: ID!
+  "start block timestamp"
+  startTimestamp: BigInt!
+  "end block timestamp"
+  endTimestamp: BigInt!
+  "subject token address"
+  subjectToken: SubjectToken!
+
+  "address of the beneficiary"
+  subject: User
+  "reserve balance (moxie)/ total locked value"
+  reserve: BigInt!
+
+  "price of the token at the start of the snapshot"
+  startPrice: BigDecimal!
+  "price of the token at the end of the snapshot"
+  endPrice: BigDecimal!
+  "hourly price change"
+  hourlyPriceChange: BigDecimal!
+
+  "marketCap of the token at the start of the snapshot"
+  startMarketCap: BigDecimal!
+  "marketCap of the token at the end of the snapshot"
+  endMarketCap: BigDecimal!
+  "hourly marketCap change"
+  marketCapChange: BigDecimal!
+
+  "Total supply of the token"
+  totalSupply: BigInt!
+
+  "total number of unique holders at start of the snapshot"
+  startUniqueHolders: BigInt!
+  "total number of unique holders at end of the snapshot"
+  endUniqueHolders: BigInt!
+  "hourly unique holders change"
+  hourlyUniqueHoldersChange: BigInt!
+
+  "amount of moxie used to buy or sell this subject token at start of the snapshot"
+  startVolume: BigInt!
+  "amount of moxie used to buy or sell this subject token at end of the snapshot"
+  endVolume: BigInt!
+  "hourly volume change"
+  hourlyVolumeChange: BigInt!
+
+  "total beneficiary fee at start of the snapshot"
+  startSubjectFee: BigInt!
+  "total beneficiary fee at end of the snapshot"
+  endSubjectFee: BigInt!
+  "hourly beneficiary fee change"
+  hourlySubjectFeeChange: BigInt!
+  "total protocol fee at start of the snapshot"
+  startProtocolFee: BigInt!
+  "total protocol fee at end of the snapshot"
+  endProtocolFee: BigInt!
+  "hourly protocol fee change"
+  hourlyProtocolFeeChange: BigInt!
+  createdAtBlockInfo: BlockInfo!
+  updatedAtBlockInfo: BlockInfo!
+  createdAtBlockNumber: BigInt!
+  updatedAtBlockNumber: BigInt!
+}
+
+type SubjectToken @entity {
+  "address of the subject token"
+  id: ID!
+  "name of the token"
+  name: String!
+  "symbol of the token"
+  symbol: String!
+  "decimals of the token"
+  decimals: BigInt!
+  "address of the beneficiary"
+  subject: User
+  "reserve balance in vault"
+  reserve: BigInt!
+  "current price of the token in Moxie"
+  currentPriceInMoxie: BigDecimal!
+  "current price of the token in Moxie in wei unit"
+  currentPriceInWeiInMoxie: BigDecimal!
+  "market cap: total supply * current price"
+  marketCap: BigDecimal!
+  "constant used to calculate bonding curve"
+  reserveRatio: BigInt!
+  "Total supply of the token"
+  totalSupply: BigInt!
+  "total locked In staking"
+  totalStaked: BigInt!
+  "initial supply when bonding curve is initialized"
+  initialSupply: BigInt!
+  "all the lockInfos"
+  lockInfos: [LockInfo!]! @derivedFrom(field: "subjectToken")
+  "total number of unique holders"
+  uniqueHolders: BigInt!
+  "amount of moxie used to buy or sell or auction this subject token"
+  lifetimeVolume: BigInt!
+  "snapshots"
+  hourlySnapshots: [SubjectTokenHourlySnapshot!]! @derivedFrom(field: "subjectToken")
+  dailySnapshots: [SubjectTokenDailySnapshot!]! @derivedFrom(field: "subjectToken")
+  latestRollingDailySnapshot: SubjectTokenRollingDailySnapshot
+  latestDailySnapshot: SubjectTokenDailySnapshot
+  previousDailySnapshot: SubjectTokenDailySnapshot
+  "total beneficiary fees collected"
+  subjectFee: BigInt!
+  "total protocol fees collected"
+  protocolFee: BigInt!
+  "portfolios with this subject"
+  portfolio: [Portfolio!]! @derivedFrom(field: "subjectToken")
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
+  "updated at block information"
+  lastUpdatedAtBlockInfo: BlockInfo!
+  "last order happened block number"
+  lastOrderBlockNumber: BigInt!
+  "Moxie spent by all users buy this subject token"
+  buySideVolume: BigInt!
+  "Moxie earned by all user to sell the subject token"
+  sellSideVolume: BigInt!
+  "total moxie invested by the user, after reducing when user sells the token"
+  protocolTokenInvested: BigDecimal!
+  auction: Auction
+  status: OnboardingStatus!
+}
+enum OnboardingStatus {
+  OnboardingInitialized
+  OnboardingFinished
+}
+
+type Auction @entity {
+  "auctionid"
+  id: ID!
+  "protocol token address"
+  protocolToken: Bytes!
+  subjectToken: SubjectToken
+
+  minFundingThreshold: BigInt!
+  minFundingThresholdNotReached: Boolean!
+
+  clearingUserId: BigInt!
+  clearingBuyAmount: BigInt!
+  clearingSellAmount: BigInt!
+  volumeClearingPriceOrder: BigInt!
+  "_bondingAmount + _protocolFee + _subjectFee -> from auction , should be added in summary buyVolume "
+  amountRaised: BigInt!
+
+  subjectFee: BigInt!
+  protocolFee: BigInt!
+
+  startTxHash: Bytes!
+  endTxHash: Bytes
+  startBlockInfo: BlockInfo!
+  startBlockNumber: BigInt!
+  endBlockInfo: BlockInfo
+  auctionEndDate: BigInt!
+}
+
+type Portfolio @entity {
+  "User's address+-+Subject's token address"
+  id: ID!
+  "User's address"
+  user: User!
+  "Subject's token address"
+  subjectToken: SubjectToken!
+  "lockInfos"
+  lockInfos: [LockInfo!]! @derivedFrom(field: "portfolio")
+  "lockInfos as buyer"
+  buyerLockInfos: [LockInfo!]! @derivedFrom(field: "buyerPortfolio")
+  "Net quantity of the subject token by the user"
+  balance: BigInt!
+  "staked quantity of the subject token by the user"
+  stakedBalance: BigInt!
+  "unstaked quantity of the subject token by the user"
+  unstakedBalance: BigInt!
+  "Moxie spent by user to buy the subject token(buyShare + auctionOrders)"
+  buyVolume: BigInt!
+  "total subject token bought by user"
+  subjectTokenBuyVolume: BigInt!
+  "amount of moxie earned by user by selling the subject token"
+  sellVolume: BigInt!
+  "total moxie invested by the user"
+  protocolTokenInvested: BigDecimal!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+  "created at block information"
+  createdAtBlockNumber: BigInt!
+  "updated at block information"
+  updatedAtBlockNumber: BigInt!
+}
+
+type LockInfo @entity {
+  "index"
+  id: ID!
+  "txHash of the transaction"
+  txHash: Bytes!
+  "logIndex of the transaction"
+  logIndex: BigInt!
+  "User's address"
+  user: User!
+  "Buyer's address, if the lock is a buy and lock"
+  buyer: User
+  "Subject's token address"
+  subjectToken: SubjectToken!
+  "portfolio"
+  portfolio: Portfolio!
+  "Buyer's portfolio , if the lock is a buy and lock"
+  buyerPortfolio: Portfolio
+  "Subject's address"
+  subject: User!
+  "Unlock time in seconds"
+  unlockTimeInSec: BigInt!
+  "Amount locked"
+  amount: BigInt!
+  "isBuy"
+  isBuy: Boolean!
+  "Lock period"
+  lockPeriodInSec: BigInt!
+  "moxie spent to buy the subject token & lock"
+  moxieDepositAmount: BigInt!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
+}
+
+type User @entity {
+  "Ethereum address of the user"
+  id: ID!
+  "User's Portfolio for each subject token he/she holds"
+  portfolio: [Portfolio!]! @derivedFrom(field: "user")
+  "total moxie spent by the user"
+  buyVolume: BigInt!
+  "Moxie earned by user to sell the subject token"
+  sellVolume: BigInt!
+  "total moxie invested by the user"
+  protocolTokenInvested: BigDecimal!
+  "total number of orders (auction & buyOrders)"
+  protocolOrdersCount: BigInt!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
+}
+
+enum OrderType {
+  SELL
+  BUY
+  AUCTION
+}
+
+# type ProtocolFeeBeneficiary @entity {
+#   "address of the beneficiary"
+#   id: ID!
+#   "address of the beneficiary"
+#   beneficiary: Bytes!
+#   "total fees collected by the protocol"
+#   totalFees: BigInt!
+# }
+
+type Summary @entity {
+  id: ID!
+  totalSubjectTokensIssued: BigInt!
+  "total reserve in the vault"
+  totalReserve: BigInt!
+  "total protocol token spent by all users - after reducing when user sells the token"
+  totalProtocolTokenInvested: BigDecimal!
+  "total subject tokens staked"
+  totalStakedSubjectTokens: BigInt!
+  # activeProtocolFeeBeneficiary: ProtocolFeeBeneficiary
+  protocolBuyFeePct: BigInt!
+  protocolSellFeePct: BigInt!
+  subjectBuyFeePct: BigInt!
+  subjectSellFeePct: BigInt!
+
+  numberOfBuyOrders: BigInt!
+  numberOfSellOrders: BigInt!
+  numberOfAuctionOrders: BigInt!
+  numberOfUsers: BigInt!
+
+  "total moxie spent in buy orders + initialization"
+  totalBuyVolume: BigInt!
+  totalSellVolume: BigInt!
+
+  totalProtocolFee: BigInt!
+  totalProtocolFeeFromAuction: BigInt!
+
+  totalSubjectFee: BigInt!
+  totalSubjectFeeFromAuction: BigInt!
+}
+
+type AuctionUser @entity {
+  id: ID!
+  userAddress: Bytes!
+}
+
+# type VaultDepositTx @entity {
+#   id: ID!
+#   amount: BigInt!
+#   sender: Bytes!
+#   subject: Bytes!
+#   token: Bytes!
+#   totalReserve: BigInt!
+#   txHash: Bytes!
+#   blockInfo: BlockInfo!
+# }
+
+# type VaultTransferTx @entity {
+#   id: ID!
+#   amount: BigInt
+#   to: Bytes!
+#   subject: Bytes!
+#   token: Bytes!
+#   totalReserve: BigInt!
+#   txHash: Bytes!
+#   blockInfo: BlockInfo!
+# }
+
+
+type SubjectToSubjectToken @entity {
+  "subject address"
+  id: ID!
+  subjectToken: SubjectToken!
+}
