@@ -4,14 +4,14 @@
   "scripts": {
     "cb:base-sepolia": "yarn prepare:base-sepolia && yarn codegen && yarn build",
     "cb:base": "yarn prepare:base && yarn codegen && yarn build",
-    "prepare:base-sepolia": "mustache ./config/base-sepolia.json subgraph.template.yaml > subgraph.yaml",
-    "prepare:base": "mustache ./config/base.json subgraph.template.yaml > subgraph.yaml",
+    "prepare:base-sepolia": "mustache ./config/base-sepolia.json subgraph.template.yaml > subgraph.yaml ",
+    "prepare:base": "mustache ./config/base.json subgraph.template.yaml > subgraph.yaml ",
     "codegen": "graph codegen",
     "build": "graph build",
-    "cbd": "yarn cb && graph deploy --studio protocol -l v5.1.7",
     "test": "graph test -d",
     "cbt": "graph codegen && graph build && graph test -d",
-    "clean": "rm -rf generated/ build/"
+    "clean": "rm -rf generated/ build/",
+    "cbd:public": "yarn cb:base && graph deploy --studio moxie_protocol_minimal_mainnet -l v1.1.1"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.73.0",

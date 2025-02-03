@@ -15,7 +15,6 @@ import {
   getOrCreateSummary,
   getOrCreateUser,
   savePortfolio,
-  saveSubjectToken,
   saveUser,
 } from "./utils"
 export function handleLock(event: Lock): void {
@@ -29,7 +28,7 @@ export function handleLock(event: Lock): void {
     event.block
   )
   subjectToken.totalStaked = subjectToken.totalStaked.plus(event.params._amount)
-  saveSubjectToken(subjectToken, event.block)
+  subjectToken.save()
 
   let user = getOrCreateUser(event.params._user, event.block)
   user.protocolTokenInvested = user.protocolTokenInvested.plus(
@@ -42,15 +41,13 @@ export function handleLock(event: Lock): void {
     event.transaction.hash,
     event.block
   )
-
+  beneficiaryPortfolio.protocolTokenInvested = beneficiaryPortfolio.protocolTokenInvested.plus(
+    new BigDecimal(event.params._moxieDepositAmount)
+  )
   beneficiaryPortfolio.stakedBalance = beneficiaryPortfolio.stakedBalance.plus(
     event.params._amount
   )
-  beneficiaryPortfolio.protocolTokenInvested =
-    beneficiaryPortfolio.protocolTokenInvested.plus(
-      new BigDecimal(event.params._moxieDepositAmount)
-    )
-  savePortfolio(beneficiaryPortfolio, event.block)
+  savePortfolio(beneficiaryPortfolio, event.block, false)
 
   if (event.params._buyer != Address.zero()) {
     let buyerPortfolio = getOrCreatePortfolio(
@@ -88,7 +85,7 @@ export function handleLockExtended(event: LockExtended): void {
     event.block
   )
   portfolio.stakedBalance = portfolio.stakedBalance.minus(event.params._amount)
-  savePortfolio(portfolio, event.block)
+  savePortfolio(portfolio, event.block, false)
 
   // reduce total staked amount from subject token
   let subjectToken = getOrCreateSubjectToken(
@@ -98,7 +95,7 @@ export function handleLockExtended(event: LockExtended): void {
   subjectToken.totalStaked = subjectToken.totalStaked.minus(
     event.params._amount
   )
-  saveSubjectToken(subjectToken, event.block)
+  subjectToken.save()
   // loop over the array of lock indexes and delete the lock info
   let lockIndexes = event.params._indexes
   for (let i = 0; i < lockIndexes.length; i++) {
@@ -121,7 +118,7 @@ export function handleWithdraw(event: Withdraw): void {
     event.block
   )
   portfolio.stakedBalance = portfolio.stakedBalance.minus(event.params._amount)
-  savePortfolio(portfolio, event.block)
+  savePortfolio(portfolio, event.block, false)
 
   let subjectToken = getOrCreateSubjectToken(
     event.params._subjectToken,
@@ -130,7 +127,7 @@ export function handleWithdraw(event: Withdraw): void {
   subjectToken.totalStaked = subjectToken.totalStaked.minus(
     event.params._amount
   )
-  saveSubjectToken(subjectToken, event.block)
+  subjectToken.save()
   // loop over the array of lock indexes and delete the lock info
   let lockIndexes = event.params._indexes
   for (let i = 0; i < lockIndexes.length; i++) {

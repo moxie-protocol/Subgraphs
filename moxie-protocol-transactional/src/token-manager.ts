@@ -3,6 +3,7 @@ import { TokenDeployed } from "../generated/TokenManager/TokenManager"
 import { SubjectTokenContract } from "../generated/templates"
 
 import { getOrCreateSubjectToken, getOrCreateUser, isBlacklistedSubjectTokenAddress, saveSubjectToken } from "./utils"
+import { SubjectToSubjectToken } from "../generated/schema"
 
 // emitted when a new SubjectErc20 is deployed
 export function handleTokenDeployed(event: TokenDeployed): void {
@@ -16,5 +17,10 @@ export function handleTokenDeployed(event: TokenDeployed): void {
   subjectToken.subject = user.id
   saveSubjectToken(subjectToken, event.block)
   log.warning("Token deployed: {}", [token.toHexString()])
+
+  // create subject to subject token contract
+  let subjectToSubjectToken = new SubjectToSubjectToken(event.params._beneficiary.toHexString())
+  subjectToSubjectToken.subjectToken = subjectToken.id
+  subjectToSubjectToken.save()
   SubjectTokenContract.create(token)
 }

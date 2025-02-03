@@ -1,22 +1,57 @@
 import { BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
-import { BondingCurveInitialized, SubjectSharePurchased, SubjectShareSold, UpdateBeneficiary, UpdateFees, Initialized, MoxieBondingCurve } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
-import { User } from "../generated/schema"
+import {
+  BondingCurveInitialized,
+  SubjectSharePurchased,
+  SubjectShareSold,
+  UpdateBeneficiary,
+  UpdateFees,
+  Initialized,
+  MoxieBondingCurve,
+  SubjectReserveRatioUpdated,
+} from "../generated/MoxieBondingCurve/MoxieBondingCurve"
+import { SubjectToken, SubjectToSubjectToken, User } from "../generated/schema"
 
-import { calculateBuySideFee, calculateSellSideProtocolAmountAddingBackFees, getOrCreatePortfolio, getOrCreateSubjectToken, getOrCreateSummary, getOrCreateUser, savePortfolio, saveSubjectToken, saveUser, CalculatePrice, calculateSellSideFee, isBlacklistedSubjectTokenAddress } from "./utils"
-export function handleBondingCurveInitialized(event: BondingCurveInitialized): void {
+import {
+  calculateBuySideFee,
+  calculateSellSideProtocolAmountAddingBackFees,
+  getOrCreatePortfolio,
+  getOrCreateSubjectToken,
+  getOrCreateSummary,
+  getOrCreateUser,
+  savePortfolio,
+  saveSubjectToken,
+  saveUser,
+  CalculatePrice,
+  calculateSellSideFee,
+  isBlacklistedSubjectTokenAddress,
+  getUserType,
+  BeneficiaryType,
+} from "./utils"
+export function handleBondingCurveInitialized(
+  event: BondingCurveInitialized
+): void {
   if (isBlacklistedSubjectTokenAddress(event.params._subjectToken)) {
     return
   }
-  let subjectToken = getOrCreateSubjectToken(event.params._subjectToken, event.block)
+  let subjectToken = getOrCreateSubjectToken(
+    event.params._subjectToken,
+    event.block
+  )
   subjectToken.reserveRatio = event.params._reserveRatio
   subjectToken.initialSupply = event.params._initialSupply
-  let calculatedPrice = new CalculatePrice(event.params._reserve, subjectToken.initialSupply, subjectToken.reserveRatio)
+  let calculatedPrice = new CalculatePrice(
+    event.params._reserve,
+    subjectToken.initialSupply,
+    subjectToken.reserveRatio
+  )
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   saveSubjectToken(subjectToken, event.block)
 }
 
-export function handleSubjectSharePurchased(event: SubjectSharePurchased): void {
+export function handleSubjectSharePurchased(
+  event: SubjectSharePurchased
+): void {
   if (isBlacklistedSubjectTokenAddress(event.params._buyToken)) {
     return
   }
@@ -40,26 +75,86 @@ export function handleSubjectSharePurchased(event: SubjectSharePurchased): void 
   //   );
 
   const fees = calculateBuySideFee(event.params._sellAmount)
-  let protocolTokenSpentAfterFees = event.params._sellAmount.minus(fees.protocolFee).minus(fees.subjectFee)
-
-  let user = getOrCreateUser(event.params._beneficiary, event.block)
+  let protocolTokenSpentAfterFees = event.params._sellAmount
+    .minus(fees.protocolFee)
+    .minus(fees.subjectFee)
+  let beneficiaryType = getUserType(event.params._beneficiary)
+  let userAddress = event.params._beneficiary
+  if (beneficiaryType != BeneficiaryType.USER) {
+    userAddress = event.transaction.from
+  }
+  let user = getOrCreateUser(userAddress, event.block)
   user.buyVolume = user.buyVolume.plus(event.params._sellAmount)
+  if (beneficiaryType == BeneficiaryType.USER) {
+    // whitelisted users are handled using beneficiary as user
+    // staking user are handled on staking handler
+    user.protocolTokenInvested = user.protocolTokenInvested.plus(
+      new BigDecimal(event.params._sellAmount)
+    )
+  }
   saveUser(user, event.block)
 
-  let subjectToken = getOrCreateSubjectToken(event.params._buyToken, event.block)
-  subjectToken.buySideVolume = subjectToken.buySideVolume.plus(event.params._sellAmount)
+  let subjectToken = getOrCreateSubjectToken(
+    event.params._buyToken,
+    event.block
+  )
+  subjectToken.buySideVolume = subjectToken.buySideVolume.plus(
+    event.params._sellAmount
+  )
   // calculating price here the sell amount will be in protocol token and buy amount is protocol token since it's a buy
-  let calculatedPrice = new CalculatePrice(subjectToken.reserve, subjectToken.totalSupply, subjectToken.reserveRatio)
+  let calculatedPrice = new CalculatePrice(
+    subjectToken.reserve,
+    subjectToken.totalSupply,
+    subjectToken.reserveRatio
+  )
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
-  subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(event.params._sellAmount)
+  subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(
+    event.params._sellAmount
+  )
+  subjectToken.protocolTokenInvested = subjectToken.protocolTokenInvested.plus(
+    new BigDecimal(event.params._sellAmount)
+  )
   saveSubjectToken(subjectToken, event.block)
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._buyToken, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(
+    userAddress,
+    event.params._buyToken,
+    event.transaction.hash,
+    event.block
+  )
   portfolio.buyVolume = portfolio.buyVolume.plus(event.params._sellAmount)
-  portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(event.params._buyAmount)
-  savePortfolio(portfolio, event.block)
+  portfolio.subjectTokenBuyVolume = portfolio.subjectTokenBuyVolume.plus(
+    event.params._buyAmount
+  )
+  if (beneficiaryType == BeneficiaryType.USER) {
+    // whitelisted users are handled using beneficiary as user
+    // staking user are handled on staking handler
+    portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(
+      new BigDecimal(event.params._sellAmount)
+    )
+  }
+  savePortfolio(portfolio, event.block, false)
+
+  if (beneficiaryType == BeneficiaryType.WHITELISTED) {
+    let user = getOrCreateUser(event.params._beneficiary, event.block)
+    user.protocolTokenInvested = user.protocolTokenInvested.plus(
+      new BigDecimal(event.params._sellAmount)
+    )
+    saveUser(user, event.block)
+
+    let portfolio = getOrCreatePortfolio(
+      event.params._beneficiary,
+      event.params._buyToken,
+      event.transaction.hash,
+      event.block
+    )
+    portfolio.protocolTokenInvested = portfolio.protocolTokenInvested.plus(
+      new BigDecimal(event.params._sellAmount)
+    )
+    savePortfolio(portfolio, event.block, false)
+  }
 }
 
 export function handleSubjectShareSold(event: SubjectShareSold): void {
@@ -84,31 +179,58 @@ export function handleSubjectShareSold(event: SubjectShareSold): void {
   // );
   // SubjectShareSold event is in perspective of user, so _buyAmount is the amount user gets back(fees already deducted)
   let protocolTokenAmountReducingFees = event.params._buyAmount
-  let protocolTokenAmount = calculateSellSideProtocolAmountAddingBackFees(protocolTokenAmountReducingFees)
+  let protocolTokenAmount = calculateSellSideProtocolAmountAddingBackFees(
+    protocolTokenAmountReducingFees
+  )
   const fees = calculateSellSideFee(protocolTokenAmount)
 
-  let subjectToken = getOrCreateSubjectToken(event.params._sellToken, event.block)
-  let predictedReserve = subjectToken.reserve.minus(event.params._buyAmount.plus(fees.protocolFee).plus(fees.subjectFee))
-  let predictedTotalSupply = subjectToken.totalSupply.minus(event.params._sellAmount)
-  let calculatedPrice = new CalculatePrice(predictedReserve, predictedTotalSupply, subjectToken.reserveRatio)
+  let subjectToken = getOrCreateSubjectToken(
+    event.params._sellToken,
+    event.block
+  )
+  let predictedReserve = subjectToken.reserve.minus(
+    event.params._buyAmount.plus(fees.protocolFee).plus(fees.subjectFee)
+  )
+  let predictedTotalSupply = subjectToken.totalSupply.minus(
+    event.params._sellAmount
+  )
+  let calculatedPrice = new CalculatePrice(
+    predictedReserve,
+    predictedTotalSupply,
+    subjectToken.reserveRatio
+  )
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   // volume uses amount with fees
-  subjectToken.lifetimeVolume = subjectToken.lifetimeVolume.plus(protocolTokenAmount)
+  subjectToken.lifetimeVolume =
+    subjectToken.lifetimeVolume.plus(protocolTokenAmount)
   // volume uses amount with fees
-  subjectToken.sellSideVolume = subjectToken.sellSideVolume.plus(protocolTokenAmount)
+  subjectToken.sellSideVolume =
+    subjectToken.sellSideVolume.plus(protocolTokenAmount)
   saveSubjectToken(subjectToken, event.block)
-
-  let user = getOrCreateUser(event.params._beneficiary, event.block)
+  let beneficiaryType = getUserType(event.params._beneficiary)
+  let userAddress = event.params._beneficiary
+  if (
+    beneficiaryType == BeneficiaryType.WHITELISTED ||
+    beneficiaryType == BeneficiaryType.STAKING
+  ) {
+    userAddress = event.transaction.from
+  }
+  let user = getOrCreateUser(userAddress, event.block)
   // volume uses amount with fees
   user.sellVolume = user.sellVolume.plus(protocolTokenAmount)
   saveUser(user, event.block)
 
   // updating user's portfolio
-  let portfolio = getOrCreatePortfolio(event.params._beneficiary, event.params._sellToken, event.transaction.hash, event.block)
+  let portfolio = getOrCreatePortfolio(
+    userAddress,
+    event.params._sellToken,
+    event.transaction.hash,
+    event.block
+  )
   // volume uses amount with fees
   portfolio.sellVolume = portfolio.sellVolume.plus(protocolTokenAmount)
-  savePortfolio(portfolio, event.block)
+  savePortfolio(portfolio, event.block, false)
 }
 
 export function handleUpdateFees(event: UpdateFees): void {
@@ -134,4 +256,32 @@ export function handleInitialized(event: Initialized): void {
   summary.subjectSellFeePct = subjectSellFeePct
 
   summary.save()
+}
+
+export function handleSubjectReserveRatioUpdated(
+  event: SubjectReserveRatioUpdated
+): void {
+  log.info(
+    "handling SubjectReserveRatioUpdated event for subject {} txHash {}",
+    [event.params._subject.toHexString(), event.transaction.hash.toHexString()]
+  )
+  let subjectToSubjectToken = SubjectToSubjectToken.load(
+    event.params._subject.toHexString()
+  )
+  if (subjectToSubjectToken == null) {
+    throw new Error(
+      "SubjectToSubjectToken not found, subject: " +
+        event.params._subject.toHexString()
+    )
+  }
+  let subjectToken = SubjectToken.load(subjectToSubjectToken.subjectToken)
+  subjectToken!.reserveRatio = event.params._newReserveRatio
+  let calculatedPrice = new CalculatePrice(
+    subjectToken!.reserve,
+    subjectToken!.totalSupply,
+    subjectToken!.reserveRatio
+  )
+  subjectToken!.currentPriceInMoxie = calculatedPrice.price
+  subjectToken!.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
+  saveSubjectToken(subjectToken!, event.block)
 }

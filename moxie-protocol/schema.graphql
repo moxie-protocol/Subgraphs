@@ -534,24 +534,9 @@ type AuctionUser @entity {
   userAddress: Bytes!
 }
 
-type VaultDepositTx @entity {
-  id: ID!
-  amount: BigInt!
-  sender: Bytes!
-  subject: Bytes!
-  token: Bytes!
-  totalReserve: BigInt!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
-}
 
-type VaultTransferTx @entity {
+type SubjectToSubjectToken @entity {
+  "subject address"
   id: ID!
-  amount: BigInt
-  to: Bytes!
-  subject: Bytes!
-  token: Bytes!
-  totalReserve: BigInt!
-  txHash: Bytes!
-  blockInfo: BlockInfo!
+  subjectToken: SubjectToken!
 }
