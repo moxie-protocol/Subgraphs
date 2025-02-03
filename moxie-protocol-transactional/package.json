@@ -10,7 +10,8 @@
     "build": "graph build",
     "test": "graph test -d",
     "cbt": "graph codegen && graph build && graph test -d",
-    "clean": "rm -rf generated/ build/"
+    "clean": "rm -rf generated/ build/",
+    "cbd:public": "yarn cb:base && graph deploy --studio moxie_protocol_minimal_mainnet -l v1.1.1"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.73.0",
