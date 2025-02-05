@@ -52,8 +52,3 @@ type V3NftTokenIdToLiquidity @entity {
   liquidity: BigInt!
   ownerPool: UserPool
 }
-
-type NFTManager @entity {
-  id: ID!
-}
-

@@ -119,16 +119,14 @@ dataSources:
           handler: handleCollectFees
         - event: Flash(indexed address,indexed address,uint256,uint256,uint256,uint256)
           handler: handleFlash
-      callHandlers:
-        - function: setGaugeAndPositionManager(address,address)
-          handler: handleSetGaugeAndPositionManager
       file: ./src/handler.ts
-templates:
-  - name: NonfungiblePositionManager
-    kind: ethereum/contract
+  - kind: ethereum
+    name: NonfungiblePositionManager
     network: base
     source:
+      address: "0x827922686190790b37229fd06084350e74485b72"
       abi: NonfungiblePositionManager
+      startBlock: 23651808
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7

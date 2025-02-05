@@ -30,21 +30,9 @@ export function handleIncreaseLiquidity(event: IncreaseLiquidity): void {
     event.params.amount0,
     event.params.amount1
   )
-  log.info(
-    "Handling IncreaseLiquidity event for tokenId: {} txHash: {} entityId {}",
-    [
-      event.params.tokenId.toString(),
-      event.transaction.hash.toHexString(),
-      entityId,
-    ]
-  )
   let tokenIdToLiquidity: V3NftTokenIdToLiquidity | null = null
   let entity = V3NftMint.load(entityId)
   if (entity) {
-    log.info("Minting liquidity for tokenId: {}, liquidity: {}", [
-      event.params.tokenId.toString(),
-      event.params.liquidity.toString(),
-    ])
     let tokenIdToLiquidity = new V3NftTokenIdToLiquidity(
       event.params.tokenId.toString()
     )
