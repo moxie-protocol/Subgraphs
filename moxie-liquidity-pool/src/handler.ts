@@ -12,7 +12,7 @@ import {
 } from "../generated/AerodromeGauge/AerodromeGauge"
 import { Deposit as CLDeposit, Withdraw as CLWithdraw } from "../generated/AerodromeCLGauge/AerodromeCLGauge"
 import { Mint, Burn, SetGaugeAndPositionManagerCall, Swap, Collect, CollectFees, Flash } from "../generated/AerodromeCLPool/AerodromeCLPool"
-import { getOrCreateBlockInfo, getOrCreatePoolEntity, getOrCreateUserEntity, getOrCreateUserPoolEntity, getV3NftIdentifier, handleSyncEvents, handleTransferEvents } from "./utils"
+import { getOrCreateBlockInfo, getOrCreatePoolEntity, getOrCreateUserEntity, getOrCreateUserPoolEntity, getV3NftIdentifier, handleSyncEvents, handleTransferEvents, saveUserPool } from "./utils"
 import { GAUGE_LP_TOKEN_MAP } from "./constants"
 import { Address, BigInt, log } from "@graphprotocol/graph-ts"
 import { V3NftMint, V3NftTokenIdToLiquidity, NFTManager, User, UserPool, V3NftMintViaTransfer } from "../generated/schema"
@@ -162,10 +162,7 @@ export function handleCLDeposit(event: CLDeposit): void {
       throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString() + "txHash: " + event.transaction.hash.toHexString())
     }
     userPool.stakedLPAmount = userPool.stakedLPAmount.plus(event.params.liquidityToStake)
-    userPool.totalLPAmount = userPool.stakedLPAmount.plus(userPool.unstakedLpAmount)
-    userPool.latestStakeTransactionHash = event.transaction.hash
-    userPool.updatedAt = getOrCreateBlockInfo(event).id
-    userPool.save()
+    saveUserPool(event, userPool, true)
   }
 }
 export function handleCLWithdraw(event: CLWithdraw): void {
@@ -184,8 +181,6 @@ export function handleCLWithdraw(event: CLWithdraw): void {
       throw new Error("OwnerPool not found for tokenId: " + event.params.tokenId.toString() + "txHash: " + event.transaction.hash.toHexString())
     }
     userPool.stakedLPAmount = userPool.stakedLPAmount.minus(event.params.liquidityToStake)
-    userPool.latestStakeTransactionHash = event.transaction.hash
-    userPool.updatedAt = getOrCreateBlockInfo(event).id
-    userPool.save()
+    saveUserPool(event, userPool, true)
   }
 }

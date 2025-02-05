@@ -56,3 +56,4 @@ type V3NftTokenIdToLiquidity @entity {
 type NFTManager @entity {
   id: ID!
 }
+
