@@ -36,3 +36,19 @@ type UserPool @entity {
   createdAt: BlockInfo!
   updatedAt: BlockInfo!
 }
+
+type MintToAddLiquidityTx @entity {
+  id: ID!
+}
+type MintToTransferTx @entity {
+  id: ID!
+}
+
+type Position @entity {
+  "tokenId as id"
+  id: ID!
+  unstakedLpAmount: BigInt!
+  userPool: UserPool
+  createdAt: BlockInfo!
+  updatedAt: BlockInfo!
+}

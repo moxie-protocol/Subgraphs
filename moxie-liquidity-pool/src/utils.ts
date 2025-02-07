@@ -1,5 +1,5 @@
-import {BigInt, ethereum, Address } from "@graphprotocol/graph-ts"
-import { BlockInfo, Pool, User, UserPool } from "../generated/schema"
+import {BigInt, ethereum, Address,Bytes, log } from "@graphprotocol/graph-ts"
+import { BlockInfo, Pool, Position, User, UserPool, MintToAddLiquidityTx, MintToTransferTx } from "../generated/schema"
 
 export function getOrCreateBlockInfo(event: ethereum.Event): BlockInfo {
     let blockInfo = BlockInfo.load(event.block.number.toString())
@@ -107,4 +107,96 @@ export function handleTransferEvents(event: ethereum.Event, from: Address, to: A
     receiverUserPool.save()
   }
 
+}
+
+export function getV3MintToLiquidityTxId(
+  txHash: Bytes,
+  liquidity: BigInt,
+  amount0: BigInt,
+  amount1: BigInt
+): string {
+  return (
+    txHash.toHexString() +
+    "-" +
+    liquidity.toString() +
+    "-" +
+    amount0.toString() +
+    "-" +
+    amount1.toString()
+  )
+}
+
+export function IsMintToAddLiquidityTx(
+  txHash: Bytes,
+  liquidity: BigInt,
+  amount0: BigInt,
+  amount1: BigInt
+): boolean {
+  let entityId = getV3MintToLiquidityTxId(txHash, liquidity, amount0, amount1)
+  let mintToAddLiquidityTx = MintToAddLiquidityTx.load(entityId)
+  return !!mintToAddLiquidityTx
+}
+
+export function handleMintToAddLiquidityTx(
+  txHash: Bytes,
+  liquidity: BigInt,
+  amount0: BigInt,
+  amount1: BigInt
+): void {
+  let entityId = getV3MintToLiquidityTxId(txHash, liquidity, amount0, amount1)
+  let mintToAddLiquidityTx = new MintToAddLiquidityTx(entityId)
+  mintToAddLiquidityTx.save()
+}
+
+export function handleMintToTransferTx(event: ethereum.Event): void {
+  let entityId = event.transaction.hash.toHexString().concat("-").concat(event.logIndex.toString())
+  let mintToTransferTx = new MintToTransferTx(entityId)
+  mintToTransferTx.save()
+}
+
+export function IsMintToTransferTx(event: ethereum.Event): boolean {
+  let entityId = event.transaction.hash.toHexString().concat("-").concat(event.logIndex.minus(BigInt.fromI32(1)).toString())
+  let mintToTransferTx = MintToTransferTx.load(entityId)
+  return !!mintToTransferTx
+}
+
+
+export function savePosition(event: ethereum.Event, position:Position): void {
+  position.updatedAt = getOrCreateBlockInfo(event).id
+  position.save()
+}
+
+export function saveUserPool(event: ethereum.Event, userPool:UserPool,isStake:bool=false): void {
+  userPool.totalLPAmount = userPool.stakedLPAmount.plus(userPool.unstakedLpAmount)
+  if(userPool.totalLPAmount.lt(BigInt.fromI32(0))) {
+    log.info("userPool.totalLPAmount is less than 0, txHash: {}", [
+      event.transaction.hash.toHexString(),
+    ])
+    throw new Error("userPool.totalLPAmount is less than 0, txHash: " + event.transaction.hash.toHexString())
+  }
+  userPool.updatedAt = getOrCreateBlockInfo(event).id
+  if(isStake) {
+    userPool.latestStakeTransactionHash = event.transaction.hash
+  }else{
+    userPool.latestTransactionHash = event.transaction.hash
+  }
+  userPool.save()
+}
+
+export function savePool(event: ethereum.Event, pool:Pool): void {
+  if(pool.totalSupply.lt(BigInt.fromI32(0))) {
+    log.info("pool.totalSupply is less than 0, txHash: {}", [
+      event.transaction.hash.toHexString(),
+    ])
+    throw new Error("pool.totalSupply is less than 0, txHash: " + event.transaction.hash.toHexString())
+  }
+  if(pool.nonMoxieReserve.lt(BigInt.fromI32(0)) || pool.moxieReserve.lt(BigInt.fromI32(0))) {
+    log.info("pool.nonMoxieReserve or pool.moxieReserve is less than 0, txHash: {}", [
+      event.transaction.hash.toHexString(),
+    ])
+    throw new Error("pool.nonMoxieReserve or pool.moxieReserve is less than 0, txHash: " + event.transaction.hash.toHexString())
+  }
+  pool.latestTransactionHash = event.transaction.hash
+  pool.updatedAt = getOrCreateBlockInfo(event).id
+  pool.save()
 }
