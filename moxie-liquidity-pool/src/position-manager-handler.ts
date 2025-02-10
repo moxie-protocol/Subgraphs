@@ -63,8 +63,8 @@ export function handleIncreaseLiquidity(event: IncreaseLiquidity): void {
 export function handleDecreaseLiquidity(event: DecreaseLiquidity): void {
   let position = Position.load(event.params.tokenId.toString())
   if (!position) {
-   // position not found, skip 
-   return
+    // position not found, skip
+    return
   }
   position.unstakedLpAmount = position.unstakedLpAmount.minus(
     event.params.liquidity
@@ -111,18 +111,33 @@ export function handleTransfer(event: Transfer): void {
     event.transaction.hash.toHexString(),
   ])
   let poolId = NFT_MANAGER_POOL_MAP.mustGet(event.address.toHexString())
-  let userPool = getOrCreateUserPoolEntity(
+  let fromUserPool = getOrCreateUserPoolEntity(
+    event,
+    event.params.from.toHexString(),
+    poolId
+  )
+  if (fromUserPool.unstakedLpAmount.ge(position.unstakedLpAmount)) {
+    // reducing old owner's unstakedLpAmount
+    fromUserPool.unstakedLpAmount = fromUserPool.unstakedLpAmount.minus(
+      position.unstakedLpAmount
+    )
+    saveUserPool(event, fromUserPool)
+  }
+
+  // increasing new owner's unstakedLpAmount
+  let toUserPool = getOrCreateUserPoolEntity(
     event,
     event.params.to.toHexString(),
     poolId
   )
-  // position.unstakedLpAmount value is updated in the handleIncreaseLiquidity function
   log.info("position.unstakedLpAmount: {} txHash: {}", [
     position.unstakedLpAmount.toString(),
     event.transaction.hash.toHexString(),
   ])
-  userPool.unstakedLpAmount = position.unstakedLpAmount
-  saveUserPool(event, userPool)
-  position.userPool = userPool.id
+  toUserPool.unstakedLpAmount = toUserPool.unstakedLpAmount.plus(
+    position.unstakedLpAmount
+  )
+  saveUserPool(event, toUserPool)
+  position.userPool = toUserPool.id
   savePosition(event, position)
 }

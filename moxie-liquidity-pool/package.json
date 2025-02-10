@@ -9,7 +9,7 @@
     "remove-local": "graph remove --node http://localhost:8020/ moxie_liquidity_pool",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 moxie_liquidity_pool",
     "test": "graph test",
-    "cbd:deploy": "graph codegen && graph build && graph deploy --studio moxie-liquidity -l v0.7.7"
+    "cbd:deploy": "graph codegen && graph build && graph deploy --studio moxie-liquidity -l v0.8.1"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.81.0",
