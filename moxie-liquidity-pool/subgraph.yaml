@@ -70,3 +70,77 @@ dataSources:
         - event: Withdraw(indexed address,uint256)
           handler: handleWithdraw
       file: ./src/handler.ts
+  - kind: ethereum
+    name: AerodromeCLGauge
+    network: base
+    source:
+      address: "0xe6813b3271803dc1c083ec5e605d68926757ca92"
+      abi: AerodromeCLGauge
+      startBlock: 23874894
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Transfer
+      abis:
+        - name: AerodromeCLGauge
+          file: ./abis/AerodromeCLGauge.json
+      eventHandlers:
+        - event: Deposit(indexed address,indexed uint256,indexed uint128)
+          handler: handleCLDeposit
+        - event: Withdraw(indexed address,indexed uint256,indexed uint128)
+          handler: handleCLWithdraw
+      file: ./src/cl-gauge-handler.ts
+  - kind: ethereum
+    name: AerodromeCLPool
+    network: base
+    source:
+      address: "0x8a86610952343beff5f1a906fd5bd9185c031a90"
+      abi: AerodromeCLPool
+      startBlock: 23651809
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Transfer
+      abis:
+        - name: AerodromeCLPool
+          file: ./abis/AerodromeCLPool.json
+      eventHandlers:
+        - event: Mint(address,indexed address,indexed int24,indexed int24,uint128,uint256,uint256)
+          handler: handleMint
+        - event: Swap(indexed address,indexed address,int256,int256,uint160,uint128,int24)
+          handler: handleSwap
+        - event: Burn(indexed address,indexed int24,indexed int24,uint128,uint256,uint256)
+          handler: handleBurn
+        - event: CollectFees(indexed address,uint128,uint128)
+          handler: handleCollectFees
+        - event: Flash(indexed address,indexed address,uint256,uint256,uint256,uint256)
+          handler: handleFlash
+      file: ./src/cl-pool-handler.ts
+  - kind: ethereum
+    name: NonfungiblePositionManager
+    network: base
+    source:
+      address: "0x827922686190790b37229fd06084350e74485b72"
+      abi: NonfungiblePositionManager
+      startBlock: 23651809
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      file: ./src/position-manager-handler.ts
+      entities:
+        - NonfungiblePositionManager
+      abis:
+        - name: NonfungiblePositionManager
+          file: ./abis/NonfungiblePositionManager.json
+      eventHandlers:
+        - event: DecreaseLiquidity(indexed uint256,uint128,uint256,uint256)
+          handler: handleDecreaseLiquidity
+        - event: IncreaseLiquidity(indexed uint256,uint128,uint256,uint256)
+          handler: handleIncreaseLiquidity
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
