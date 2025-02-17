@@ -542,6 +542,8 @@ type Summary @entity {
 
   totalSubjectFee: BigInt!
   totalSubjectFeeFromAuction: BigInt!
+  totalSubjectTokens: BigInt!
+  totalSubjectTokensGraduated: BigInt!
 }
 
 type AuctionUser @entity {

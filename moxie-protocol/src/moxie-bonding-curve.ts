@@ -579,4 +579,7 @@ export function handleSubjectGraduated(event: SubjectGraduated): void {
    subjectToken!.poolId = event.params._poolId
    subjectToken!.tokenId = event.params._tokenId
    saveSubjectToken(subjectToken!, event.block, false)
+   let summary = getOrCreateSummary()
+   summary.totalSubjectTokensGraduated = summary.totalSubjectTokensGraduated.plus(BigInt.fromI32(1))
+   summary.save()
 }

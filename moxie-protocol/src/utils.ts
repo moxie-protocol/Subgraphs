@@ -45,6 +45,9 @@ export function getOrCreateSubjectToken(
 ): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
   if (!subjectToken) {
+    let summary = getOrCreateSummary()
+    summary.totalSubjectTokens = summary.totalSubjectTokens.plus(BigInt.fromI32(1))
+    summary.save()
     subjectToken = new SubjectToken(subjectTokenAddress.toHexString())
     let token = ERC20.bind(subjectTokenAddress)
     subjectToken.name = token.name()
@@ -558,6 +561,8 @@ export function getOrCreateSummary(): Summary {
     summary.totalSubjectFeeFromAuction = BigInt.zero()
     summary.swapFeeRatioProtocolPct = BigInt.zero()
     summary.defaultGraduationMarketCap = BigInt.zero()
+    summary.totalSubjectTokens = BigInt.zero()
+    summary.totalSubjectTokensGraduated = BigInt.zero()
     summary.save()
   }
   return summary
