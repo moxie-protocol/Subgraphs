@@ -560,6 +560,7 @@ type SubjectToSubjectToken @entity {
 
 
 type GraduationMarketCap @entity {
+  "reserve ratio"
   id: ID!
   "market cap"
   marketCap: BigInt!
