@@ -101,12 +101,20 @@ dataSources:
           handler: handleSubjectShareSold
         - event: UpdateBeneficiary(address)
           handler: handleUpdateBeneficiary
-        - event: UpdateFees(uint256,uint256,uint256,uint256)
+        - event: UpdateFees(uint256,uint256,uint256,uint256,uint256)
           handler: handleUpdateFees
         - event: Initialized(uint64)
           handler: handleInitialized
         - event: SubjectReserveRatioUpdated(address,uint32,uint32)
           handler: handleSubjectReserveRatioUpdated
+        - event: TradingPaused(address,bool)
+          handler: handleTradingPaused
+        - event: DefaultGraduationMarketCapUpdated(uint256,uint256)
+          handler: handleDefaultGraduationMarketCapUpdated
+        - event: GraduationMarketCapUpdated(indexed uint32,uint256,uint256,bool)
+          handler: handleGraduationMarketCapUpdated
+        - event: SubjectGraduated(indexed address,bytes32,uint256)
+          handler: handleSubjectGraduated
       file: ./src/moxie-bonding-curve.ts
   - kind: ethereum
     name: EasyAuction

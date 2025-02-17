@@ -274,6 +274,14 @@ type SubjectToken @entity {
 
   auction: Auction
   status: OnboardingStatus!
+  "trading paused"
+  tradingPaused: Boolean!
+  "subject graduated"
+  isGraduated: Boolean!
+  "pool id"
+  poolId: Bytes!
+  "graduation token id"
+  tokenId: BigInt!
 }
 enum OnboardingStatus {
   OnboardingInitialized
@@ -512,10 +520,17 @@ type Summary @entity {
   protocolSellFeePct: BigInt!
   subjectBuyFeePct: BigInt!
   subjectSellFeePct: BigInt!
-
+  "swap fee ratio protocol pct"
+  swapFeeRatioProtocolPct: BigInt!
+  "default graduation market cap"
+  defaultGraduationMarketCap: BigInt!
+  "number of buy orders"
   numberOfBuyOrders: BigInt!
+  "number of sell orders"
   numberOfSellOrders: BigInt!
+  "number of auction orders"
   numberOfAuctionOrders: BigInt!
+  "number of users"
   numberOfUsers: BigInt!
 
   "total moxie spent in buy orders + initialization"
@@ -540,3 +555,21 @@ type SubjectToSubjectToken @entity {
   id: ID!
   subjectToken: SubjectToken!
 }
+
+
+type GraduationMarketCap @entity {
+  id: ID!
+  "market cap"
+  marketCap: BigInt!
+  "is default"
+  isDefault: Boolean!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
+}
+

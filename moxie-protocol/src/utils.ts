@@ -72,6 +72,10 @@ export function getOrCreateSubjectToken(
     subjectToken.status = ONBOARDING_STATUS_ONBOARDING_INITIALIZED
     subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
     subjectToken.updatedAtBlockNumber = block.number
+    subjectToken.tradingPaused = false
+    subjectToken.isGraduated = false
+    subjectToken.poolId = Bytes.fromHexString("0x0000000000000000000000000000000000000000")
+    subjectToken.tokenId = BigInt.zero()
     saveSubjectToken(subjectToken, block)
   }
   return subjectToken
@@ -552,6 +556,8 @@ export function getOrCreateSummary(): Summary {
     summary.totalProtocolFeeFromAuction = BigInt.zero()
     summary.totalSubjectFee = BigInt.zero()
     summary.totalSubjectFeeFromAuction = BigInt.zero()
+    summary.swapFeeRatioProtocolPct = BigInt.zero()
+    summary.defaultGraduationMarketCap = BigInt.zero()
     summary.save()
   }
   return summary
