@@ -116,6 +116,7 @@ type Summary @entity {
   subjectBuyFeePct: BigInt!
   subjectSellFeePct: BigInt!
   totalStakedSubjectTokens: BigInt!
+  totalSubjectTokens: BigInt!
 }
 
 type LockInfo @entity {
