@@ -5,6 +5,7 @@ import {
   SubjectShareSold,
   UpdateBeneficiary,
   UpdateFees,
+  UpdateFees1,
   UpdateFormula,
   Initialized,
   MoxieBondingCurve,
@@ -460,6 +461,15 @@ export function handleUpdateBeneficiary(event: UpdateBeneficiary): void {
 }
 
 export function handleUpdateFees(event: UpdateFees): void {
+  let summary = getOrCreateSummary()
+  summary.protocolBuyFeePct = event.params._protocolBuyFeePct
+  summary.protocolSellFeePct = event.params._protocolSellFeePct
+  summary.subjectBuyFeePct = event.params._subjectBuyFeePct
+  summary.subjectSellFeePct = event.params._subjectSellFeePct
+  summary.save()
+}
+
+export function handleUpdateFees1(event: UpdateFees1): void {
   let summary = getOrCreateSummary()
   summary.protocolBuyFeePct = event.params._protocolBuyFeePct
   summary.protocolSellFeePct = event.params._protocolSellFeePct

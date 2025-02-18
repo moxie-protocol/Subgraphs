@@ -656,6 +656,37 @@
           "internalType": "uint256",
           "name": "_subjectSellFeePct",
           "type": "uint256"
+        }
+      ],
+      "name": "UpdateFees",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_protocolBuyFeePct",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_protocolSellFeePct",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_subjectBuyFeePct",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "_subjectSellFeePct",
+          "type": "uint256"
         },
         {
           "indexed": false,
@@ -667,6 +698,7 @@
       "name": "UpdateFees",
       "type": "event"
     },
+
     {
       "anonymous": false,
       "inputs": [

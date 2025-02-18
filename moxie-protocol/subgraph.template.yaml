@@ -101,8 +101,10 @@ dataSources:
           handler: handleSubjectShareSold
         - event: UpdateBeneficiary(address)
           handler: handleUpdateBeneficiary
-        - event: UpdateFees(uint256,uint256,uint256,uint256,uint256)
+        - event: UpdateFees(uint256,uint256,uint256,uint256)
           handler: handleUpdateFees
+        - event: UpdateFees(uint256,uint256,uint256,uint256,uint256)
+          handler: handleUpdateFees1
         - event: Initialized(uint64)
           handler: handleInitialized
         - event: SubjectReserveRatioUpdated(address,uint32,uint32)
