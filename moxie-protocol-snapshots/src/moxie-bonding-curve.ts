@@ -392,6 +392,11 @@ export function handleSubjectReserveRatioUpdated(
         event.params._subject.toHexString()
     )
   }
+  let graduationMarketCap = getOrCreateGraduationMarketCap(
+    event.params._newReserveRatio.toString(),
+    event.block
+  )
+  saveGraduationMarketCap(graduationMarketCap, event.block)
   let subjectToken = SubjectToken.load(subjectToSubjectToken.subjectToken)
   subjectToken!.reserveRatio = event.params._newReserveRatio
   let calculatedPrice = new CalculatePrice(
@@ -404,6 +409,7 @@ export function handleSubjectReserveRatioUpdated(
   subjectToken!.marketCap = subjectToken!.currentPriceInMoxie
     .times(subjectToken!.totalSupply.toBigDecimal())
     .div(BigInt.fromI32(10).pow(18).toBigDecimal())
+  subjectToken!.graduationMarketCap = graduationMarketCap.id
   saveSubjectToken(subjectToken!, event.block, true)
 }
 
