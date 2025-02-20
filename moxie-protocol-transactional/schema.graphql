@@ -57,6 +57,16 @@ type SubjectToken @entity {
   protocolTokenInvested: BigDecimal!
   "market cap: total supply * current price"
   marketCap: BigDecimal!
+  "trading paused"
+  tradingPaused: Boolean!
+  "subject graduated"
+  isGraduated: Boolean!
+  "pool id"
+  poolId: Bytes!
+  "graduation token id"
+  tokenId: BigInt!
+
+  graduationMarketCap: GraduationMarketCap
 }
 
 type Portfolio @entity {
@@ -117,6 +127,13 @@ type Summary @entity {
   subjectSellFeePct: BigInt!
   totalStakedSubjectTokens: BigInt!
   totalSubjectTokens: BigInt!
+
+  "swap fee ratio protocol pct"
+  swapFeeRatioProtocolPct: BigInt!
+  "default graduation market cap"
+  defaultGraduationMarketCap: BigInt!
+  totalSubjectTokensGraduated: BigInt!
+  availableGraduationMarketCap: [GraduationMarketCap!]!
 }
 
 type LockInfo @entity {
@@ -191,4 +208,21 @@ type SubjectToSubjectToken @entity {
   "subject address"
   id: ID!
   subjectToken: SubjectToken!
+}
+
+type GraduationMarketCap @entity {
+  "reserve ratio"
+  id: ID!
+  "market cap"
+  marketCap: BigInt!
+  "is default"
+  isDefault: Boolean!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
 }

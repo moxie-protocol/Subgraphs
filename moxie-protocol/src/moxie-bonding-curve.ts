@@ -64,6 +64,11 @@ export function handleBondingCurveInitialized(
   if (isBlacklistedSubjectTokenAddress(event.params._subjectToken)) {
     return
   }
+  let graduationMarketCap = getOrCreateGraduationMarketCap(
+    event.params._reserveRatio.toString(),
+    event.block
+  )
+  saveGraduationMarketCap(graduationMarketCap, event.block)
   let subjectToken = getOrCreateSubjectToken(
     event.params._subjectToken,
     event.block
@@ -77,13 +82,8 @@ export function handleBondingCurveInitialized(
   )
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
+  subjectToken.graduationMarketCap = graduationMarketCap.id
   saveSubjectToken(subjectToken, event.block, true)
-
-  let graduationMarketCap = getOrCreateGraduationMarketCap(
-    event.params._reserveRatio.toString(),
-    event.block
-  )
-  saveGraduationMarketCap(graduationMarketCap, event.block)
 }
 
 export function handleSubjectSharePurchased(
@@ -526,6 +526,11 @@ export function handleSubjectReserveRatioUpdated(
         event.params._subject.toHexString()
     )
   }
+  let graduationMarketCap = getOrCreateGraduationMarketCap(
+    event.params._newReserveRatio.toString(),
+    event.block
+  )
+  saveGraduationMarketCap(graduationMarketCap, event.block)
   let subjectToken = SubjectToken.load(subjectToSubjectToken.subjectToken)
   subjectToken!.reserveRatio = event.params._newReserveRatio
   let calculatedPrice = new CalculatePrice(
@@ -535,13 +540,8 @@ export function handleSubjectReserveRatioUpdated(
   )
   subjectToken!.currentPriceInMoxie = calculatedPrice.price
   subjectToken!.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
+  subjectToken!.graduationMarketCap = graduationMarketCap.id
   saveSubjectToken(subjectToken!, event.block, true)
-
-  let graduationMarketCap = getOrCreateGraduationMarketCap(
-    event.params._newReserveRatio.toString(),
-    event.block
-  )
-  saveGraduationMarketCap(graduationMarketCap, event.block)
 }
 
 export function handleTradingPaused(event: TradingPaused): void {
@@ -563,7 +563,8 @@ export function handleDefaultGraduationMarketCapUpdated(
   event: DefaultGraduationMarketCapUpdated
 ): void {
   let summary = getOrCreateSummary()
-  summary.defaultGraduationMarketCap = event.params._newDefaultGraduationMarketCap
+  summary.defaultGraduationMarketCap =
+    event.params._newDefaultGraduationMarketCap
   summary.save()
 
   // update all graduation market caps
@@ -593,23 +594,23 @@ export function handleGraduationMarketCapUpdated(
   saveGraduationMarketCap(graduationMarketCap, event.block)
 }
 
-
 export function handleSubjectGraduated(event: SubjectGraduated): void {
-   let subjectToSubjectToken = SubjectToSubjectToken.load(
-     event.params._subject.toHexString()
-   )
-   if (subjectToSubjectToken == null) {
-     throw new Error(
-       "SubjectToSubjectToken not found, subject: " +
-         event.params._subject.toHexString()
-     )
-   }
-   let subjectToken = SubjectToken.load(subjectToSubjectToken.subjectToken)
-   subjectToken!.isGraduated = true
-   subjectToken!.poolId = event.params._poolId
-   subjectToken!.tokenId = event.params._tokenId
-   saveSubjectToken(subjectToken!, event.block, false)
-   let summary = getOrCreateSummary()
-   summary.totalSubjectTokensGraduated = summary.totalSubjectTokensGraduated.plus(BigInt.fromI32(1))
-   summary.save()
+  let subjectToSubjectToken = SubjectToSubjectToken.load(
+    event.params._subject.toHexString()
+  )
+  if (subjectToSubjectToken == null) {
+    throw new Error(
+      "SubjectToSubjectToken not found, subject: " +
+        event.params._subject.toHexString()
+    )
+  }
+  let subjectToken = SubjectToken.load(subjectToSubjectToken.subjectToken)
+  subjectToken!.isGraduated = true
+  subjectToken!.poolId = event.params._poolId
+  subjectToken!.tokenId = event.params._tokenId
+  saveSubjectToken(subjectToken!, event.block, false)
+  let summary = getOrCreateSummary()
+  summary.totalSubjectTokensGraduated =
+    summary.totalSubjectTokensGraduated.plus(BigInt.fromI32(1))
+  summary.save()
 }

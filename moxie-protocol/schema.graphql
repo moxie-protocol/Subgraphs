@@ -283,7 +283,7 @@ type SubjectToken @entity {
   "graduation token id"
   tokenId: BigInt!
 
-  graduationMarketCap: GraduationMarketCap!
+  graduationMarketCap: GraduationMarketCap
 }
 enum OnboardingStatus {
   OnboardingInitialized
