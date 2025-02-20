@@ -75,6 +75,7 @@ export function handleBondingCurveInitialized(
   )
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
+  subjectToken.graduationMarketCap = graduationMarketCap.id
   saveSubjectToken(subjectToken, event.block, true)
 }
 
