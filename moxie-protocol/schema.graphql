@@ -282,6 +282,8 @@ type SubjectToken @entity {
   poolId: Bytes!
   "graduation token id"
   tokenId: BigInt!
+
+  graduationMarketCap: GraduationMarketCap!
 }
 enum OnboardingStatus {
   OnboardingInitialized
@@ -544,6 +546,7 @@ type Summary @entity {
   totalSubjectFeeFromAuction: BigInt!
   totalSubjectTokens: BigInt!
   totalSubjectTokensGraduated: BigInt!
+  availableGraduationMarketCap: [GraduationMarketCap!]!
 }
 
 type AuctionUser @entity {

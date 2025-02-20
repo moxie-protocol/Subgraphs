@@ -47,6 +47,8 @@ import {
   isBlacklistedSubjectTokenAddress,
   getUserType,
   BeneficiaryType,
+  saveGraduationMarketCap,
+  getOrCreateGraduationMarketCap,
 } from "./utils"
 import {
   ORDER_TYPE_BUY as BUY,
@@ -76,6 +78,12 @@ export function handleBondingCurveInitialized(
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   saveSubjectToken(subjectToken, event.block, true)
+
+  let graduationMarketCap = getOrCreateGraduationMarketCap(
+    event.params._reserveRatio.toString(),
+    event.block
+  )
+  saveGraduationMarketCap(graduationMarketCap, event.block)
 }
 
 export function handleSubjectSharePurchased(
@@ -528,6 +536,12 @@ export function handleSubjectReserveRatioUpdated(
   subjectToken!.currentPriceInMoxie = calculatedPrice.price
   subjectToken!.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
   saveSubjectToken(subjectToken!, event.block, true)
+
+  let graduationMarketCap = getOrCreateGraduationMarketCap(
+    event.params._newReserveRatio.toString(),
+    event.block
+  )
+  saveGraduationMarketCap(graduationMarketCap, event.block)
 }
 
 export function handleTradingPaused(event: TradingPaused): void {
@@ -551,26 +565,32 @@ export function handleDefaultGraduationMarketCapUpdated(
   let summary = getOrCreateSummary()
   summary.defaultGraduationMarketCap = event.params._newDefaultGraduationMarketCap
   summary.save()
+
+  // update all graduation market caps
+  let availableGraduationMarketCap = summary.availableGraduationMarketCap
+  for (let i = 0; i < availableGraduationMarketCap.length; i++) {
+    let graduationMarketCap = getOrCreateGraduationMarketCap(
+      availableGraduationMarketCap[i],
+      event.block
+    )
+    if (graduationMarketCap.isDefault) {
+      // setting new default graduation market cap for all graduation market caps
+      graduationMarketCap.marketCap = summary.defaultGraduationMarketCap
+      saveGraduationMarketCap(graduationMarketCap, event.block)
+    }
+  }
 }
 
 export function handleGraduationMarketCapUpdated(
   event: GraduationMarketCapUpdated
 ): void {
-  let graduationMarketCap = GraduationMarketCap.load(
-    event.params._reserveRatio.toHexString()
+  let graduationMarketCap = getOrCreateGraduationMarketCap(
+    event.params._reserveRatio.toString(),
+    event.block
   )
-  if (graduationMarketCap == null) {
-    graduationMarketCap = new GraduationMarketCap(
-      event.params._reserveRatio.toHexString()
-    )
-    graduationMarketCap.createdAtBlockInfo = getOrCreateBlockInfo(event.block).id
-    graduationMarketCap.createdAtBlockNumber = event.block.number
-  }
-  graduationMarketCap.isDefault = event.params._isDefault
   graduationMarketCap.marketCap = event.params._newGraduationMarketCap
-  graduationMarketCap.updatedAtBlockInfo = getOrCreateBlockInfo(event.block).id
-  graduationMarketCap.updatedAtBlockNumber = event.block.number
-  graduationMarketCap.save()
+  graduationMarketCap.isDefault = event.params._isDefault
+  saveGraduationMarketCap(graduationMarketCap, event.block)
 }
 
 
