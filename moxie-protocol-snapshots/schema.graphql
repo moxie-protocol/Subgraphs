@@ -236,8 +236,10 @@ type SubjectToken @entity {
   "amount of moxie used to buy or sell or auction this subject token"
   lifetimeVolume: BigInt!
   "snapshots"
-  hourlySnapshots: [SubjectTokenHourlySnapshot!]! @derivedFrom(field: "subjectToken")
-  dailySnapshots: [SubjectTokenDailySnapshot!]! @derivedFrom(field: "subjectToken")
+  hourlySnapshots: [SubjectTokenHourlySnapshot!]!
+    @derivedFrom(field: "subjectToken")
+  dailySnapshots: [SubjectTokenDailySnapshot!]!
+    @derivedFrom(field: "subjectToken")
   latestRollingDailySnapshot: SubjectTokenRollingDailySnapshot
   latestDailySnapshot: SubjectTokenDailySnapshot
   previousDailySnapshot: SubjectTokenDailySnapshot
@@ -267,6 +269,17 @@ type SubjectToken @entity {
   protocolTokenInvested: BigDecimal!
   auction: Auction
   status: OnboardingStatus!
+
+  "trading paused"
+  tradingPaused: Boolean!
+  "subject graduated"
+  isGraduated: Boolean!
+  "pool id"
+  poolId: Bytes!
+  "graduation token id"
+  tokenId: BigInt!
+
+  graduationMarketCap: GraduationMarketCap
 }
 enum OnboardingStatus {
   OnboardingInitialized
@@ -438,6 +451,14 @@ type Summary @entity {
 
   totalSubjectFee: BigInt!
   totalSubjectFeeFromAuction: BigInt!
+
+  "swap fee ratio protocol pct"
+  swapFeeRatioProtocolPct: BigInt!
+  "default graduation market cap"
+  defaultGraduationMarketCap: BigInt!
+  totalSubjectTokens: BigInt!
+  totalSubjectTokensGraduated: BigInt!
+  availableGraduationMarketCap: [GraduationMarketCap!]!
 }
 
 type AuctionUser @entity {
@@ -445,31 +466,25 @@ type AuctionUser @entity {
   userAddress: Bytes!
 }
 
-# type VaultDepositTx @entity {
-#   id: ID!
-#   amount: BigInt!
-#   sender: Bytes!
-#   subject: Bytes!
-#   token: Bytes!
-#   totalReserve: BigInt!
-#   txHash: Bytes!
-#   blockInfo: BlockInfo!
-# }
-
-# type VaultTransferTx @entity {
-#   id: ID!
-#   amount: BigInt
-#   to: Bytes!
-#   subject: Bytes!
-#   token: Bytes!
-#   totalReserve: BigInt!
-#   txHash: Bytes!
-#   blockInfo: BlockInfo!
-# }
-
-
 type SubjectToSubjectToken @entity {
   "subject address"
   id: ID!
   subjectToken: SubjectToken!
+}
+
+type GraduationMarketCap @entity {
+  "reserve ratio"
+  id: ID!
+  "market cap"
+  marketCap: BigInt!
+  "is default"
+  isDefault: Boolean!
+  "created at block information"
+  createdAtBlockInfo: BlockInfo!
+  "created at block number"
+  createdAtBlockNumber: BigInt!
+  "updated at block information"
+  updatedAtBlockInfo: BlockInfo!
+  "updated at block number"
+  updatedAtBlockNumber: BigInt!
 }
