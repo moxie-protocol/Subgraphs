@@ -444,7 +444,7 @@ export function handleDefaultGraduationMarketCapUpdated(
 ): void {
   let summary = getOrCreateSummary()
   summary.defaultGraduationMarketCap =
-    event.params._newDefaultGraduationMarketCap
+    event.params._newDefaultGraduationMarketCap.div(BigInt.fromI32(10).pow(18))
   summary.save()
 
   // update all graduation market caps
@@ -469,7 +469,9 @@ export function handleGraduationMarketCapUpdated(
     event.params._reserveRatio.toString(),
     event.block
   )
-  graduationMarketCap.marketCap = event.params._newGraduationMarketCap
+  graduationMarketCap.marketCap = event.params._newGraduationMarketCap.div(
+    BigInt.fromI32(10).pow(18)
+  )
   graduationMarketCap.isDefault = event.params._isDefault
   saveGraduationMarketCap(graduationMarketCap, event.block)
 }
