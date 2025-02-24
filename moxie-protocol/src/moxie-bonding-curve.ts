@@ -5,12 +5,18 @@ import {
   SubjectShareSold,
   UpdateBeneficiary,
   UpdateFees,
+  UpdateFees1,
   UpdateFormula,
   Initialized,
   MoxieBondingCurve,
   SubjectReserveRatioUpdated,
+  GraduationMarketCapUpdated,
+  DefaultGraduationMarketCapUpdated,
+  TradingPaused,
+  SubjectGraduated,
 } from "../generated/MoxieBondingCurve/MoxieBondingCurve"
 import {
+  GraduationMarketCap,
   Order,
   ProtocolFeeBeneficiary,
   ProtocolFeeTransfer,
@@ -41,6 +47,8 @@ import {
   isBlacklistedSubjectTokenAddress,
   getUserType,
   BeneficiaryType,
+  saveGraduationMarketCap,
+  getOrCreateGraduationMarketCap,
 } from "./utils"
 import {
   ORDER_TYPE_BUY as BUY,
@@ -56,6 +64,11 @@ export function handleBondingCurveInitialized(
   if (isBlacklistedSubjectTokenAddress(event.params._subjectToken)) {
     return
   }
+  let graduationMarketCap = getOrCreateGraduationMarketCap(
+    event.params._reserveRatio.toString(),
+    event.block
+  )
+  saveGraduationMarketCap(graduationMarketCap, event.block)
   let subjectToken = getOrCreateSubjectToken(
     event.params._subjectToken,
     event.block
@@ -69,6 +82,7 @@ export function handleBondingCurveInitialized(
   )
   subjectToken.currentPriceInMoxie = calculatedPrice.price
   subjectToken.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
+  subjectToken.graduationMarketCap = graduationMarketCap.id
   saveSubjectToken(subjectToken, event.block, true)
 }
 
@@ -463,6 +477,16 @@ export function handleUpdateFees(event: UpdateFees): void {
   summary.save()
 }
 
+export function handleUpdateFees1(event: UpdateFees1): void {
+  let summary = getOrCreateSummary()
+  summary.protocolBuyFeePct = event.params._protocolBuyFeePct
+  summary.protocolSellFeePct = event.params._protocolSellFeePct
+  summary.subjectBuyFeePct = event.params._subjectBuyFeePct
+  summary.subjectSellFeePct = event.params._subjectSellFeePct
+  summary.swapFeeRatioProtocolPct = event.params._swapFeeRatioProtocolPct
+  summary.save()
+}
+
 export function handleInitialized(event: Initialized): void {
   let bondingCurve = MoxieBondingCurve.bind(event.address)
   let feeBeneficiary = bondingCurve.feeBeneficiary()
@@ -502,6 +526,11 @@ export function handleSubjectReserveRatioUpdated(
         event.params._subject.toHexString()
     )
   }
+  let graduationMarketCap = getOrCreateGraduationMarketCap(
+    event.params._newReserveRatio.toString(),
+    event.block
+  )
+  saveGraduationMarketCap(graduationMarketCap, event.block)
   let subjectToken = SubjectToken.load(subjectToSubjectToken.subjectToken)
   subjectToken!.reserveRatio = event.params._newReserveRatio
   let calculatedPrice = new CalculatePrice(
@@ -511,5 +540,79 @@ export function handleSubjectReserveRatioUpdated(
   )
   subjectToken!.currentPriceInMoxie = calculatedPrice.price
   subjectToken!.currentPriceInWeiInMoxie = calculatedPrice.priceInWei
+  subjectToken!.graduationMarketCap = graduationMarketCap.id
   saveSubjectToken(subjectToken!, event.block, true)
+}
+
+export function handleTradingPaused(event: TradingPaused): void {
+  let subjectToSubjectToken = SubjectToSubjectToken.load(
+    event.params._subject.toHexString()
+  )
+  if (subjectToSubjectToken == null) {
+    throw new Error(
+      "SubjectToSubjectToken not found, subject: " +
+        event.params._subject.toHexString()
+    )
+  }
+  let subjectToken = SubjectToken.load(subjectToSubjectToken.subjectToken)
+  subjectToken!.tradingPaused = event.params._isPaused
+  saveSubjectToken(subjectToken!, event.block, false)
+}
+
+export function handleDefaultGraduationMarketCapUpdated(
+  event: DefaultGraduationMarketCapUpdated
+): void {
+  let summary = getOrCreateSummary()
+  summary.defaultGraduationMarketCap =
+    event.params._newDefaultGraduationMarketCap.div(BigInt.fromI32(10).pow(18))
+  summary.save()
+
+  // update all graduation market caps
+  let availableGraduationMarketCap = summary.availableGraduationMarketCap
+  for (let i = 0; i < availableGraduationMarketCap.length; i++) {
+    let graduationMarketCap = getOrCreateGraduationMarketCap(
+      availableGraduationMarketCap[i],
+      event.block
+    )
+    if (graduationMarketCap.isDefault) {
+      // setting new default graduation market cap for all graduation market caps
+      graduationMarketCap.marketCap = summary.defaultGraduationMarketCap
+      saveGraduationMarketCap(graduationMarketCap, event.block)
+    }
+  }
+}
+
+export function handleGraduationMarketCapUpdated(
+  event: GraduationMarketCapUpdated
+): void {
+  let graduationMarketCap = getOrCreateGraduationMarketCap(
+    event.params._reserveRatio.toString(),
+    event.block
+  )
+  graduationMarketCap.marketCap = event.params._newGraduationMarketCap.div(
+    BigInt.fromI32(10).pow(18)
+  )
+  graduationMarketCap.isDefault = event.params._isDefault
+  saveGraduationMarketCap(graduationMarketCap, event.block)
+}
+
+export function handleSubjectGraduated(event: SubjectGraduated): void {
+  let subjectToSubjectToken = SubjectToSubjectToken.load(
+    event.params._subject.toHexString()
+  )
+  if (subjectToSubjectToken == null) {
+    throw new Error(
+      "SubjectToSubjectToken not found, subject: " +
+        event.params._subject.toHexString()
+    )
+  }
+  let subjectToken = SubjectToken.load(subjectToSubjectToken.subjectToken)
+  subjectToken!.isGraduated = true
+  subjectToken!.poolId = event.params._poolId
+  subjectToken!.tokenId = event.params._tokenId
+  saveSubjectToken(subjectToken!, event.block, false)
+  let summary = getOrCreateSummary()
+  summary.totalSubjectTokensGraduated =
+    summary.totalSubjectTokensGraduated.plus(BigInt.fromI32(1))
+  summary.save()
 }
