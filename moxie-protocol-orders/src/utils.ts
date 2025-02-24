@@ -19,10 +19,13 @@ import {
   Summary,
   User,
   Auction,
+  GraduationMarketCap,
 } from "../generated/schema"
 import {
   BLACKLISTED_AUCTION,
   BLACKLISTED_SUBJECT_TOKEN_ADDRESS,
+  DEFAULT_GRADUATION_MARKET_CAP_MAINNET,
+  DEFAULT_GRADUATION_MARKET_CAP_TESTNET,
   ONBOARDING_STATUS_ONBOARDING_INITIALIZED,
   PCT_BASE,
   SECONDS_IN_DAY,
@@ -40,6 +43,11 @@ export function getOrCreateSubjectToken(
 ): SubjectToken {
   let subjectToken = SubjectToken.load(subjectTokenAddress.toHexString())
   if (!subjectToken) {
+    let summary = getOrCreateSummary()
+    summary.totalSubjectTokens = summary.totalSubjectTokens.plus(
+      BigInt.fromI32(1)
+    )
+    summary.save()
     subjectToken = new SubjectToken(subjectTokenAddress.toHexString())
     let token = ERC20.bind(subjectTokenAddress)
     subjectToken.name = token.name()
@@ -67,6 +75,12 @@ export function getOrCreateSubjectToken(
     subjectToken.status = ONBOARDING_STATUS_ONBOARDING_INITIALIZED
     subjectToken.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
     subjectToken.updatedAtBlockNumber = block.number
+    subjectToken.tradingPaused = false
+    subjectToken.isGraduated = false
+    subjectToken.poolId = Bytes.fromHexString(
+      "0x0000000000000000000000000000000000000000"
+    )
+    subjectToken.tokenId = BigInt.zero()
     saveSubjectToken(subjectToken, block)
   }
   return subjectToken
@@ -207,6 +221,15 @@ export function getOrCreateSummary(): Summary {
     summary.totalSubjectFee = BigInt.zero()
     summary.totalSubjectFeeFromAuction = BigInt.zero()
     summary.totalStakedSubjectTokens = BigInt.zero()
+
+    const isMainnet = dataSource.network() == "base"
+    summary.defaultGraduationMarketCap = isMainnet
+      ? DEFAULT_GRADUATION_MARKET_CAP_MAINNET
+      : DEFAULT_GRADUATION_MARKET_CAP_TESTNET
+    summary.totalSubjectTokens = BigInt.zero()
+    summary.totalSubjectTokensGraduated = BigInt.zero()
+    summary.availableGraduationMarketCap = []
+    summary.swapFeeRatioProtocolPct = BigInt.fromI32(0)
     summary.save()
   }
   return summary
@@ -449,4 +472,37 @@ export function getUserType(beneficiary: Address): BeneficiaryType {
     return BeneficiaryType.WHITELISTED
   }
   return BeneficiaryType.USER
+}
+
+export function getOrCreateGraduationMarketCap(
+  reserveRatio: string,
+  block: ethereum.Block
+): GraduationMarketCap {
+  let graduationMarketCap = GraduationMarketCap.load(reserveRatio)
+  if (graduationMarketCap == null) {
+    let summary = getOrCreateSummary()
+    graduationMarketCap = new GraduationMarketCap(reserveRatio)
+    graduationMarketCap.createdAtBlockInfo = getOrCreateBlockInfo(block).id
+    graduationMarketCap.createdAtBlockNumber = block.number
+    graduationMarketCap.marketCap = summary.defaultGraduationMarketCap
+    graduationMarketCap.isDefault = true
+  }
+  return graduationMarketCap
+}
+
+export function saveGraduationMarketCap(
+  graduationMarketCap: GraduationMarketCap,
+  block: ethereum.Block
+): void {
+  graduationMarketCap.updatedAtBlockInfo = getOrCreateBlockInfo(block).id
+  graduationMarketCap.updatedAtBlockNumber = block.number
+  graduationMarketCap.save()
+
+  let summary = getOrCreateSummary()
+  let availableGraduationMarketCap = summary.availableGraduationMarketCap
+  if (!availableGraduationMarketCap.includes(graduationMarketCap.id)) {
+    availableGraduationMarketCap.push(graduationMarketCap.id)
+    summary.availableGraduationMarketCap = availableGraduationMarketCap
+    summary.save()
+  }
 }
