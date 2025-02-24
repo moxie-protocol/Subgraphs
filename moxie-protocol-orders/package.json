@@ -11,7 +11,7 @@
     "test": "graph test -d",
     "cbt": "graph codegen && graph build && graph test -d",
     "clean": "rm -rf generated/ build/",
-    "cbd:public": "yarn cb:base && graph deploy --studio protocol_analytics_orders_mainnet -l v0.0.1"
+    "cbd:public": "yarn cb:base && graph deploy --studio protocol_analytics_orders_mainnet -l v0.0.2"
   },
   "dependencies": {
     "@graphprotocol/graph-cli": "0.73.0",
